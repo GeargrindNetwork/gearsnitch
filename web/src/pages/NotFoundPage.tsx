@@ -1,21 +1,27 @@
 import { Link } from 'react-router-dom';
-import { Button } from '../components/ui/button';
+import { Button } from '@/components/ui/button';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center px-6">
-      <div className="text-center">
-        <p className="text-7xl font-bold text-emerald-500">404</p>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight">Page not found</h1>
-        <p className="mt-4 text-zinc-400">
+    <div className="min-h-screen bg-black text-white">
+      <Header />
+      <section className="flex min-h-[60vh] flex-col items-center justify-center px-4 pt-16">
+        <p className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-8xl font-extrabold text-transparent">
+          404
+        </p>
+        <h1 className="mt-4 text-2xl font-bold">Page Not Found</h1>
+        <p className="mt-2 text-zinc-400">
           The page you're looking for doesn't exist or has been moved.
         </p>
-        <div className="mt-8">
-          <Button asChild className="bg-emerald-600 hover:bg-emerald-500 text-white">
-            <Link to="/">Go Home</Link>
+        <Link to="/" className="mt-8">
+          <Button className="bg-gradient-to-r from-cyan-500 to-emerald-500 font-semibold text-black hover:from-cyan-400 hover:to-emerald-400">
+            Back to Home
           </Button>
-        </div>
-      </div>
+        </Link>
+      </section>
+      <Footer />
     </div>
   );
 }

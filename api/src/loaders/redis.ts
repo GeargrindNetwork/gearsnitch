@@ -1,17 +1,17 @@
-import Redis from 'ioredis';
-import logger from '../utils/logger.js';
-import config from '../config/index.js';
+import IORedis from 'ioredis';
+import logger from '../utils/logger';
+import config from '../config';
 
-let redisClient: Redis | null = null;
+let redisClient: IORedis | null = null;
 
-export function getRedisClient(): Redis {
+export function getRedisClient(): IORedis {
   if (!redisClient) {
     throw new Error('Redis client not initialized — call connectRedis() first');
   }
   return redisClient;
 }
 
-export async function connectRedis(): Promise<Redis> {
+export async function connectRedis(): Promise<IORedis> {
   if (redisClient) {
     return redisClient;
   }
@@ -20,7 +20,7 @@ export async function connectRedis(): Promise<Redis> {
     throw new Error('REDIS_URL is not configured');
   }
 
-  redisClient = new Redis(config.redisUrl, {
+  redisClient = new IORedis(config.redisUrl, {
     maxRetriesPerRequest: 3,
     retryStrategy(times: number) {
       if (times > 10) {

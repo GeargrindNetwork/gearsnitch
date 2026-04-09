@@ -13,7 +13,7 @@ export function createRateLimiter(
   try {
     const redis = getRedisClient();
     store = new RedisStore({
-      sendCommand: (...args: string[]) => redis.call(...(args as [string, ...string[]])),
+      sendCommand: ((...args: string[]) => redis.call(args[0], ...args.slice(1))) as never,
       prefix,
     });
   } catch {
