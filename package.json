@@ -1,0 +1,32 @@
+{
+  "name": "gearsnitch",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GearSnitch — Bluetooth gear awareness, gym activation, health tracking, and peptide store",
+  "workspaces": [
+    "api",
+    "web",
+    "shared",
+    "worker",
+    "realtime"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "dev:api": "npm run dev --workspace=api",
+    "dev:web": "npm run dev --workspace=web",
+    "dev:worker": "npm run dev --workspace=worker",
+    "dev:realtime": "npm run dev --workspace=realtime",
+    "build:api": "npm run build --workspace=api",
+    "build:web": "npm run build --workspace=web",
+    "build:shared": "npm run build --workspace=shared"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "Geargrind",
+  "license": "UNLICENSED"
+}

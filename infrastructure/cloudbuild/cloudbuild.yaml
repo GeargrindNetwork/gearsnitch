@@ -1,0 +1,156 @@
+steps:
+  # Build API image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:latest'
+      - '-f'
+      - 'infrastructure/docker/api.Dockerfile'
+      - '.'
+    id: 'build-api'
+
+  # Build Web image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:latest'
+      - '-f'
+      - 'infrastructure/docker/web.Dockerfile'
+      - '.'
+    id: 'build-web'
+
+  # Build Worker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:latest'
+      - '-f'
+      - 'infrastructure/docker/worker.Dockerfile'
+      - '.'
+    id: 'build-worker'
+
+  # Build Realtime image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:${SHORT_SHA}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:latest'
+      - '-f'
+      - 'infrastructure/docker/realtime.Dockerfile'
+      - '.'
+    id: 'build-realtime'
+
+  # Push all images
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api']
+    waitFor: ['build-api']
+    id: 'push-api'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web']
+    waitFor: ['build-web']
+    id: 'push-web'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker']
+    waitFor: ['build-worker']
+    id: 'push-worker'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime']
+    waitFor: ['build-realtime']
+    id: 'push-realtime'
+
+  # Deploy API to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'gearsnitch-api'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--quiet'
+    waitFor: ['push-api']
+    id: 'deploy-api'
+
+  # Deploy Web to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'gearsnitch-web'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--quiet'
+    waitFor: ['push-web']
+    id: 'deploy-web'
+
+  # Deploy Worker to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'gearsnitch-worker'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--quiet'
+    waitFor: ['push-worker']
+    id: 'deploy-worker'
+
+  # Deploy Realtime to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'gearsnitch-realtime'
+      - '--image'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--quiet'
+    waitFor: ['push-realtime']
+    id: 'deploy-realtime'
+
+images:
+  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:${SHORT_SHA}'
+  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${SHORT_SHA}'
+  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:${SHORT_SHA}'
+  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:${SHORT_SHA}'
+
+substitutions:
+  _REGION: 'us-central1'
+  _PROJECT_ID: 'gearsnitch'
+  _ENV: 'dev'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
