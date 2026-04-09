@@ -56,12 +56,10 @@ export default function Header() {
 
         {/* Mobile Menu */}
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon" className="text-zinc-400">
-              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </Button>
+          <SheetTrigger className="inline-flex h-10 w-10 items-center justify-center rounded-md text-zinc-400 hover:bg-white/5 hover:text-white md:hidden">
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </SheetTrigger>
           <SheetContent side="right" className="w-72 border-white/5 bg-zinc-950">
             <nav className="mt-8 flex flex-col gap-4">
