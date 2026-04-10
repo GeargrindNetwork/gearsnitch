@@ -9,6 +9,7 @@ final class SignInViewModel: ObservableObject {
     @Published var error: String?
 
     private let authManager = AuthManager.shared
+    private let googleSignInManager = GoogleSignInManager()
 
     // MARK: - Apple Sign-In
 
@@ -48,22 +49,21 @@ final class SignInViewModel: ObservableObject {
     // MARK: - Google Sign-In
 
     func signInWithGoogle() {
-        // Google Sign-In SDK integration point.
-        // In production, present GIDSignIn shared instance, obtain idToken,
-        // then call performGoogleSignIn(idToken:).
-        //
-        // For now we surface an informational message since the Google Sign-In
-        // pod/SPM package must be configured with a valid client ID first.
-        error = "Google Sign-In is not yet configured."
+        Task {
+            await performGoogleSignIn()
+        }
     }
 
-    func performGoogleSignIn(idToken: String) async {
+    private func performGoogleSignIn() async {
         isLoading = true
         error = nil
 
         do {
+            let idToken = try await googleSignInManager.signIn()
             try await authManager.signInWithGoogle(idToken: idToken)
             isAuthenticated = true
+        } catch AuthError.signInCancelled {
+            // User cancelled — no error shown
         } catch {
             self.error = error.localizedDescription
         }

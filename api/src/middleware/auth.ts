@@ -7,6 +7,7 @@ import config from '../config/index.js';
 
 export interface JwtPayload {
   sub: string;
+  jti: string;
   email: string;
   role: string;
   scope: string[];
@@ -55,7 +56,7 @@ export async function isAuthenticated(
 
     // Check Redis whitelist — token must be present in active sessions
     const redis = getRedisClient();
-    const sessionKey = `session:${decoded.sub}:${token.slice(-8)}`;
+    const sessionKey = `session:${decoded.sub}:${decoded.jti}`;
     const sessionExists = await redis.exists(sessionKey);
     if (!sessionExists) {
       errorResponse(res, StatusCodes.UNAUTHORIZED, 'Session expired or revoked');

@@ -124,7 +124,7 @@ final class AuthManager: ObservableObject {
 
         do {
             let response: AuthTokenResponse = try await apiClient.request(endpoint)
-            completeSignIn(response: response)
+            completeSignIn(response: response, method: "apple")
         } catch {
             authState = .unauthenticated
             logger.error("Apple sign-in failed: \(error.localizedDescription)")
@@ -141,7 +141,7 @@ final class AuthManager: ObservableObject {
 
         do {
             let response: AuthTokenResponse = try await apiClient.request(endpoint)
-            completeSignIn(response: response)
+            completeSignIn(response: response, method: "google")
         } catch {
             authState = .unauthenticated
             logger.error("Google sign-in failed: \(error.localizedDescription)")
@@ -180,18 +180,18 @@ final class AuthManager: ObservableObject {
 
     // MARK: - Private
 
-    private func completeSignIn(response: AuthTokenResponse) {
+    private func completeSignIn(response: AuthTokenResponse, method: String = "unknown") {
         tokenStore.save(accessToken: response.accessToken, refreshToken: response.refreshToken)
         let user = GSUser(from: response.user)
         authState = .authenticated(user)
-        logger.info("Sign-in complete for user \(user.id)")
+        logger.info("Sign-in complete for user \(user.id) via \(method)")
 
         AnalyticsClient.shared.identify(userId: user.id, traits: [
             "email": user.email ?? "",
             "displayName": user.displayName ?? "",
             "subscriptionTier": user.roles.first ?? "free",
         ])
-        AnalyticsClient.shared.track(event: .signInCompleted(method: "apple"))
+        AnalyticsClient.shared.track(event: .signInCompleted(method: method))
 
         NotificationCenter.default.post(name: AuthManager.didSignInNotification, object: user)
     }

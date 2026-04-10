@@ -6,6 +6,8 @@ export interface IUser extends Document {
   emailHash: string;
   displayName: string;
   photoUrl?: string;
+  googleId?: string;
+  appleId?: string;
   authProviders: string[];
   roles: string[];
   status: string;
@@ -31,6 +33,8 @@ const UserSchema = new Schema<IUser>(
     emailHash: { type: String, required: true },
     displayName: { type: String, required: true },
     photoUrl: { type: String },
+    googleId: { type: String, sparse: true },
+    appleId: { type: String, sparse: true },
     authProviders: { type: [String], default: [] },
     roles: { type: [String], default: ['user'] },
     status: { type: String, default: 'active' },
@@ -51,6 +55,8 @@ const UserSchema = new Schema<IUser>(
 );
 
 UserSchema.index({ emailHash: 1 }, { unique: true });
+UserSchema.index({ googleId: 1 }, { unique: true, sparse: true });
+UserSchema.index({ appleId: 1 }, { unique: true, sparse: true });
 UserSchema.index({ roles: 1 });
 UserSchema.index({ createdAt: 1 });
 

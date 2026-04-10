@@ -36,7 +36,7 @@ extension APIEndpoint {
     enum Auth {
         static func appleLogin(identityToken: String, authorizationCode: String, fullName: String?) -> APIEndpoint {
             APIEndpoint(
-                path: "/api/v1/auth/apple/login",
+                path: "/api/v1/auth/oauth/apple",
                 method: .POST,
                 body: AppleLoginBody(
                     identityToken: identityToken,
@@ -48,7 +48,7 @@ extension APIEndpoint {
 
         static func googleLogin(idToken: String) -> APIEndpoint {
             APIEndpoint(
-                path: "/api/v1/auth/google/login",
+                path: "/api/v1/auth/oauth/google",
                 method: .POST,
                 body: GoogleLoginBody(idToken: idToken)
             )
