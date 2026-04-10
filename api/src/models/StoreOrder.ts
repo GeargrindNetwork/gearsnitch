@@ -22,6 +22,7 @@ export interface IStoreOrder extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   orderNumber: string;
+  paymentIntentId?: string;
   status: 'pending' | 'paid' | 'fulfilled' | 'cancelled' | 'refunded';
   items: IStoreOrderItem[];
   subtotal: number;
@@ -67,6 +68,7 @@ const StoreOrderSchema = new Schema<IStoreOrder>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     orderNumber: { type: String, required: true },
+    paymentIntentId: { type: String },
     status: {
       type: String,
       enum: ['pending', 'paid', 'fulfilled', 'cancelled', 'refunded'],
@@ -87,6 +89,7 @@ const StoreOrderSchema = new Schema<IStoreOrder>(
 StoreOrderSchema.index({ orderNumber: 1 }, { unique: true });
 StoreOrderSchema.index({ userId: 1, createdAt: -1 });
 StoreOrderSchema.index({ status: 1 });
+StoreOrderSchema.index({ paymentIntentId: 1 }, { sparse: true });
 
 export const StoreOrder = mongoose.model<IStoreOrder>(
   'StoreOrder',

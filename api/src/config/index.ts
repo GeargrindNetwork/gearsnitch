@@ -21,6 +21,11 @@ const config = {
   appleTeamId: process.env.APPLE_TEAM_ID ?? '',
   appleKeyId: process.env.APPLE_KEY_ID ?? '',
 
+  // Stripe
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? '',
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+
   // CORS
   corsOrigins: process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()) ?? [
     'http://localhost:3000',

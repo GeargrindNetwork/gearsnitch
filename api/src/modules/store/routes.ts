@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import { isAuthenticated } from '../../middleware/auth.js';
 import { successResponse } from '../../utils/response.js';
+import paymentRoutes from './paymentRoutes.js';
 
 const router = Router();
+
+// Payment routes
+router.use('/payments', paymentRoutes);
 
 // GET /store/products
 router.get('/products', (_req, res) => {

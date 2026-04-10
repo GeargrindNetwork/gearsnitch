@@ -12,6 +12,8 @@ locals {
     "apple-private-key",
     "apns-key",
     "encryption-key",
+    "stripe-secret-key",
+    "stripe-webhook-secret",
   ]
 }
 

@@ -53,7 +53,10 @@ struct CartView: View {
                 }
 
                 NavigationLink {
-                    CheckoutView()
+                    CheckoutView(
+                        cartItems: viewModel.items,
+                        subtotal: viewModel.cart?.subtotal ?? 0
+                    )
                 } label: {
                     Text("Checkout")
                         .font(.headline)
