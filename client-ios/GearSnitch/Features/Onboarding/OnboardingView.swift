@@ -152,7 +152,7 @@ struct OnboardingView: View {
 
             VStack(spacing: 12) {
                 NavigationLink {
-                    AddGymView(onGymAdded: { viewModel.advance() })
+                    AddGymView()
                 } label: {
                     Text("Add Gym")
                         .font(.headline)

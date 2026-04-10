@@ -8,7 +8,7 @@ import os
 /// (1s -> 2s -> 4s -> 8s, max 60s), and refreshes JWT before reconnect.
 actor SocketClient {
 
-    static let shared = SocketClient()
+    static var shared: SocketClient { SocketClient() }
 
     // MARK: - State
 
@@ -33,7 +33,7 @@ actor SocketClient {
     private let session: URLSession
     private let logger = Logger(subsystem: "com.gearsnitch", category: "SocketClient")
 
-    private var currentBackoff: TimeInterval = Self.initialBackoff
+    private var currentBackoff: TimeInterval = 1.0
     private var shouldReconnect = false
     private var receiveTask: Task<Void, Never>?
 
@@ -137,7 +137,7 @@ actor SocketClient {
     }
 
     private func buildWebSocketURL(token: String) -> URL? {
-        let baseURL = AppConfig.apiBaseURL.absoluteString
+        let baseURL = AppConfig.apiBaseURL
         let wsScheme = baseURL.hasPrefix("https") ? "wss" : "ws"
         let host = baseURL
             .replacingOccurrences(of: "https://", with: "")

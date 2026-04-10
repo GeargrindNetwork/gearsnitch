@@ -43,7 +43,7 @@ final class BLEManager: NSObject, ObservableObject {
 
     // MARK: - Init
 
-    private override init() {
+    override init() {
         super.init()
 
         let options: [String: Any] = [

@@ -83,7 +83,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
     private func sendDeviceTokenToBackend(_ token: String) async {
         do {
-            let endpoint = APIEndpoint.Notifications.registerDevice(token: token)
+            let endpoint = APIEndpoint.Notifications.registerToken(token: token)
             let _: EmptyData = try await APIClient.shared.request(endpoint)
             logger.info("Device token registered with backend")
         } catch {

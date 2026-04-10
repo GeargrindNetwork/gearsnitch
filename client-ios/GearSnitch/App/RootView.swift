@@ -5,23 +5,26 @@ struct RootView: View {
     @EnvironmentObject private var coordinator: AppCoordinator
 
     var body: some View {
-        Group {
-            switch authManager.authState {
-            case .loading:
-                splashView
+        content
+            .animation(.easeInOut(duration: 0.35), value: authManager.authState)
+    }
 
-            case .unauthenticated:
-                NavigationStack {
-                    OnboardingView(onComplete: {
-                        // Auth state change drives navigation automatically
-                    })
-                }
+    @ViewBuilder
+    private var content: some View {
+        switch authManager.authState {
+        case .loading:
+            splashView
 
-            case .authenticated:
-                MainTabView()
+        case .unauthenticated:
+            NavigationStack {
+                OnboardingView(onComplete: {
+                    // Auth state change drives navigation automatically
+                })
             }
+
+        case .authenticated:
+            MainTabView()
         }
-        .animation(.easeInOut(duration: 0.35), value: authManager.authState)
     }
 
     // MARK: - Splash

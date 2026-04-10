@@ -20,7 +20,7 @@ final class FeatureFlags: ObservableObject {
 
     private let logger = Logger(subsystem: "com.gearsnitch", category: "FeatureFlags")
 
-    private init() {
+    init() {
         // Load defaults from cached config if available
         if let config = RemoteConfigClient.shared.currentConfig {
             applyConfig(config)

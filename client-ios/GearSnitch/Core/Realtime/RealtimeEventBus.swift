@@ -55,7 +55,7 @@ final class RealtimeEventBus: ObservableObject {
     private let eventHandler = SocketEventHandler()
     private let logger = Logger(subsystem: "com.gearsnitch", category: "RealtimeEventBus")
 
-    private init() {
+    init() {
         registerHandlers()
     }
 

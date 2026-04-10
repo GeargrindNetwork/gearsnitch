@@ -7,7 +7,7 @@ import Combine
 
 enum AuthState: Equatable {
     case unauthenticated
-    case authenticated(User)
+    case authenticated(GSUser)
     case loading
 
     static func == (lhs: AuthState, rhs: AuthState) -> Bool {
@@ -17,28 +17,6 @@ enum AuthState: Equatable {
         case (.authenticated(let l), .authenticated(let r)): return l.id == r.id
         default: return false
         }
-    }
-}
-
-// MARK: - User Model
-
-struct User: Identifiable, Equatable {
-    let id: String
-    let email: String?
-    let displayName: String?
-    let avatarURL: String?
-    let role: String?
-    let referralCode: String?
-    let subscriptionTier: String?
-
-    init(from dto: UserDTO) {
-        self.id = dto.id
-        self.email = dto.email
-        self.displayName = dto.displayName
-        self.avatarURL = dto.avatarURL
-        self.role = dto.role
-        self.referralCode = dto.referralCode
-        self.subscriptionTier = dto.subscriptionTier
     }
 }
 
@@ -64,7 +42,7 @@ final class AuthManager: ObservableObject {
         return false
     }
 
-    var currentUser: User? {
+    var currentUser: GSUser? {
         if case .authenticated(let user) = authState { return user }
         return nil
     }
@@ -101,7 +79,7 @@ final class AuthManager: ObservableObject {
 
         do {
             let userDTO: UserDTO = try await apiClient.request(APIEndpoint.Auth.me)
-            let user = User(from: userDTO)
+            let user = GSUser(from: userDTO)
             authState = .authenticated(user)
             logger.info("Session restored for user \(user.id)")
             NotificationCenter.default.post(name: AuthManager.didSignInNotification, object: user)
@@ -204,14 +182,14 @@ final class AuthManager: ObservableObject {
 
     private func completeSignIn(response: AuthTokenResponse) {
         tokenStore.save(accessToken: response.accessToken, refreshToken: response.refreshToken)
-        let user = User(from: response.user)
+        let user = GSUser(from: response.user)
         authState = .authenticated(user)
         logger.info("Sign-in complete for user \(user.id)")
 
         AnalyticsClient.shared.identify(userId: user.id, traits: [
             "email": user.email ?? "",
             "displayName": user.displayName ?? "",
-            "subscriptionTier": user.subscriptionTier ?? "free",
+            "subscriptionTier": user.roles.first ?? "free",
         ])
         AnalyticsClient.shared.track(event: .signInCompleted(method: "apple"))
 

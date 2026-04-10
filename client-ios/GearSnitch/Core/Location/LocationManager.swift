@@ -26,7 +26,7 @@ final class LocationManager: NSObject, ObservableObject {
 
     // MARK: - Init
 
-    private override init() {
+    override init() {
         self.geofenceManager = GeofenceManager()
         super.init()
 

@@ -63,15 +63,16 @@ struct GymDetailView: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                     } else {
-                        infoRow(label: "Name", value: gym.name) {
-                            Button {
-                                isEditing = true
-                            } label: {
-                                Image(systemName: "pencil")
-                                    .font(.caption)
-                                    .foregroundColor(.gsEmerald)
+                        HStack {
+                            Text("Name").font(.subheadline).foregroundColor(.gsTextSecondary)
+                            Spacer()
+                            Text(gym.name).font(.subheadline.weight(.medium)).foregroundColor(.gsText)
+                            Button { isEditing = true } label: {
+                                Image(systemName: "pencil").font(.caption).foregroundColor(.gsEmerald)
                             }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                     }
 
                     Divider().background(Color.gsBorder)
@@ -120,7 +121,7 @@ struct GymDetailView: View {
         }
     }
 
-    private func infoRow(label: String, value: String, trailing: (() -> some View)? = nil) -> some View {
+    private func infoRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
                 .font(.subheadline)
@@ -129,9 +130,6 @@ struct GymDetailView: View {
             Text(value)
                 .font(.subheadline.weight(.medium))
                 .foregroundColor(.gsText)
-            if let trailing {
-                trailing()
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

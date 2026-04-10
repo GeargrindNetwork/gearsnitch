@@ -68,7 +68,9 @@ actor APIClient {
 
     /// Low-level execution: build request, fire URLSession, check status.
     private func execute(_ endpoint: APIEndpoint, accessToken: String?) async throws -> (Data, Int) {
-        let baseURL = AppConfig.apiBaseURL
+        guard let baseURL = URL(string: AppConfig.apiBaseURL) else {
+            throw NetworkError.invalidURL
+        }
 
         let urlRequest = try RequestBuilder.build(
             from: endpoint,
@@ -177,18 +179,4 @@ actor APIClient {
     }
 }
 
-// MARK: - App Config
-
-/// Centralized app configuration.
-enum AppConfig {
-
-    /// Base URL for the API server, read from Info.plist or defaulting to staging.
-    static var apiBaseURL: URL {
-        if let urlString = Bundle.main.infoDictionary?["API_BASE_URL"] as? String,
-           let url = URL(string: urlString) {
-            return url
-        }
-        // Default — override in scheme or Info.plist
-        return URL(string: "https://api.gearsnitch.com")!
-    }
-}
+// AppConfig is defined in Shared/Models/AppConfig.swift

@@ -3,7 +3,7 @@ import Foundation
 // MARK: - User
 
 /// Local User model matching the API response shape.
-struct User: Codable, Identifiable, Equatable, Sendable {
+struct GSUser: Codable, Identifiable, Equatable, Sendable {
     let id: String
     let email: String
     let displayName: String?
@@ -68,9 +68,28 @@ enum UnitSystem: String, Codable, Sendable {
     case metric
 }
 
+// MARK: - DTO Conversion
+
+extension GSUser {
+    init(from dto: UserDTO) {
+        self.init(
+            id: dto.id,
+            email: dto.email ?? "",
+            displayName: dto.displayName,
+            photoUrl: dto.avatarURL,
+            roles: [dto.role ?? "user"],
+            status: .active,
+            defaultGymId: nil,
+            onboardingCompletedAt: nil,
+            permissionsState: nil,
+            preferences: nil
+        )
+    }
+}
+
 // MARK: - Convenience
 
-extension User {
+extension GSUser {
     /// User's display name or a fallback derived from email.
     var resolvedDisplayName: String {
         if let name = displayName, !name.isEmpty {
