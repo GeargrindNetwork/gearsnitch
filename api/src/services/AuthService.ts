@@ -1,5 +1,6 @@
 import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
+import jwksRsa from 'jwks-rsa';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { StatusCodes } from 'http-status-codes';
@@ -58,6 +59,25 @@ function getGoogleClient(): OAuth2Client {
     googleClient = new OAuth2Client(config.googleOAuthClientId);
   }
   return googleClient;
+}
+
+// ---------------------------------------------------------------------------
+// Apple JWKS Client (singleton, caches keys automatically)
+// ---------------------------------------------------------------------------
+
+let appleJwksClient: jwksRsa.JwksClient | null = null;
+
+function getAppleJwksClient(): jwksRsa.JwksClient {
+  if (!appleJwksClient) {
+    appleJwksClient = jwksRsa({
+      jwksUri: 'https://appleid.apple.com/auth/keys',
+      cache: true,
+      cacheMaxAge: 86_400_000, // 24 hours
+      rateLimit: true,
+      jwksRequestsPerMinute: 10,
+    });
+  }
+  return appleJwksClient;
 }
 
 // ---------------------------------------------------------------------------
@@ -140,22 +160,7 @@ export class AuthService {
     fullName: string | undefined,
     deviceInfo: DeviceInfo,
   ): Promise<AuthResult> {
-    // TODO: Verify Apple identity token using JWKS from
-    // https://appleid.apple.com/auth/keys
-    // For now, decode without verification to extract claims.
-    // In production, use jwks-rsa to fetch Apple's public keys and verify.
-    const decoded = jwt.decode(identityToken) as {
-      sub?: string;
-      email?: string;
-      email_verified?: boolean;
-    } | null;
-
-    if (!decoded?.sub || !decoded?.email) {
-      throw new AuthServiceError(
-        'Invalid Apple identity token',
-        StatusCodes.UNAUTHORIZED,
-      );
-    }
+    const decoded = await AuthService.verifyAppleToken(identityToken);
 
     const appleId = decoded.sub;
     const email = decoded.email;
@@ -367,6 +372,50 @@ export class AuthService {
       });
       throw new AuthServiceError(
         'Invalid Google ID token',
+        StatusCodes.UNAUTHORIZED,
+      );
+    }
+  }
+
+  private static async verifyAppleToken(
+    identityToken: string,
+  ): Promise<{ sub: string; email: string }> {
+    try {
+      // Decode the header to get the key ID (kid)
+      const header = jwt.decode(identityToken, { complete: true })?.header;
+      if (!header?.kid) {
+        throw new Error('Missing kid in token header');
+      }
+
+      // Fetch the matching signing key from Apple's JWKS endpoint
+      const client = getAppleJwksClient();
+      const signingKey = await client.getSigningKey(header.kid);
+      const publicKey = signingKey.getPublicKey();
+
+      // Verify the token signature and claims
+      const payload = jwt.verify(identityToken, publicKey, {
+        algorithms: ['RS256'],
+        issuer: 'https://appleid.apple.com',
+        audience: config.appleClientId,
+      }) as {
+        sub?: string;
+        email?: string;
+        email_verified?: string | boolean;
+        iss?: string;
+        aud?: string;
+      };
+
+      if (!payload.sub || !payload.email) {
+        throw new Error('Missing sub or email in Apple token payload');
+      }
+
+      return { sub: payload.sub, email: payload.email };
+    } catch (err) {
+      logger.error('Apple token verification failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw new AuthServiceError(
+        'Invalid Apple identity token',
         StatusCodes.UNAUTHORIZED,
       );
     }
