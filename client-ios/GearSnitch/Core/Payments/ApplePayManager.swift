@@ -83,14 +83,16 @@ final class ApplePayManager: NSObject, ObservableObject {
                 self.paymentContinuation = continuation
 
                 controller.present { [weak self] presented in
-                    guard let self else { return }
-                    if !presented {
-                        self.logger.error("Failed to present Apple Pay sheet")
-                        self.paymentStatus = .failed("Failed to present Apple Pay")
-                        self.paymentContinuation?.resume(
-                            throwing: ApplePayError.presentationFailed
-                        )
-                        self.paymentContinuation = nil
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        if !presented {
+                            self.logger.error("Failed to present Apple Pay sheet")
+                            self.paymentStatus = .failed("Failed to present Apple Pay")
+                            self.paymentContinuation?.resume(
+                                throwing: ApplePayError.presentationFailed
+                            )
+                            self.paymentContinuation = nil
+                        }
                     }
                 }
             }
@@ -118,7 +120,7 @@ final class ApplePayManager: NSObject, ObservableObject {
         request.countryCode = "US"
         request.currencyCode = "USD"
         request.supportedNetworks = Self.supportedNetworks
-        request.merchantCapabilities = [.capability3DS, .capabilityDebit, .capabilityCredit]
+        request.merchantCapabilities = [.threeDSecure, .debit, .credit]
 
         var summaryItems: [PKPaymentSummaryItem] = items.map { item in
             PKPaymentSummaryItem(
@@ -199,14 +201,16 @@ extension ApplePayManager: PKPaymentAuthorizationControllerDelegate {
     nonisolated func paymentAuthorizationControllerDidFinish(
         _ controller: PKPaymentAuthorizationController
     ) {
-        Task { @MainActor in
+        Task { @MainActor [weak self] in
             controller.dismiss {
-                // If the continuation is still alive, the user cancelled
-                if self.paymentContinuation != nil {
-                    self.logger.info("User cancelled Apple Pay")
-                    self.paymentStatus = .idle
-                    self.paymentContinuation?.resume(throwing: ApplePayError.cancelled)
-                    self.paymentContinuation = nil
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    if self.paymentContinuation != nil {
+                        self.logger.info("User cancelled Apple Pay")
+                        self.paymentStatus = .idle
+                        self.paymentContinuation?.resume(throwing: ApplePayError.cancelled)
+                        self.paymentContinuation = nil
+                    }
                 }
             }
         }

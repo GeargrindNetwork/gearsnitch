@@ -37,6 +37,8 @@
 	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>GearSnitch syncs your health data for fitness tracking.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>GearSnitch records your workout and fitness data to Apple Health.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Always-on location lets GearSnitch auto-activate monitoring at your gym.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
