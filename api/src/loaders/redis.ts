@@ -2,6 +2,9 @@ import IORedis from 'ioredis';
 import logger from '../utils/logger';
 import config from '../config';
 
+/** All GearSnitch Redis keys are prefixed to isolate from other apps sharing the same instance */
+export const REDIS_KEY_PREFIX = 'gs:';
+
 let redisClient: IORedis | null = null;
 
 export function getRedisClient(): IORedis {
@@ -21,6 +24,7 @@ export async function connectRedis(): Promise<IORedis> {
   }
 
   redisClient = new IORedis(config.redisUrl, {
+    keyPrefix: REDIS_KEY_PREFIX,
     maxRetriesPerRequest: 3,
     retryStrategy(times: number) {
       if (times > 10) {
