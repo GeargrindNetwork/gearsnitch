@@ -2,31 +2,24 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Background Modes -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>bluetooth-central</string>
-		<string>location</string>
-		<string>remote-notification</string>
-	</array>
-
-	<!-- Bluetooth -->
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
-
-	<!-- Location -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>GearSnitch detects when you arrive at your gym.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Always-on location lets GearSnitch auto-activate monitoring at your gym.</string>
-
-	<!-- HealthKit -->
-	<key>NSHealthShareUsageDescription</key>
-	<string>GearSnitch syncs your health data for fitness tracking.</string>
-
-	<!-- URL Schemes -->
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>GearSnitch</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -38,8 +31,16 @@
 			</array>
 		</dict>
 	</array>
-
-	<!-- Scene Manifest for SwiftUI -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>GearSnitch syncs your health data for fitness tracking.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Always-on location lets GearSnitch auto-activate monitoring at your gym.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>GearSnitch detects when you arrive at your gym.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -47,5 +48,33 @@
 		<key>UISceneConfigurations</key>
 		<dict/>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+		<string>location</string>
+		<string>remote-notification</string>
+		<string>bluetooth-peripheral</string>
+		<string>audio</string>
+		<string>fetch</string>
+		<string>external-accessory</string>
+		<string>push-to-talk</string>
+		<string>processing</string>
+		<string>nearby-interaction</string>
+		<string>voip</string>
+	</array>
+	<key>UIStatusBarHidden</key>
+	<true/>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDarkContent</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
 </dict>
 </plist>
