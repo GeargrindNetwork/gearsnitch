@@ -84,6 +84,12 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>GearSnitch uses the camera to scan referral QR codes.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>GearSnitch accesses your photos to set a profile picture.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

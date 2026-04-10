@@ -8,6 +8,10 @@ import { Toaster } from './components/ui/sonner';
 import LandingPage from './pages/LandingPage';
 import StorePage from './pages/StorePage';
 import AccountPage from './pages/AccountPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import SupportPage from './pages/SupportPage';
+import DeleteAccountPage from './pages/DeleteAccountPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 const queryClient = new QueryClient();
@@ -29,6 +33,10 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/store/*" element={<StorePage />} />
           <Route path="/account/*" element={<AccountPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
+          <Route path="/support" element={<SupportPage />} />
+          <Route path="/delete-account" element={<DeleteAccountPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         <Toaster />

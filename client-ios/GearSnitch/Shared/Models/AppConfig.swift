@@ -44,6 +44,12 @@ enum AppConfig {
     /// Terms of service URL.
     static let termsURL = "https://gearsnitch.com/terms"
 
+    /// Support page URL.
+    static let supportURL = "https://gearsnitch.com/support"
+
+    /// Account deletion page URL.
+    static let deleteAccountURL = "https://gearsnitch.com/delete-account"
+
     /// Support email.
     static let supportEmail = "support@gearsnitch.com"
 
