@@ -3,6 +3,8 @@ import AuthenticationServices
 
 struct SignInView: View {
     @StateObject private var viewModel = SignInViewModel()
+
+    /// Called when sign-in succeeds. Used by OnboardingView to advance steps.
     var onSignInComplete: (() -> Void)?
 
     var body: some View {
@@ -15,7 +17,7 @@ struct SignInView: View {
                     .font(.system(size: 48))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.cyan, .green],
+                            colors: [.gsCyan, .gsEmerald],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -23,11 +25,11 @@ struct SignInView: View {
 
                 Text("GearSnitch")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(.gsText)
 
                 Text("Sign in to get started")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.gsTextSecondary)
             }
 
             Spacer()
@@ -46,32 +48,39 @@ struct SignInView: View {
                         Text("Continue with Google")
                             .font(.headline)
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(.gsText)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color.white.opacity(0.08))
+                    .background(Color.gsSurfaceRaised)
                     .cornerRadius(14)
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            .stroke(Color.gsBorder, lineWidth: 1)
                     )
                 }
             }
             .padding(.horizontal, 24)
+            .disabled(viewModel.isLoading)
 
             // Error
             if let error = viewModel.error {
-                Text(error)
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.top, 12)
-                    .padding(.horizontal, 24)
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.gsDanger)
+                        .font(.caption)
+
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.gsDanger)
+                }
+                .padding(.top, 12)
+                .padding(.horizontal, 24)
             }
 
             // Loading
             if viewModel.isLoading {
                 ProgressView()
-                    .tint(.cyan)
+                    .tint(.gsEmerald)
                     .padding(.top, 16)
             }
 
@@ -82,26 +91,26 @@ struct SignInView: View {
             VStack(spacing: 8) {
                 Text("By continuing, you agree to our")
                     .font(.caption2)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.gsTextSecondary)
 
                 HStack(spacing: 4) {
-                    Link("Terms of Service", destination: URL(string: "https://gearsnitch.app/terms")!)
+                    Link("Terms of Service", destination: URL(string: AppConfig.termsURL)!)
                         .font(.caption2.bold())
-                        .foregroundColor(.cyan)
+                        .foregroundColor(.gsCyan)
 
                     Text("and")
                         .font(.caption2)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.gsTextSecondary)
 
-                    Link("Privacy Policy", destination: URL(string: "https://gearsnitch.app/privacy")!)
+                    Link("Privacy Policy", destination: URL(string: AppConfig.privacyPolicyURL)!)
                         .font(.caption2.bold())
-                        .foregroundColor(.cyan)
+                        .foregroundColor(.gsCyan)
                 }
             }
             .padding(.bottom, 32)
         }
-        .background(Color.black.ignoresSafeArea())
-        .onChange(of: viewModel.isAuthenticated) { authenticated in
+        .background(Color.gsBackground.ignoresSafeArea())
+        .onChange(of: viewModel.isAuthenticated) { _, authenticated in
             if authenticated {
                 onSignInComplete?()
             }
@@ -183,4 +192,5 @@ struct SignInWithAppleButtonRepresentable: UIViewRepresentable {
 
 #Preview {
     SignInView()
+        .preferredColorScheme(.dark)
 }

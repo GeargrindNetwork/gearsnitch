@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "E7D1D483-679E-4D62-BF62-AC6B607BB0F2",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:GearSnitch.xcodeproj",
+      "identifier" : "ECF6BEF24B590549BDA03608",
+      "name" : "GearSnitch"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:GearSnitch.xcodeproj",
+        "identifier" : "86AC59BA8F8019D810326896",
+        "name" : "GearSnitchTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:GearSnitch.xcodeproj",
+        "identifier" : "B7C595239251A97BE5D4D4AD",
+        "name" : "GearSnitchUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

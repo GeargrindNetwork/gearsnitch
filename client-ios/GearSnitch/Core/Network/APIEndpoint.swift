@@ -296,6 +296,7 @@ struct UpdateUserBody: Encodable {
     var displayName: String?
     var avatarURL: String?
     var preferences: [String: String]?
+    var onboardingCompletedAt: Date?
 }
 
 struct CreateDeviceBody: Encodable {
