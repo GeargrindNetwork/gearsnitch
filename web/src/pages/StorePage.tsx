@@ -1,8 +1,17 @@
+import { useState } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import StripeCheckout from '@/components/checkout/StripeCheckout';
 
 const placeholderProducts = [
   {
@@ -62,6 +71,19 @@ const placeholderProducts = [
 ];
 
 export default function StorePage() {
+  const [checkoutProduct, setCheckoutProduct] = useState<typeof placeholderProducts[number] | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  function openCheckout(product: typeof placeholderProducts[number]) {
+    setCheckoutProduct(product);
+    setCheckoutOpen(true);
+  }
+
+  function closeCheckout() {
+    setCheckoutOpen(false);
+    setCheckoutProduct(null);
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header />
@@ -109,8 +131,9 @@ export default function StorePage() {
                   <Button
                     size="sm"
                     className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                    onClick={() => openCheckout(product)}
                   >
-                    Add to Cart
+                    Buy Now
                   </Button>
                 </CardFooter>
               </Card>
@@ -125,6 +148,36 @@ export default function StorePage() {
           </div>
         </div>
       </section>
+
+      {/* Checkout Dialog */}
+      <Dialog open={checkoutOpen} onOpenChange={(open) => { if (!open) closeCheckout(); }}>
+        <DialogContent className="bg-zinc-900 border-zinc-700 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-100">
+              {checkoutProduct ? `Checkout — ${checkoutProduct.name}` : 'Checkout'}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Complete your purchase securely with Apple Pay, Google Pay, or card.
+            </DialogDescription>
+          </DialogHeader>
+          {checkoutProduct && (
+            <StripeCheckout
+              amount={checkoutProduct.price}
+              label={checkoutProduct.name}
+              onSuccess={(id) => {
+                // eslint-disable-next-line no-console
+                console.log('Payment succeeded:', id);
+                setTimeout(closeCheckout, 2000);
+              }}
+              onError={(msg) => {
+                // eslint-disable-next-line no-console
+                console.error('Payment error:', msg);
+              }}
+              onCancel={closeCheckout}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

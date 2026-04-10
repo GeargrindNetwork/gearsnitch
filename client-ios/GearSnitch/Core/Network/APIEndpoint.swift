@@ -182,9 +182,17 @@ extension APIEndpoint {
 
         static func validateApple(receipt: String) -> APIEndpoint {
             APIEndpoint(
-                path: "/api/v1/subscriptions/apple/validate",
+                path: "/api/v1/subscriptions/validate-apple",
                 method: .POST,
                 body: ValidateAppleReceiptBody(receipt: receipt)
+            )
+        }
+
+        static func validateAppleJWS(jwsRepresentation: String) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/subscriptions/validate-apple",
+                method: .POST,
+                body: ValidateAppleJWSBody(jwsRepresentation: jwsRepresentation)
             )
         }
     }
@@ -328,6 +336,10 @@ struct RegisterTokenBody: Encodable {
 
 struct ValidateAppleReceiptBody: Encodable {
     let receipt: String
+}
+
+struct ValidateAppleJWSBody: Encodable {
+    let jwsRepresentation: String
 }
 
 struct HealthMetricPayload: Encodable {
