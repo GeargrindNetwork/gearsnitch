@@ -24,9 +24,9 @@ struct SessionWidgetEntry: TimelineEntry {
     let sessionStart: Date?
 }
 
-struct SessionWidgetProvider: AppIntentTimelineProvider {
+struct SessionWidgetProvider: TimelineProvider {
     typealias Entry = SessionWidgetEntry
-    typealias Intent = SessionWidgetConfigurationIntent
+    
 
     func placeholder(in context: Context) -> SessionWidgetEntry {
         SessionWidgetEntry(date: .now, isAtGym: true, gymName: "Iron Temple", sessionStart: .now)
@@ -59,9 +59,7 @@ struct SessionWidgetProvider: AppIntentTimelineProvider {
     }
 }
 
-struct SessionWidgetConfigurationIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Gym Session"
-    static var description: IntentDescription = "Shows current gym session status."
 }
 
 struct SessionWidgetView: View {
@@ -113,9 +111,9 @@ struct DeviceStatusEntry: TimelineEntry {
     let totalCount: Int
 }
 
-struct DeviceStatusProvider: AppIntentTimelineProvider {
+struct DeviceStatusProvider: TimelineProvider {
     typealias Entry = DeviceStatusEntry
-    typealias Intent = DeviceStatusConfigurationIntent
+    
 
     func placeholder(in context: Context) -> DeviceStatusEntry {
         DeviceStatusEntry(date: .now, connectedCount: 2, totalCount: 3)
@@ -139,9 +137,7 @@ struct DeviceStatusProvider: AppIntentTimelineProvider {
     }
 }
 
-struct DeviceStatusConfigurationIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Device Status"
-    static var description: IntentDescription = "Shows connected device count."
 }
 
 struct DeviceStatusWidgetView: View {
@@ -190,9 +186,9 @@ struct CaloriesEntry: TimelineEntry {
     }
 }
 
-struct CaloriesProvider: AppIntentTimelineProvider {
+struct CaloriesProvider: TimelineProvider {
     typealias Entry = CaloriesEntry
-    typealias Intent = CaloriesConfigurationIntent
+    
 
     func placeholder(in context: Context) -> CaloriesEntry {
         CaloriesEntry(date: .now, consumed: 1450, goal: 2200)
@@ -216,9 +212,7 @@ struct CaloriesProvider: AppIntentTimelineProvider {
     }
 }
 
-struct CaloriesConfigurationIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "Daily Calories"
-    static var description: IntentDescription = "Shows daily calorie progress."
 }
 
 struct CaloriesWidgetView: View {
@@ -271,9 +265,8 @@ struct GearSnitchSessionWidget: Widget {
     let kind = "GearSnitchSessionWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(
+        StaticConfiguration(
             kind: kind,
-            intent: SessionWidgetConfigurationIntent.self,
             provider: SessionWidgetProvider()
         ) { entry in
             SessionWidgetView(entry: entry)
@@ -288,9 +281,9 @@ struct GearSnitchDeviceStatusWidget: Widget {
     let kind = "GearSnitchDeviceStatusWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(
+        StaticConfiguration(
             kind: kind,
-            intent: DeviceStatusConfigurationIntent.self,
+            
             provider: DeviceStatusProvider()
         ) { entry in
             DeviceStatusWidgetView(entry: entry)
@@ -305,9 +298,9 @@ struct GearSnitchCaloriesWidget: Widget {
     let kind = "GearSnitchCaloriesWidget"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(
+        StaticConfiguration(
             kind: kind,
-            intent: CaloriesConfigurationIntent.self,
+            
             provider: CaloriesProvider()
         ) { entry in
             CaloriesWidgetView(entry: entry)

@@ -74,12 +74,7 @@ final class ApplePayManager: NSObject, ObservableObject {
             shipping: shipping
         )
 
-        guard let controller = PKPaymentAuthorizationController(paymentRequest: request) else {
-            let errorMessage = "Unable to create Apple Pay controller"
-            logger.error("\(errorMessage)")
-            paymentStatus = .failed(errorMessage)
-            throw ApplePayError.controllerCreationFailed
-        }
+        let controller = PKPaymentAuthorizationController(paymentRequest: request)
 
         controller.delegate = self
 

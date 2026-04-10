@@ -22,6 +22,7 @@ targets:
       - path: GearSnitch
         excludes:
           - "**/*.xcassets"
+          - "Features/Widgets/**"
       - path: GearSnitch/Resources/Assets.xcassets
         type: folder
     resources:

@@ -285,7 +285,7 @@ final class GymSessionManager: ObservableObject {
 
 // MARK: - API Request / Response Types
 
-private struct StartSessionBody: Encodable {
+struct StartSessionBody: Encodable {
     let gymId: String
     let gymName: String
 }
