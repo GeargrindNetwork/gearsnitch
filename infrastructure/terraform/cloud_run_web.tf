@@ -14,36 +14,26 @@ resource "google_cloud_run_v2_service" "web" {
     }
 
     containers {
-      image = "${local.image_prefix}/web:latest"
+      image = local.web_image
 
       resources {
         limits = {
           cpu    = "1"
-          memory = "256Mi"
+          memory = "512Mi"
         }
       }
 
       ports {
-        container_port = 80
+        container_port = var.use_placeholder_images ? 8080 : 80
       }
 
       startup_probe {
-        http_get {
-          path = "/"
-          port = 80
+        tcp_socket {
+          port = var.use_placeholder_images ? 8080 : 80
         }
         initial_delay_seconds = 3
         period_seconds        = 5
         failure_threshold     = 3
-      }
-
-      liveness_probe {
-        http_get {
-          path = "/"
-          port = 80
-        }
-        period_seconds    = 30
-        failure_threshold = 3
       }
 
       env {
@@ -63,11 +53,4 @@ resource "google_cloud_run_v2_service" "web" {
   ]
 }
 
-# Allow unauthenticated access to the web frontend
-resource "google_cloud_run_v2_service_iam_member" "web_public" {
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.web.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
+# Note: allUsers IAM blocked by org policy. Use Cloud Run ingress settings.

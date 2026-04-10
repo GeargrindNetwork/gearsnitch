@@ -14,46 +14,32 @@ resource "google_cloud_run_v2_service" "api" {
     }
 
     containers {
-      image = "${local.image_prefix}/api:latest"
+      image = local.api_image
 
       resources {
         limits = {
           cpu    = "1"
-          memory = "256Mi"
+          memory = "512Mi"
         }
       }
 
       ports {
-        container_port = 3000
+        container_port = var.use_placeholder_images ? 8080 : 3000
       }
 
       startup_probe {
-        http_get {
-          path = "/health"
-          port = 3000
+        tcp_socket {
+          port = var.use_placeholder_images ? 8080 : 3000
         }
         initial_delay_seconds = 5
         period_seconds        = 10
         failure_threshold     = 3
       }
 
-      liveness_probe {
-        http_get {
-          path = "/health"
-          port = 3000
-        }
-        period_seconds    = 30
-        failure_threshold = 3
-      }
 
       env {
         name  = "NODE_ENV"
         value = var.environment
-      }
-
-      env {
-        name  = "PORT"
-        value = "3000"
       }
 
       env {
@@ -133,11 +119,5 @@ resource "google_cloud_run_v2_service" "api" {
   ]
 }
 
-# Allow unauthenticated access to the API
-resource "google_cloud_run_v2_service_iam_member" "api_public" {
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.api.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
+# Note: allUsers IAM blocked by org policy. Use Cloud Run ingress settings
+# or domain mapping with Cloudflare for public access.

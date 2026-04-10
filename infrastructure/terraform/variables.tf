@@ -37,3 +37,9 @@ variable "redis_url" {
   type        = string
   sensitive   = true
 }
+
+variable "use_placeholder_images" {
+  description = "Use Google sample container images for initial deploy before real images are built"
+  type        = bool
+  default     = true
+}

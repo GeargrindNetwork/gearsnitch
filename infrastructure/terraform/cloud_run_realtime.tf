@@ -17,46 +17,31 @@ resource "google_cloud_run_v2_service" "realtime" {
     session_affinity = true
 
     containers {
-      image = "${local.image_prefix}/realtime:latest"
+      image = local.realtime_image
 
       resources {
         limits = {
           cpu    = "1"
-          memory = "256Mi"
+          memory = "512Mi"
         }
       }
 
       ports {
-        container_port = 3001
+        container_port = var.use_placeholder_images ? 8080 : 3001
       }
 
       startup_probe {
-        http_get {
-          path = "/health"
-          port = 3001
+        tcp_socket {
+          port = var.use_placeholder_images ? 8080 : 3001
         }
         initial_delay_seconds = 5
         period_seconds        = 10
         failure_threshold     = 3
       }
 
-      liveness_probe {
-        http_get {
-          path = "/health"
-          port = 3001
-        }
-        period_seconds    = 30
-        failure_threshold = 3
-      }
-
       env {
         name  = "NODE_ENV"
         value = var.environment
-      }
-
-      env {
-        name  = "PORT"
-        value = "3001"
       }
 
       env {
@@ -96,11 +81,4 @@ resource "google_cloud_run_v2_service" "realtime" {
   ]
 }
 
-# Allow unauthenticated access (WebSocket clients authenticate at app level)
-resource "google_cloud_run_v2_service_iam_member" "realtime_public" {
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.realtime.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
-}
+# Note: allUsers IAM blocked by org policy. Use Cloud Run ingress settings.

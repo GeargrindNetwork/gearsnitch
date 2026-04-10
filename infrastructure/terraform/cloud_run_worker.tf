@@ -17,7 +17,7 @@ resource "google_cloud_run_v2_service" "worker" {
     }
 
     containers {
-      image = "${local.image_prefix}/worker:latest"
+      image = local.worker_image
 
       resources {
         limits = {
@@ -27,7 +27,7 @@ resource "google_cloud_run_v2_service" "worker" {
       }
 
       ports {
-        container_port = 3000
+        container_port = var.use_placeholder_images ? 8080 : 3000
       }
 
       env {

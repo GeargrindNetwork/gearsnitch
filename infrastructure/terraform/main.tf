@@ -40,7 +40,12 @@ resource "google_project_iam_member" "cloud_run_secret_accessor" {
 }
 
 locals {
-  image_prefix = "${var.region}-docker.pkg.dev/${var.project_id}/gearsnitch"
+  image_prefix     = "${var.region}-docker.pkg.dev/${var.project_id}/gearsnitch"
+  placeholder_image = "us-docker.pkg.dev/cloudrun/container/hello"
+  api_image        = var.use_placeholder_images ? local.placeholder_image : "${local.image_prefix}/api:latest"
+  web_image        = var.use_placeholder_images ? local.placeholder_image : "${local.image_prefix}/web:latest"
+  worker_image     = var.use_placeholder_images ? local.placeholder_image : "${local.image_prefix}/worker:latest"
+  realtime_image   = var.use_placeholder_images ? local.placeholder_image : "${local.image_prefix}/realtime:latest"
   labels = {
     environment = var.environment
     managed_by  = "terraform"
