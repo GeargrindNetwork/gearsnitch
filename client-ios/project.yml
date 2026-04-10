@@ -21,14 +21,8 @@ targets:
     sources:
       - path: GearSnitch
         excludes:
-          - "**/*.xcassets"
           - "Features/Widgets/**"
-      - path: GearSnitch/Resources/Assets.xcassets
-        type: folder
-    resources:
-      - path: GearSnitch/Resources/Assets.xcassets
-      - path: GearSnitch/Resources/Info.plist
-        buildPhase: none
+          - "Resources/Info.plist"
     settings:
       base:
         INFOPLIST_FILE: GearSnitch/Resources/Info.plist

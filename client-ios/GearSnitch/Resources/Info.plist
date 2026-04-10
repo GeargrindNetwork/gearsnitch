@@ -53,15 +53,17 @@
 		<string>bluetooth-central</string>
 		<string>location</string>
 		<string>remote-notification</string>
-		<string>bluetooth-peripheral</string>
 		<string>audio</string>
 		<string>fetch</string>
-		<string>external-accessory</string>
-		<string>push-to-talk</string>
 		<string>processing</string>
-		<string>nearby-interaction</string>
-		<string>voip</string>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.gearsnitch.app.refresh</string>
+		<string>com.gearsnitch.app.sync</string>
+	</array>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>UIStatusBarHidden</key>
 	<true/>
 	<key>UIStatusBarStyle</key>
