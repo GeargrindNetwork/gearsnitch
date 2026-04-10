@@ -81,7 +81,7 @@ struct GymDetailView: View {
                     infoRow(label: "Default", value: gym.isDefault ? "Yes" : "No")
                     if let created = gym.createdAt {
                         Divider().background(Color.gsBorder)
-                        infoRow(label: "Added", value: created.shortDateString())
+                        infoRow(label: "Added", value: String(created.prefix(10)))
                     }
                 }
                 .cardStyle(padding: 0)
@@ -164,8 +164,9 @@ struct GymDetailView: View {
 #Preview {
     NavigationStack {
         GymDetailView(gym: GymDTO(
-            id: "1", name: "Iron Temple", latitude: 40.7128, longitude: -74.006,
-            radiusMeters: 200, isDefault: true, createdAt: Date()
+            id: "1", name: "Iron Temple",
+            radiusMeters: 200, isDefault: true, createdAt: "2026-04-10",
+            location: GeoJSONPoint(type: "Point", coordinates: [-74.006, 40.7128])
         ))
     }
     .preferredColorScheme(.dark)

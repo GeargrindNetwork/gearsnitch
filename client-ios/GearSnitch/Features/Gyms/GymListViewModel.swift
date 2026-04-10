@@ -5,16 +5,24 @@ import Foundation
 struct GymDTO: Identifiable, Decodable {
     let id: String
     let name: String
-    let latitude: Double
-    let longitude: Double
     let radiusMeters: Double
     let isDefault: Bool
-    let createdAt: Date?
+    let createdAt: String?
+    let location: GeoJSONPoint?
+
+    // Computed properties for convenience
+    var latitude: Double { location?.coordinates.last ?? 0 }
+    var longitude: Double { location?.coordinates.first ?? 0 }
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
-        case name, latitude, longitude, radiusMeters, isDefault, createdAt
+        case name, radiusMeters, isDefault, createdAt, location
     }
+}
+
+struct GeoJSONPoint: Decodable {
+    let type: String
+    let coordinates: [Double] // [longitude, latitude]
 }
 
 // MARK: - ViewModel

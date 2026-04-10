@@ -42,6 +42,8 @@ targets:
         com.apple.developer.associated-domains:
           - applinks:gearsnitch.com
         aps-environment: development
+        com.apple.developer.applesignin:
+          - Default
 
   GearSnitchTests:
     type: bundle.unit-test

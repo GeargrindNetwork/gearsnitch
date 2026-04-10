@@ -102,6 +102,7 @@
 		CD24680F795A40FDE7DC9A40 /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 518B69DE4EEB05013965BA16 /* AppDatabase.swift */; };
 		CD56478B5EB09ED47A71E05F /* CartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AA0026640D6A92A71A03DF0 /* CartView.swift */; };
 		CD709CBCE5BFFCBCA4A9D7C8 /* PermissionsRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E516EC05EA2E882165EC607 /* PermissionsRequestView.swift */; };
+		CF443E352F433E5677219483 /* coverage.geojson in Resources */ = {isa = PBXBuildFile; fileRef = 7A8FAD0447CAA96B7AAD5FE8 /* coverage.geojson */; };
 		D08ACB55AE0D613900A5871E /* ApplePayButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C214E8EAE2147E0D752B9D5 /* ApplePayButton.swift */; };
 		D28F759FEDBA4B1E71568B02 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1620CF81D724DC3279BCC97D /* FeatureFlags.swift */; };
 		D4F0427389476DE29BE009FD /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67550D7F3CED6EDCE592F5A5 /* LocationManager.swift */; };
@@ -209,6 +210,7 @@
 		7880B2F2F9BAB5DC91F8B0C2 /* SignInViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInViewModel.swift; sourceTree = "<group>"; };
 		79569B64C87DB4A7411D0AB1 /* CalorieDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalorieDashboardViewModel.swift; sourceTree = "<group>"; };
 		7A677BC7E409D0857BB4033A /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
+		7A8FAD0447CAA96B7AAD5FE8 /* coverage.geojson */ = {isa = PBXFileReference; path = coverage.geojson; sourceTree = "<group>"; };
 		7C214E8EAE2147E0D752B9D5 /* ApplePayButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayButton.swift; sourceTree = "<group>"; };
 		7D8F66DD4AB609729A71DD1A /* StopwatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopwatchView.swift; sourceTree = "<group>"; };
 		7FDAF6E82525532EB0FFC115 /* LogMealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogMealView.swift; sourceTree = "<group>"; };
@@ -370,6 +372,14 @@
 				FE08B599CA8A0C737DA0D935 /* WorkoutListViewModel.swift */,
 			);
 			path = Workouts;
+			sourceTree = "<group>";
+		};
+		417FF31EE8A2758373DEEA1C /* GeoJSON */ = {
+			isa = PBXGroup;
+			children = (
+				7A8FAD0447CAA96B7AAD5FE8 /* coverage.geojson */,
+			);
+			path = GeoJSON;
 			sourceTree = "<group>";
 		};
 		43EBBE8ED8E29ACC70478B58 /* Auth */ = {
@@ -576,6 +586,7 @@
 			isa = PBXGroup;
 			children = (
 				39816E569B3E18B77A216951 /* Assets.xcassets */,
+				417FF31EE8A2758373DEEA1C /* GeoJSON */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -846,6 +857,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7E04278C553EA8D3F1C45847 /* Assets.xcassets in Resources */,
+				CF443E352F433E5677219483 /* coverage.geojson in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

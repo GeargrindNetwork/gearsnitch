@@ -310,10 +310,21 @@ struct DeviceStatusUpdateBody: Encodable {
 
 struct CreateGymBody: Encodable {
     let name: String
-    let latitude: Double
-    let longitude: Double
+    let location: GeoJSONPointBody
     let radiusMeters: Double
     let isDefault: Bool
+
+    init(name: String, latitude: Double, longitude: Double, radiusMeters: Double, isDefault: Bool) {
+        self.name = name
+        self.location = GeoJSONPointBody(coordinates: [longitude, latitude])
+        self.radiusMeters = radiusMeters
+        self.isDefault = isDefault
+    }
+}
+
+struct GeoJSONPointBody: Encodable {
+    let type: String = "Point"
+    let coordinates: [Double] // [longitude, latitude]
 }
 
 struct EvaluateLocationBody: Encodable {
