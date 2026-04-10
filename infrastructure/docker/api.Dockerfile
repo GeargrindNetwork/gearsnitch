@@ -14,7 +14,7 @@ COPY api/ ./api/
 RUN npm ci --ignore-scripts
 
 # Build shared first, then api
-RUN npx turbo run build --filter=@gearsnitch/shared --filter=@gearsnitch/api
+RUN cd shared && npx tsc && cd ../api && npx tsc
 
 # --- Production stage ---
 FROM node:20-alpine AS runner

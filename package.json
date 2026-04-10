@@ -24,8 +24,12 @@
     "build:web": "npm run build --workspace=web",
     "build:shared": "npm run build --workspace=shared"
   },
+  "packageManager": "npm@11.12.1",
   "engines": {
     "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.5"
   },
   "author": "Geargrind",
   "license": "UNLICENSED"

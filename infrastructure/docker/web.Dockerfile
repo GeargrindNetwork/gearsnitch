@@ -14,7 +14,7 @@ COPY web/ ./web/
 RUN npm ci --ignore-scripts
 
 # Build shared first, then web (Vite)
-RUN npx turbo run build --filter=@gearsnitch/shared --filter=@gearsnitch/web
+RUN cd web && npx vite build
 
 # --- Production stage ---
 FROM nginx:alpine AS runner

@@ -14,7 +14,7 @@ COPY realtime/ ./realtime/
 RUN npm ci --ignore-scripts
 
 # Build shared first, then realtime
-RUN npx turbo run build --filter=@gearsnitch/shared --filter=@gearsnitch/realtime
+RUN cd shared && npx tsc && cd ../realtime && npx tsc
 
 # --- Production stage ---
 FROM node:20-alpine AS runner
@@ -43,4 +43,4 @@ USER gearsnitch
 
 EXPOSE 3001
 
-CMD ["node", "realtime/dist/server.js"]
+CMD ["node", "realtime/dist/index.js"]

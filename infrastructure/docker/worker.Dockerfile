@@ -14,7 +14,7 @@ COPY worker/ ./worker/
 RUN npm ci --ignore-scripts
 
 # Build shared first, then worker
-RUN npx turbo run build --filter=@gearsnitch/shared --filter=@gearsnitch/worker
+RUN cd shared && npx tsc && cd ../worker && npx tsc
 
 # --- Production stage ---
 FROM node:20-alpine AS runner
@@ -41,4 +41,4 @@ RUN npm ci --omit=dev --ignore-scripts && \
 
 USER gearsnitch
 
-CMD ["node", "worker/dist/worker.js"]
+CMD ["node", "worker/dist/index.js"]
