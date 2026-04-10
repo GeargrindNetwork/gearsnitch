@@ -61,3 +61,14 @@ export type {
   IStoreOrderItem,
   IShippingAddress,
 } from './StoreOrder';
+
+export { GymSession } from './GymSession';
+export type { IGymSession, IGymSessionEvent } from './GymSession';
+
+export { EventLog } from './EventLog';
+export type { IEventLog } from './EventLog';
+export { EVENT_TYPES } from './EventLog';
+export type { EventType } from './EventLog';
+
+export { DosingHistory } from './DosingHistory';
+export type { IDosingHistory } from './DosingHistory';

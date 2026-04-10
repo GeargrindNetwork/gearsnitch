@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
@@ -9,8 +10,22 @@ struct ProfileView: View {
                 // Avatar + name
                 profileHeader
 
+                // Health info card
+                healthInfoCard
+
+                // Blood type dietary recommendations
+                if viewModel.bloodTypeRecommendation != nil {
+                    dietaryRecommendationsCard
+                }
+
+                // Import from Apple Health
+                healthImportButton
+
                 // Subscription card
                 subscriptionCard
+
+                // Purchases / Order History
+                purchasesSection
 
                 // Menu sections
                 accountSection
@@ -32,6 +47,15 @@ struct ProfileView: View {
         } message: {
             Text("This will permanently delete your account and all data. This cannot be undone.")
         }
+        .sheet(isPresented: $viewModel.showEditProfile) {
+            editProfileSheet
+        }
+        .photosPicker(
+            isPresented: $viewModel.showPhotoPicker,
+            selection: $viewModel.selectedPhoto,
+            matching: .images,
+            photoLibrary: .shared()
+        )
         .overlay {
             if viewModel.isLoading && viewModel.profile == nil {
                 LoadingView(message: "Loading profile...")
@@ -40,21 +64,50 @@ struct ProfileView: View {
         .task {
             await viewModel.loadProfile()
         }
+        .onChange(of: viewModel.selectedPhoto) { _, newValue in
+            if newValue != nil {
+                Task { await viewModel.loadSelectedPhoto() }
+            }
+        }
     }
 
     // MARK: - Header
 
     private var profileHeader: some View {
         VStack(spacing: 12) {
-            // Avatar
+            // Avatar with photo
             ZStack {
-                Circle()
-                    .fill(Color.gsEmerald.opacity(0.2))
-                    .frame(width: 80, height: 80)
+                if let image = viewModel.profileImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 80, height: 80)
+                        .clipShape(Circle())
+                } else {
+                    Circle()
+                        .fill(Color.gsEmerald.opacity(0.2))
+                        .frame(width: 80, height: 80)
 
-                Text(String(viewModel.displayName.prefix(1)).uppercased())
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.gsEmerald)
+                    Text(String(viewModel.displayName.prefix(1)).uppercased())
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundColor(.gsEmerald)
+                }
+
+                // Camera overlay
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Image(systemName: "camera.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundColor(.gsEmerald)
+                            .background(Circle().fill(Color.gsBackground).frame(width: 20, height: 20))
+                    }
+                }
+                .frame(width: 80, height: 80)
+                .onTapGesture {
+                    viewModel.showPhotoPicker = true
+                }
             }
 
             Text(viewModel.displayName)
@@ -79,6 +132,18 @@ struct ProfileView: View {
                     }
                 }
             }
+
+            Button {
+                viewModel.showEditProfile = true
+            } label: {
+                Text("Edit Profile")
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(.gsEmerald)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(Color.gsEmerald.opacity(0.12))
+                    .cornerRadius(8)
+            }
         }
         .frame(maxWidth: .infinity)
         .cardStyle()
@@ -90,6 +155,150 @@ struct ProfileView: View {
         case "google": return "g.circle"
         default: return "link"
         }
+    }
+
+    // MARK: - Health Info Card
+
+    private var healthInfoCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("HEALTH PROFILE")
+                    .font(.caption2.weight(.bold))
+                    .foregroundColor(.gsTextSecondary)
+                    .tracking(1)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 8)
+
+            // Grid of health data
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+            ], spacing: 12) {
+                healthTile(
+                    icon: "calendar",
+                    label: "Date of Birth",
+                    value: viewModel.dateOfBirthDisplay
+                )
+                healthTile(
+                    icon: "ruler",
+                    label: "Height",
+                    value: viewModel.heightDisplay
+                )
+                healthTile(
+                    icon: "scalemass",
+                    label: "Weight",
+                    value: viewModel.weightDisplay
+                )
+                healthTile(
+                    icon: "number",
+                    label: "BMI",
+                    value: viewModel.bmiDisplay
+                )
+                healthTile(
+                    icon: "drop.fill",
+                    label: "Blood Type",
+                    value: viewModel.bloodTypeDisplay
+                )
+                healthTile(
+                    icon: "person.fill",
+                    label: "Biological Sex",
+                    value: viewModel.biologicalSexDisplay
+                )
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 14)
+        }
+        .background(Color.gsSurface)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gsBorder, lineWidth: 1)
+        )
+    }
+
+    private func healthTile(icon: String, label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.caption2)
+                    .foregroundColor(.gsEmerald)
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(.gsTextSecondary)
+            }
+
+            Text(value)
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.gsText)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(Color.gsSurfaceRaised)
+        .cornerRadius(8)
+    }
+
+    // MARK: - Dietary Recommendations
+
+    private var dietaryRecommendationsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Image(systemName: "leaf.fill")
+                    .font(.caption)
+                    .foregroundColor(.gsEmerald)
+
+                Text("DIETARY RECOMMENDATIONS")
+                    .font(.caption2.weight(.bold))
+                    .foregroundColor(.gsTextSecondary)
+                    .tracking(1)
+            }
+
+            if let recommendation = viewModel.bloodTypeRecommendation {
+                Text("Based on Blood Type \(viewModel.bloodTypeDisplay)")
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+
+                Text(recommendation)
+                    .font(.subheadline)
+                    .foregroundColor(.gsText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .cardStyle()
+    }
+
+    // MARK: - Health Import
+
+    private var healthImportButton: some View {
+        Button {
+            Task { await viewModel.importFromHealthKit() }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "heart.fill")
+                    .font(.body)
+                    .foregroundColor(.gsDanger)
+
+                Text("Import from Apple Health")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.gsText)
+
+                Spacer()
+
+                if viewModel.isImportingHealth {
+                    ProgressView()
+                        .tint(.gsTextSecondary)
+                } else {
+                    Image(systemName: "arrow.down.circle")
+                        .font(.body)
+                        .foregroundColor(.gsEmerald)
+                }
+            }
+            .cardStyle()
+        }
+        .disabled(viewModel.isImportingHealth)
     }
 
     // MARK: - Subscription
@@ -123,6 +332,19 @@ struct ProfileView: View {
             }
             .cardStyle()
         }
+    }
+
+    // MARK: - Purchases
+
+    private var purchasesSection: some View {
+        VStack(spacing: 0) {
+            NavigationLink {
+                OrderHistoryView()
+            } label: {
+                menuRow(icon: "bag", label: "Purchases", detail: viewModel.orderCountDisplay, color: .gsCyan)
+            }
+        }
+        .cardStyle(padding: 0)
     }
 
     // MARK: - Account
@@ -208,6 +430,69 @@ struct ProfileView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+    }
+
+    // MARK: - Edit Profile Sheet
+
+    private var editProfileSheet: some View {
+        NavigationStack {
+            Form {
+                Section("Personal Information") {
+                    TextField("First Name", text: $viewModel.editFirstName)
+                        .foregroundColor(.gsText)
+                    TextField("Last Name", text: $viewModel.editLastName)
+                        .foregroundColor(.gsText)
+                    DatePicker(
+                        "Date of Birth",
+                        selection: $viewModel.editDateOfBirth,
+                        in: ...Date(),
+                        displayedComponents: .date
+                    )
+                }
+
+                Section("Body Metrics") {
+                    HStack {
+                        Text("Height (in)")
+                        Spacer()
+                        TextField("0", value: $viewModel.editHeightInches, format: .number)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
+                    }
+
+                    HStack {
+                        Text("Weight (lbs)")
+                        Spacer()
+                        TextField("0", value: $viewModel.editWeightLbs, format: .number)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Color.gsBackground.ignoresSafeArea())
+            .navigationTitle("Edit Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        viewModel.showEditProfile = false
+                    }
+                    .foregroundColor(.gsTextSecondary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save") {
+                        Task {
+                            await viewModel.saveProfileEdits()
+                            viewModel.showEditProfile = false
+                        }
+                    }
+                    .foregroundColor(.gsEmerald)
+                    .fontWeight(.semibold)
+                }
+            }
+        }
     }
 }
 

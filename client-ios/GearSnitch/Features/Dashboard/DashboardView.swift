@@ -2,12 +2,17 @@ import SwiftUI
 
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
+    @ObservedObject private var sessionManager = GymSessionManager.shared
+    @ObservedObject private var bleManager = BLEManager.shared
     @EnvironmentObject private var authManager: AuthManager
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    // Gym session status
+                    gymSessionStatusCard
+
                     // Active alerts banner
                     if viewModel.hasActiveAlerts {
                         alertsBanner
@@ -16,10 +21,18 @@ struct DashboardView: View {
                     // Device status cards
                     deviceStatusSection
 
+                    // Signal strength indicator
+                    if !bleManager.connectedDevices.isEmpty {
+                        signalStrengthSection
+                    }
+
                     // Gym status
                     if let gym = viewModel.defaultGym {
                         gymStatusCard(gym)
                     }
+
+                    // Activity calendar link
+                    activityCalendarLink
 
                     // Quick actions
                     quickActionsSection
@@ -161,6 +174,197 @@ struct DashboardView: View {
                     Text(gym.name)
                         .font(.subheadline.weight(.medium))
                         .foregroundColor(.gsText)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+            }
+            .cardStyle()
+        }
+    }
+
+    // MARK: - Gym Session Status
+
+    private var gymSessionStatusCard: some View {
+        Group {
+            if sessionManager.isSessionActive, let session = sessionManager.activeSession {
+                // Active session card with timer
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "figure.strengthtraining.traditional")
+                            .font(.title2)
+                            .foregroundColor(.gsEmerald)
+                            .frame(width: 44, height: 44)
+                            .background(Color.gsEmerald.opacity(0.15))
+                            .cornerRadius(10)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Active Session")
+                                .font(.caption)
+                                .foregroundColor(.gsEmerald)
+
+                            Text(session.gymName)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.gsText)
+                        }
+
+                        Spacer()
+
+                        Text(session.formattedDuration)
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .foregroundColor(.gsText)
+                            .monospacedDigit()
+                    }
+
+                    Button {
+                        Task { await sessionManager.endSession() }
+                    } label: {
+                        HStack {
+                            Image(systemName: "stop.circle.fill")
+                            Text("End Session")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.gsDanger)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.gsDanger.opacity(0.12))
+                        .cornerRadius(10)
+                    }
+                    .disabled(sessionManager.isEnding)
+                }
+                .padding(16)
+                .background(Color.gsSurface)
+                .cornerRadius(16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gsEmerald.opacity(0.4), lineWidth: 1)
+                )
+            } else {
+                // No active session
+                HStack(spacing: 12) {
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .font(.title2)
+                        .foregroundColor(.gsTextSecondary)
+                        .frame(width: 44, height: 44)
+                        .background(Color.gsSurfaceRaised)
+                        .cornerRadius(10)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("No Active Session")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(.gsText)
+
+                        Text("Start one when you arrive at the gym")
+                            .font(.caption)
+                            .foregroundColor(.gsTextSecondary)
+                    }
+
+                    Spacer()
+
+                    if let gym = viewModel.defaultGym {
+                        Button {
+                            Task {
+                                await sessionManager.startSession(
+                                    gymId: gym.id,
+                                    gymName: gym.name
+                                )
+                            }
+                        } label: {
+                            Text("Start")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.gsBackground)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 6)
+                                .background(Color.gsEmerald)
+                                .cornerRadius(8)
+                        }
+                        .disabled(sessionManager.isStarting)
+                    }
+                }
+                .cardStyle()
+            }
+        }
+    }
+
+    // MARK: - Signal Strength
+
+    private var signalStrengthSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Signal Strength")
+                .font(.caption.weight(.medium))
+                .foregroundColor(.gsTextSecondary)
+
+            ForEach(bleManager.connectedDevices) { device in
+                HStack(spacing: 10) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .font(.caption)
+                        .foregroundColor(.gsSuccess)
+
+                    Text(device.name)
+                        .font(.caption)
+                        .foregroundColor(.gsText)
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    signalBars(rssi: device.rssi)
+                }
+            }
+        }
+        .cardStyle()
+    }
+
+    private func signalBars(rssi: Int) -> some View {
+        let strength: Int = {
+            switch rssi {
+            case _ where rssi >= -50: return 4
+            case -70 ..< -50: return 3
+            case -85 ..< -70: return 2
+            case -100 ..< -85: return 1
+            default: return 0
+            }
+        }()
+
+        return HStack(spacing: 2) {
+            ForEach(0..<4, id: \.self) { bar in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(bar < strength ? Color.gsEmerald : Color.gsSurfaceRaised)
+                    .frame(width: 4, height: CGFloat(6 + bar * 3))
+            }
+        }
+    }
+
+    // MARK: - Activity Calendar Link
+
+    private var activityCalendarLink: some View {
+        NavigationLink {
+            ScrollView {
+                HeatmapCalendarView()
+            }
+            .background(Color.gsBackground.ignoresSafeArea())
+            .navigationTitle("Activity")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "calendar")
+                    .font(.title2)
+                    .foregroundColor(.gsCyan)
+                    .frame(width: 44, height: 44)
+                    .background(Color.gsCyan.opacity(0.15))
+                    .cornerRadius(10)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Activity Calendar")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.gsText)
+
+                    Text("View your heatmap and daily breakdown")
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
                 }
 
                 Spacer()

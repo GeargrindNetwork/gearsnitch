@@ -19,6 +19,7 @@ final class LocalStore {
             LocalDevice.self,
             LocalGym.self,
             OfflineOperation.self,
+            DoseHistoryEntry.self,
         ])
 
         let modelConfiguration = ModelConfiguration(

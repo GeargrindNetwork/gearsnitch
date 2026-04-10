@@ -17,6 +17,10 @@ import contentRoutes from '../modules/content/routes.js';
 import supportRoutes from '../modules/support/routes.js';
 import adminRoutes from '../modules/admin/routes.js';
 import configRoutes from '../modules/config/routes.js';
+import sessionsRoutes from '../modules/sessions/routes.js';
+import calendarRoutes from '../modules/calendar/routes.js';
+import eventsRoutes from '../modules/events/routes.js';
+import dosingRoutes from '../modules/dosing/routes.js';
 
 const router = Router();
 
@@ -46,5 +50,9 @@ router.use('/content', contentRoutes);
 router.use('/support', supportRoutes);
 router.use('/admin', adminRoutes);
 router.use('/config', configRoutes);
+router.use('/sessions', sessionsRoutes);
+router.use('/calendar', calendarRoutes);
+router.use('/events', eventsRoutes);
+router.use('/dosing', dosingRoutes);
 
 export default router;

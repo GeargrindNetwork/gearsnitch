@@ -175,15 +175,11 @@ final class BLEManager: NSObject, ObservableObject {
             reconnectionTimers.removeValue(forKey: device.identifier)
             device.status = .lost
 
-            logger.warning("Reconnection timeout for \(device.name) — posting alert")
+            logger.warning("Reconnection timeout for \(device.name) — triggering panic")
 
-            // Post disconnect alert to backend
-            Task {
-                await postDisconnectAlert(for: device)
-            }
-
-            // Trigger haptic feedback
-            triggerDisconnectHaptic()
+            // Trigger full panic alarm instead of just a haptic
+            BLESignalMonitor.shared.reportDeviceLost(device)
+            PanicAlarmManager.shared.triggerPanic(device: device)
         }
     }
 
@@ -215,6 +211,20 @@ final class BLEManager: NSObject, ObservableObject {
     private func triggerDisconnectHaptic() {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.warning)
+    }
+
+    /// Called internally to set self as the peripheral delegate for RSSI callbacks.
+    private func registerAsPeripheralDelegate(for peripheral: CBPeripheral) {
+        peripheral.delegate = self
+    }
+
+    // MARK: - RSSI Reading
+
+    /// Request a fresh RSSI reading from a connected device's peripheral.
+    func readRSSI(for device: BLEDevice) {
+        guard let peripheral = device.peripheral,
+              peripheral.state == .connected else { return }
+        peripheral.readRSSI()
     }
 
     // MARK: - Stale Pruning
@@ -277,6 +287,8 @@ extension BLEManager: CBCentralManagerDelegate {
 
             self.cancelReconnection(for: peripheral.identifier)
 
+            self.registerAsPeripheralDelegate(for: peripheral)
+
             if let device = self.findDevice(for: peripheral) {
                 device.status = .connected
                 device.lastSeenAt = Date()
@@ -284,6 +296,11 @@ extension BLEManager: CBCentralManagerDelegate {
                     self.connectedDevices.append(device)
                 }
                 self.discoveredDevices.removeAll { $0.identifier == device.identifier }
+
+                // Start signal monitoring when first device connects
+                if self.connectedDevices.count == 1 {
+                    BLESignalMonitor.shared.startMonitoring()
+                }
             }
         }
     }
@@ -314,6 +331,11 @@ extension BLEManager: CBCentralManagerDelegate {
 
             if let device = self.findDevice(for: peripheral) {
                 self.connectedDevices.removeAll { $0.identifier == device.identifier }
+
+                // Stop signal monitoring when no devices remain connected
+                if self.connectedDevices.isEmpty {
+                    BLESignalMonitor.shared.stopMonitoring()
+                }
 
                 if error != nil {
                     // Unexpected disconnect — begin reconnection
@@ -357,6 +379,33 @@ extension BLEManager: CBCentralManagerDelegate {
             return device
         }
         return scanner.device(for: peripheral.identifier)
+    }
+}
+
+// MARK: - CBPeripheralDelegate (RSSI)
+
+extension BLEManager: CBPeripheralDelegate {
+
+    nonisolated func peripheral(_ peripheral: CBPeripheral, didReadRSSI RSSI: NSNumber, error: (any Error)?) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            if let error {
+                self.logger.warning("Failed to read RSSI for \(peripheral.name ?? "unknown"): \(error.localizedDescription)")
+                return
+            }
+
+            let rssiValue = RSSI.intValue
+
+            // Ignore invalid RSSI values (127 means not available)
+            guard rssiValue != 127 else { return }
+
+            if let device = self.findDevice(for: peripheral) {
+                device.rssi = rssiValue
+                device.lastSeenAt = Date()
+                BLESignalMonitor.shared.reportRSSI(rssiValue, for: device)
+            }
+        }
     }
 }
 

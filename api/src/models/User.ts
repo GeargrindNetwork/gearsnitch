@@ -11,6 +11,13 @@ export interface IUser extends Document {
   authProviders: string[];
   roles: string[];
   status: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: Date;
+  biologicalSex?: 'male' | 'female' | 'other';
+  bloodType?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
+  heightCm?: number;
+  weightKg?: number;
   defaultGymId: Types.ObjectId | null;
   onboardingCompletedAt: Date | null;
   permissionsState: {
@@ -38,6 +45,21 @@ const UserSchema = new Schema<IUser>(
     authProviders: { type: [String], default: [] },
     roles: { type: [String], default: ['user'] },
     status: { type: String, default: 'active' },
+    firstName: { type: String, default: null },
+    lastName: { type: String, default: null },
+    dateOfBirth: { type: Date, default: null },
+    biologicalSex: {
+      type: String,
+      enum: ['male', 'female', 'other'],
+      default: null,
+    },
+    bloodType: {
+      type: String,
+      enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+      default: null,
+    },
+    heightCm: { type: Number, default: null },
+    weightKg: { type: Number, default: null },
     defaultGymId: { type: Schema.Types.ObjectId, ref: 'Gym', default: null },
     onboardingCompletedAt: { type: Date, default: null },
     permissionsState: {
