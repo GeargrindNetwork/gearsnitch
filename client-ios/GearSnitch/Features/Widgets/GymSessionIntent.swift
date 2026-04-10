@@ -3,7 +3,7 @@ import Foundation
 
 // MARK: - App Group
 
-private let appGroupId = "group.com.geargrind.gearsnitch"
+private let appGroupId = "group.com.gearsnitch.app"
 private let sessionKey = "activeGymSession"
 private let lastGymIdKey = "lastGymId"
 private let lastGymNameKey = "lastGymName"

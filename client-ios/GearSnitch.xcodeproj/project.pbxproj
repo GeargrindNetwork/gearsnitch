@@ -57,6 +57,7 @@
 		5B936DD86E675796F48CB9C0 /* NutritionGoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9B62A46083DE5FF5D829AD /* NutritionGoalsView.swift */; };
 		5F90FAC2283D3E0662480F1A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71772E62CED642AC9F4DEA9 /* RootView.swift */; };
 		60AF420185D0F8C121905A36 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C72A3F57652B3904DA4C0B1D /* PrimaryButton.swift */; };
+		6465E3D90138805BB7744587 /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51480EC335EB26C4CE925C66 /* SubscriptionView.swift */; };
 		6847A31FC3ED6A5959C8D289 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942B2AA3801B97D73525058B /* OnboardingView.swift */; };
 		687E3DCF2C907DAF5764E0B7 /* SignInViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7880B2F2F9BAB5DC91F8B0C2 /* SignInViewModel.swift */; };
 		6880B89E098956273AC0032A /* QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B4A4958CFA3CCEE2AF18A94 /* QRCodeView.swift */; };
@@ -75,6 +76,7 @@
 		845364FE9437917618A9C406 /* AlertsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91E2CAF6F2B2843E3FAFDA81 /* AlertsViewModel.swift */; };
 		84B6F8FA19AEF0FEFF7C2AFE /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CA7CFF26481534981434DED /* LoadingView.swift */; };
 		85BBA8AA90A6F84A7F713C59 /* HeatmapCalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B045FB188519FA9F441365A /* HeatmapCalendarViewModel.swift */; };
+		8AC3EB3CC4A1DA239B28508B /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80109D925697C302D72E2F78 /* StoreKitManager.swift */; };
 		8F9BF3097A8C637113010AB1 /* StopwatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F66DD4AB609729A71DD1A /* StopwatchView.swift */; };
 		9168ED8EBF3FFB1B5B180BAC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34190732929A003811CFE93F /* AppDelegate.swift */; };
 		94CF7BC1775673991B2F921F /* SecondaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEC7DF0560BDDF8FF7CC0B72 /* SecondaryButton.swift */; };
@@ -185,6 +187,7 @@
 		4ED90ED47B2C7532C3950E45 /* BLEScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEScanner.swift; sourceTree = "<group>"; };
 		4F727210E1B56639BE47E1E5 /* DayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayDetailView.swift; sourceTree = "<group>"; };
 		5041DC1B23AE52CEFE28B388 /* DeviceMapViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceMapViewModel.swift; sourceTree = "<group>"; };
+		51480EC335EB26C4CE925C66 /* SubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionView.swift; sourceTree = "<group>"; };
 		518B69DE4EEB05013965BA16 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDatabase.swift; sourceTree = "<group>"; };
 		55C5CE24F4D0356582F849DD /* MeshChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshChatViewModel.swift; sourceTree = "<group>"; };
 		568284F031C76C144A411E78 /* SocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketClient.swift; sourceTree = "<group>"; };
@@ -210,6 +213,7 @@
 		7C214E8EAE2147E0D752B9D5 /* ApplePayButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayButton.swift; sourceTree = "<group>"; };
 		7D8F66DD4AB609729A71DD1A /* StopwatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopwatchView.swift; sourceTree = "<group>"; };
 		7FDAF6E82525532EB0FFC115 /* LogMealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogMealView.swift; sourceTree = "<group>"; };
+		80109D925697C302D72E2F78 /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreHomeViewModel.swift; sourceTree = "<group>"; };
 		835D70A91468F0D0A7B8FD08 /* DeviceListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceListViewModel.swift; sourceTree = "<group>"; };
 		866D40788493E59429903BBA /* ActiveWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveWorkoutView.swift; sourceTree = "<group>"; };
@@ -420,6 +424,7 @@
 				9FF2CF1CA718D3DB4A19C7BD /* ProfileView.swift */,
 				18DD21DE66D7C8932E06A0B4 /* ProfileViewModel.swift */,
 				E75F8AB51C3E4A6DB76F9F85 /* SubscriptionStatusView.swift */,
+				51480EC335EB26C4CE925C66 /* SubscriptionView.swift */,
 			);
 			path = Profile;
 			sourceTree = "<group>";
@@ -696,6 +701,7 @@
 				9325AC6C409A2219EA8CBF23 /* ApplePayManager.swift */,
 				5C046F4715799B2015B386A4 /* PaymentModels.swift */,
 				D929C599AC0FE4E0FBCC10F1 /* PaymentService.swift */,
+				80109D925697C302D72E2F78 /* StoreKitManager.swift */,
 			);
 			path = Payments;
 			sourceTree = "<group>";
@@ -801,16 +807,16 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					86AC59BA8F8019D810326896 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = TUZYDM227C;
 						ProvisioningStyle = Automatic;
 					};
 					B7C595239251A97BE5D4D4AD = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = TUZYDM227C;
 						ProvisioningStyle = Automatic;
 						TestTargetID = ECF6BEF24B590549BDA03608;
 					};
 					ECF6BEF24B590549BDA03608 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = TUZYDM227C;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -976,7 +982,9 @@
 				0E285A02CC5F1C22A9844918 /* StopwatchViewModel.swift in Sources */,
 				3B9590D069122E717D0AF0C0 /* StoreHomeView.swift in Sources */,
 				C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */,
+				8AC3EB3CC4A1DA239B28508B /* StoreKitManager.swift in Sources */,
 				FEDFD0F6AC5AB05417853194 /* SubscriptionStatusView.swift in Sources */,
+				6465E3D90138805BB7744587 /* SubscriptionView.swift in Sources */,
 				AB6408C3F61982FF8C019496 /* TokenStore.swift in Sources */,
 				A66E9A1DACE3954AF9D666A7 /* User.swift in Sources */,
 				D583FA108DD2C41A75D2814C /* View+Modifiers.swift in Sources */,
@@ -1041,7 +1049,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = TUZYDM227C;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1080,7 +1088,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.geargrind.GearSnitchUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gearsnitch.GearSnitchUITests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = GearSnitch;
@@ -1099,7 +1107,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.geargrind.gearsnitch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gearsnitch.app;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -1116,7 +1124,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.geargrind.GearSnitchTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gearsnitch.GearSnitchTests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GearSnitch.app/GearSnitch";
@@ -1132,7 +1140,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.geargrind.GearSnitchUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gearsnitch.GearSnitchUITests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = GearSnitch;
@@ -1151,7 +1159,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.geargrind.gearsnitch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gearsnitch.app;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
@@ -1196,7 +1204,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = TUZYDM227C;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -1228,7 +1236,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.geargrind.GearSnitchTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gearsnitch.GearSnitchTests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GearSnitch.app/GearSnitch";

@@ -13,7 +13,7 @@ final class ApplePayManager: NSObject, ObservableObject {
 
     // MARK: - Constants
 
-    static let merchantID = "merchant.com.geargrind.gearsnitch"
+    static let merchantID = "merchant.com.gearsnitch.app"
 
     static let supportedNetworks: [PKPaymentNetwork] = [
         .visa,

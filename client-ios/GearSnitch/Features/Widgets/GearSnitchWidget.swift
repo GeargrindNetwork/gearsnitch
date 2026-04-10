@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - App Group
 
-private let appGroupId = "group.com.geargrind.gearsnitch"
+private let appGroupId = "group.com.gearsnitch.app"
 
 // MARK: - Shared Data Keys
 

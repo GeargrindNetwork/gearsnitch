@@ -66,7 +66,7 @@ final class GymSessionManager: ObservableObject {
 
     // MARK: - App Group
 
-    private static let appGroupId = "group.com.geargrind.gearsnitch"
+    private static let appGroupId = "group.com.gearsnitch.app"
     private static let sessionKey = "activeGymSession"
 
     // MARK: - Private

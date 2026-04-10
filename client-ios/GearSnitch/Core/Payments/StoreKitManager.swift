@@ -42,7 +42,7 @@ class StoreKitManager: ObservableObject {
 
     // MARK: Private
 
-    private let productId = "com.geargrind.gearsnitch.annual"
+    private let productId = "com.gearsnitch.app.annual"
     private let logger = Logger(subsystem: "com.gearsnitch", category: "StoreKit")
     private var transactionListener: Task<Void, Never>?
 
@@ -143,7 +143,7 @@ class StoreKitManager: ObservableObject {
         transactionListener = Task.detached { [weak self] in
             for await result in Transaction.updates {
                 do {
-                    let transaction = try self?.verifyTransaction(result)
+                    let transaction = try await self?.verifyTransaction(result)
                     if let transaction {
                         await self?.handleUpdatedTransaction(transaction)
                         await transaction.finish()
@@ -192,15 +192,13 @@ class StoreKitManager: ObservableObject {
     /// Sends the JWS representation of the transaction to the backend for
     /// server-side validation and subscription record creation.
     private func sendReceiptToBackend(transaction: Transaction) async {
-        guard let jwsRepresentation = transaction.jwsRepresentation else {
-            logger.warning("No JWS representation available for transaction \(transaction.id)")
-            return
-        }
+        // Send transaction ID and original JSON for backend validation
+        let receiptData = String(data: transaction.jsonRepresentation, encoding: .utf8) ?? ""
 
         let endpoint = APIEndpoint(
             path: "/api/v1/subscriptions/validate-apple",
             method: .POST,
-            body: ValidateAppleJWSBody(jwsRepresentation: jwsRepresentation)
+            body: ValidateAppleJWSBody(jwsRepresentation: receiptData)
         )
 
         do {
@@ -230,11 +228,7 @@ extension StoreKitManager {
     }
 }
 
-// MARK: - Request / Response Bodies
-
-private struct ValidateAppleJWSBody: Encodable {
-    let jwsRepresentation: String
-}
+// MARK: - Response Bodies
 
 struct SubscriptionValidationResponse: Decodable {
     let status: String
