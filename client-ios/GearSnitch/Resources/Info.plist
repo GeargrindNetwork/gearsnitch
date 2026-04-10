@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Background Modes -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+		<string>location</string>
+		<string>remote-notification</string>
+	</array>
+
+	<!-- Bluetooth -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
+
+	<!-- Location -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>GearSnitch detects when you arrive at your gym.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Always-on location lets GearSnitch auto-activate monitoring at your gym.</string>
+
+	<!-- HealthKit -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>GearSnitch syncs your health data for fitness tracking.</string>
+
+	<!-- URL Schemes -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.gearsnitch.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>gearsnitch</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- Scene Manifest for SwiftUI -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict/>
+	</dict>
+</dict>
+</plist>
