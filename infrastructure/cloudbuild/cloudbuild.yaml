@@ -4,7 +4,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:${SHORT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:${_TAG}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:latest'
       - '-f'
@@ -17,7 +17,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${SHORT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${_TAG}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:latest'
       - '-f'
@@ -30,7 +30,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:${SHORT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:${_TAG}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:latest'
       - '-f'
@@ -43,7 +43,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:${SHORT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:${_TAG}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:latest'
       - '-f'
@@ -80,7 +80,7 @@ steps:
       - 'deploy'
       - 'gearsnitch-api'
       - '--image'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:${SHORT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:${_TAG}'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -97,7 +97,7 @@ steps:
       - 'deploy'
       - 'gearsnitch-web'
       - '--image'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${SHORT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${_TAG}'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -114,7 +114,7 @@ steps:
       - 'deploy'
       - 'gearsnitch-worker'
       - '--image'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:${SHORT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:${_TAG}'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -131,7 +131,7 @@ steps:
       - 'deploy'
       - 'gearsnitch-realtime'
       - '--image'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:${SHORT_SHA}'
+      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:${_TAG}'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -141,15 +141,15 @@ steps:
     id: 'deploy-realtime'
 
 images:
-  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:${SHORT_SHA}'
-  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${SHORT_SHA}'
-  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:${SHORT_SHA}'
-  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:${SHORT_SHA}'
+  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/api:${_TAG}'
+  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${_TAG}'
+  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/worker:${_TAG}'
+  - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/realtime:${_TAG}'
 
 substitutions:
   _REGION: 'us-central1'
   _PROJECT_ID: 'gearsnitch'
-  _ENV: 'dev'
+  _TAG: 'latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
