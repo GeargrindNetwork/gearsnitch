@@ -6,20 +6,20 @@ Scope: iOS app icon only
 
 ## Goal
 
-Replace the current iOS app icon with a monogram that matches the existing GearSnitch website and app color system.
+Replace the current iOS app icon with a much simpler mark that matches the existing GearSnitch website and app color system.
 
 The icon should:
 
-- feel premium and restrained rather than playful or aggressive
+- feel simple, crisp, and intentional rather than hand-drawn or custom-lettered
 - use the existing dark charcoal background and cyan-to-emerald accent language
-- read clearly at App Store and home screen sizes
-- avoid extra symbolism such as the previously discussed eye motif
+- combine the letters `GS` with a clear eye symbol
+- read cleanly at App Store and home screen sizes
 
 ## Chosen Direction
 
-Selected concept: `A — Luxe Monogram`
+Selected concept: `B — Iris Ring`
 
-This direction uses a pure `GS` monogram centered on a dark rounded-square icon field. The letterforms are wide, smooth, and calm. The mark should communicate a polished, product-grade identity rather than a fitness badge, gamer emblem, or surveillance logo.
+This direction uses a minimal lucide-style eye outline centered on a dark rounded-square icon field, with a clean `GS` placed inside an inner iris ring. The eye shape carries the surveillance / detection idea, while the letters keep the brand name present without trying to be a bespoke monogram.
 
 ## Visual System
 
@@ -28,15 +28,15 @@ This direction uses a pure `GS` monogram centered on a dark rounded-square icon 
 - Base background: near-black / charcoal
 - Tone target: aligned to the existing website and iOS surface colors
 - Suggested range: `#0A0A0C` to `#18181B`
-- Background treatment should stay subtle and not compete with the letters
+- Background treatment should stay subtle and should not compete with the symbol
 
 ### Foreground Mark
 
-- Monogram: `GS`
-- Style: geometric but not rigid, with rounded or softened transitions
-- Weight: bold enough to survive 20x20 icon usage
-- Composition: centered and optically balanced
-- No outlines, no badge ring, no eye symbol, no small detail work
+- Primary symbol: simple eye outline
+- Internal structure: one iris ring inside the eye
+- Letter content: `GS` centered inside the iris
+- Style target: lucide-like simplicity, smooth stroke geometry, no ornamental detail
+- Weight: bold enough to survive small iOS icon outputs
 
 ### Accent Color
 
@@ -44,22 +44,23 @@ Use the existing brand accent system already present in the product:
 
 - Cyan endpoint: consistent with the web and iOS cyan accent
 - Emerald endpoint: consistent with `Color.gsEmerald`
-- Gradient direction: cyan to emerald across the monogram
+- Gradient application: across the eye outline and iris ring
 
-The gradient should add brand recognition without reducing legibility.
+The letters should remain high-contrast and legible. They do not need gradient treatment if flat light text reads better at small sizes.
 
 ### Depth
 
-- Allow a very subtle glow, highlight, or contrast lift behind the mark
+- Allow a very subtle glow or lift behind the eye mark
 - Do not introduce glossy skeuomorphic effects
-- Do not use noisy textures
+- Do not use noise, texture, or extra rings
 
 ## Composition Rules
 
-- The monogram is the entire icon story
-- The `G` and `S` should feel designed as one mark, not like two default letters placed next to each other
-- Negative space must stay open enough that the letters are still readable when rasterized at small sizes
-- The icon must still work when viewed quickly in the iOS grid
+- The icon story is `eye first, GS second`
+- The eye should be the clearest shape at a glance
+- The iris ring should help anchor the letters, not turn into a badge system
+- The `GS` should use clean sans letterforms rather than custom drawn monogram strokes
+- The overall mark must stay readable and uncluttered when rasterized at small sizes
 
 ## Asset Plan
 
@@ -71,8 +72,6 @@ Implementation should produce:
 
 Expected app icon outputs:
 
-- `icon-20.png`
-- `icon-29.png`
 - `icon-40.png`
 - `icon-58.png`
 - `icon-60.png`
@@ -85,14 +84,17 @@ Expected app icon outputs:
 - `icon-180.png`
 - `icon-1024.png`
 
+Legacy unassigned children such as `icon-20.png` and `icon-29.png` should be removed if they are not referenced by the active asset catalog manifest.
+
 The existing `Contents.json` should only change if required for cleanup or asset assignment consistency.
 
 ## Acceptance Criteria
 
-- New icon clearly reflects the selected `A — Luxe Monogram` direction
+- New icon clearly reflects the selected `B — Iris Ring` direction
 - Icon visually matches the current website / app palette
-- `GS` is readable at small sizes
-- No eye motif or extra symbol remains
+- The eye shape is immediately recognizable
+- `GS` remains readable inside the iris at small sizes
+- No custom hand-drawn monogram treatment remains
 - All required icon sizes are regenerated and wired into the existing asset catalog
 - Xcode no longer reports avoidable app icon assignment issues from the updated set
 
@@ -106,5 +108,6 @@ The existing `Contents.json` should only change if required for cleanup or asset
 ## Implementation Notes
 
 - Prefer generating the icon from a single high-resolution master and deriving all raster sizes from that source
-- Validate small-size legibility explicitly, especially at 20, 29, and 40 point outputs
+- Validate small-size legibility explicitly, especially at 40, 58, and 60 pixel outputs
 - Preserve the current product’s dark visual language instead of introducing a new palette
+- Favor simple stroke geometry over bespoke illustration
