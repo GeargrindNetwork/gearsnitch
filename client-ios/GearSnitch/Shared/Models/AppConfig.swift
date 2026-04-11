@@ -38,17 +38,17 @@ enum AppConfig {
     /// App Store listing URL.
     static let appStoreURL = "https://apps.apple.com/app/gearsnitch/id0000000000"
 
-    /// Privacy policy URL.
-    static let privacyPolicyURL = "https://gearsnitch.com/privacy"
+    /// Website-hosted privacy policy URL.
+    static let privacyPolicyURL = "https://\(universalLinkDomain)/privacy"
 
-    /// Terms of service URL.
-    static let termsURL = "https://gearsnitch.com/terms"
+    /// Website-hosted terms of service URL.
+    static let termsURL = "https://\(universalLinkDomain)/terms"
 
     /// Support page URL.
-    static let supportURL = "https://gearsnitch.com/support"
+    static let supportURL = "https://\(universalLinkDomain)/support"
 
     /// Account deletion page URL.
-    static let deleteAccountURL = "https://gearsnitch.com/delete-account"
+    static let deleteAccountURL = "https://\(universalLinkDomain)/delete-account"
 
     /// Support email.
     static let supportEmail = "support@gearsnitch.com"
