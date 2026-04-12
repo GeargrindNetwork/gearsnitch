@@ -31,7 +31,8 @@ jobs:
 
       - name: Submit Cloud Build
         run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
           gcloud builds submit \
             --config=infrastructure/cloudbuild/cloudbuild.yaml \
-            --substitutions=SHORT_SHA=${{ github.sha }},_REGION=us-central1,_PROJECT_ID=gearsnitch,_ENV=prod \
+            --substitutions=_TAG=${SHORT_SHA},_REGION=us-central1,_PROJECT_ID=gearsnitch \
             --project=gearsnitch
