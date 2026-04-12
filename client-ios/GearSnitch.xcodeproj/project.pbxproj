@@ -20,7 +20,6 @@
 		10A1B2C3D4E5F60123456701 /* ReleaseGateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1B2C3D4E5F60123456711 /* ReleaseGateManager.swift */; };
 		10A1B2C3D4E5F60123456702 /* UpdateRequiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1B2C3D4E5F60123456712 /* UpdateRequiredView.swift */; };
 		10A1B2C3D4E5F60123456703 /* ReleaseGateManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1B2C3D4E5F60123456713 /* ReleaseGateManagerTests.swift */; };
-		10A1B2C3D4E5F60123456704 /* ResponseDecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1B2C3D4E5F60123456714 /* ResponseDecoderTests.swift */; };
 		13F8F93231A9B661FCA88C74 /* LogMealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FDAF6E82525532EB0FFC115 /* LogMealView.swift */; };
 		15B699379F824FAAA1706C08 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18DD21DE66D7C8932E06A0B4 /* ProfileViewModel.swift */; };
 		19A3F14B3BA79EFDF8053558 /* ActiveWorkoutViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CA942AC63EEB8075ECA7ECC /* ActiveWorkoutViewModel.swift */; };
@@ -101,7 +100,6 @@
 		AA827AD9EE3687FC55BD8648 /* gs-eye-iris-master.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 068EFCAE20763E29C80EF6FB /* gs-eye-iris-master.pdf */; };
 		AB6408C3F61982FF8C019496 /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9CFC2797AD596756034BBE /* TokenStore.swift */; };
 		B5C854334FABEF07A5FB39C7 /* DeviceMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E1A45B997811D066252B2D /* DeviceMapView.swift */; };
-		B7C595239251A97BE5D4D401 /* LaunchSmokeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7C595239251A97BE5D4D402 /* LaunchSmokeUITests.swift */; };
 		B9132BE19983FED0AB1F25E9 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 866D40788493E59429903BBA /* ActiveWorkoutView.swift */; };
 		BA214A124C701E9705A97225 /* MetricsLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67FDD9EA8D9439FA5BFE3EEC /* MetricsLogView.swift */; };
 		C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */; };
@@ -154,13 +152,6 @@
 			remoteGlobalIDString = ECF6BEF24B590549BDA03608;
 			remoteInfo = GearSnitch;
 		};
-		B753B5C0E750057670794459 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = BBE1BCD4DFAE9AAA147B6DCD /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = ECF6BEF24B590549BDA03608;
-			remoteInfo = GearSnitch;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -178,7 +169,6 @@
 		10A1B2C3D4E5F60123456711 /* ReleaseGateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseGateManager.swift; sourceTree = "<group>"; };
 		10A1B2C3D4E5F60123456712 /* UpdateRequiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateRequiredView.swift; sourceTree = "<group>"; };
 		10A1B2C3D4E5F60123456713 /* ReleaseGateManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseGateManagerTests.swift; sourceTree = "<group>"; };
-		10A1B2C3D4E5F60123456714 /* ResponseDecoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseDecoderTests.swift; sourceTree = "<group>"; };
 		11EBE9A263604C413029119F /* DeviceListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceListView.swift; sourceTree = "<group>"; };
 		154B191CC69DFF3B28E36D37 /* NotificationPermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPermissionManager.swift; sourceTree = "<group>"; };
 		1620CF81D724DC3279BCC97D /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
@@ -267,7 +257,6 @@
 		AFCE813887395F69511F0DF4 /* PanicAlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanicAlarmManager.swift; sourceTree = "<group>"; };
 		B3B4FD86275B132DA96B5D8A /* ReferralView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralView.swift; sourceTree = "<group>"; };
 		B6BFD5D2EE043E841AA7B600 /* MeshChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshChatView.swift; sourceTree = "<group>"; };
-		B7C595239251A97BE5D4D402 /* LaunchSmokeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSmokeUITests.swift; sourceTree = "<group>"; };
 		B9CF17771E707F32C8ECA907 /* ReferralViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralViewModel.swift; sourceTree = "<group>"; };
 		BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLESignalMonitor.swift; sourceTree = "<group>"; };
 		BBFC6CFBC32F137AA69630AF /* RealtimeEventBus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeEventBus.swift; sourceTree = "<group>"; };
@@ -296,7 +285,6 @@
 		E94C544CFF8B8BA06822F249 /* EmergencyContactsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyContactsView.swift; sourceTree = "<group>"; };
 		EC33DA8E03A30FC5BEDBAD29 /* AddGymView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGymView.swift; sourceTree = "<group>"; };
 		ED7E00D84F51A63E31E167D5 /* GearSnitchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearSnitchApp.swift; sourceTree = "<group>"; };
-		F48A562AB5846C59EECFA820 /* GearSnitchUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GearSnitchUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F732D9E9ECE794CBE91F2A0D /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		F7447513075EF893EBB81204 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		F8CD7598811AF36A137595A6 /* DosingCalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosingCalculatorView.swift; sourceTree = "<group>"; };
@@ -406,7 +394,6 @@
 			children = (
 				DE42951C73C8E10689CD0AF8 /* GearSnitch */,
 				61458D73F00143D52E5C9979 /* GearSnitchTests */,
-				B7C595239251A97BE5D4D403 /* GearSnitchUITests */,
 				EF62A29CE9D588EE284200F7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -516,17 +503,8 @@
 			children = (
 				10A1B2C3D4E5F60123456713 /* ReleaseGateManagerTests.swift */,
 				8BC5E7BD7D09E97C49A0C967 /* RequestBuilderTests.swift */,
-				10A1B2C3D4E5F60123456714 /* ResponseDecoderTests.swift */,
 			);
 			path = GearSnitchTests;
-			sourceTree = "<group>";
-		};
-		B7C595239251A97BE5D4D403 /* GearSnitchUITests */ = {
-			isa = PBXGroup;
-			children = (
-				B7C595239251A97BE5D4D402 /* LaunchSmokeUITests.swift */,
-			);
-			path = GearSnitchUITests;
 			sourceTree = "<group>";
 		};
 		64EDC5694E70347DE12ED77B /* Persistence */ = {
@@ -796,7 +774,6 @@
 			children = (
 				C908273D26DA717EF992020E /* GearSnitch.app */,
 				0619737EE7E3393951FA1D62 /* GearSnitchTests.xctest */,
-				F48A562AB5846C59EECFA820 /* GearSnitchUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -868,24 +845,6 @@
 			productReference = 0619737EE7E3393951FA1D62 /* GearSnitchTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		B7C595239251A97BE5D4D4AD /* GearSnitchUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = CC5EDF58CA7E350A4D0F72A1 /* Build configuration list for PBXNativeTarget "GearSnitchUITests" */;
-			buildPhases = (
-				06EC0A772A517C6EC0D198C3 /* Sources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				6723CDEB01815853AD7C16D4 /* PBXTargetDependency */,
-			);
-			name = GearSnitchUITests;
-			packageProductDependencies = (
-			);
-			productName = GearSnitchUITests;
-			productReference = F48A562AB5846C59EECFA820 /* GearSnitchUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 		ECF6BEF24B590549BDA03608 /* GearSnitch */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8F066E1E12A29321397FF814 /* Build configuration list for PBXNativeTarget "GearSnitch" */;
@@ -918,11 +877,6 @@
 						DevelopmentTeam = TUZYDM227C;
 						ProvisioningStyle = Automatic;
 					};
-					B7C595239251A97BE5D4D4AD = {
-						DevelopmentTeam = TUZYDM227C;
-						ProvisioningStyle = Automatic;
-						TestTargetID = ECF6BEF24B590549BDA03608;
-					};
 					ECF6BEF24B590549BDA03608 = {
 						DevelopmentTeam = TUZYDM227C;
 						ProvisioningStyle = Automatic;
@@ -945,7 +899,6 @@
 			targets = (
 				ECF6BEF24B590549BDA03608 /* GearSnitch */,
 				86AC59BA8F8019D810326896 /* GearSnitchTests */,
-				B7C595239251A97BE5D4D4AD /* GearSnitchUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -964,20 +917,11 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		06EC0A772A517C6EC0D198C3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B7C595239251A97BE5D4D401 /* LaunchSmokeUITests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		B58F1C22B5D431900DE01D22 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				10A1B2C3D4E5F60123456703 /* ReleaseGateManagerTests.swift in Sources */,
-				10A1B2C3D4E5F60123456704 /* ResponseDecoderTests.swift in Sources */,
 				8B2915D2D437967F466C8858 /* RequestBuilderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1122,11 +1066,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		6723CDEB01815853AD7C16D4 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = ECF6BEF24B590549BDA03608 /* GearSnitch */;
-			targetProxy = B753B5C0E750057670794459 /* PBXContainerItemProxy */;
-		};
 		E976F9076D141A576F5041E8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = ECF6BEF24B590549BDA03608 /* GearSnitch */;
@@ -1202,22 +1141,6 @@
 			};
 			name = Debug;
 		};
-		5B5722AE7C2D3C1E4F941C60 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.gearsnitch.GearSnitchUITests;
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = GearSnitch;
-			};
-			name = Debug;
-		};
 		5E21ED783FC3969EEE54BC13 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1255,22 +1178,6 @@
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GearSnitch.app/GearSnitch";
-			};
-			name = Release;
-		};
-		88E194C5DE118553B93D5AF3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.gearsnitch.GearSnitchUITests;
-				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = GearSnitch;
 			};
 			name = Release;
 		};
@@ -1400,15 +1307,6 @@
 			buildConfigurations = (
 				5E21ED783FC3969EEE54BC13 /* Debug */,
 				A8844D29E77ED6597E364D72 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
-		CC5EDF58CA7E350A4D0F72A1 /* Build configuration list for PBXNativeTarget "GearSnitchUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				5B5722AE7C2D3C1E4F941C60 /* Debug */,
-				88E194C5DE118553B93D5AF3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

@@ -8,7 +8,6 @@ struct RootView: View {
 
     @State private var showFixPermissions = false
     @State private var onboardingComplete = false
-    @StateObject private var onboardingViewModel = OnboardingViewModel()
 
     var body: some View {
         content
@@ -17,7 +16,6 @@ struct RootView: View {
             .task {
                 await gateManager.checkAll()
                 await releaseGateManager.refreshIfNeeded()
-                syncOnboardingFlow(for: authManager.authState)
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 // Re-check permissions when app returns from Settings
@@ -25,9 +23,6 @@ struct RootView: View {
                     await gateManager.checkAll()
                     await releaseGateManager.forceRefresh()
                 }
-            }
-            .onChange(of: authManager.authState) { _, newValue in
-                syncOnboardingFlow(for: newValue)
             }
     }
 
@@ -52,9 +47,8 @@ struct RootView: View {
         case .unauthenticated:
             NavigationStack {
                 OnboardingView(
-                    viewModel: onboardingViewModel,
                     onComplete: {
-                    onboardingComplete = true
+                        onboardingComplete = true
                     }
                 )
             }
@@ -64,9 +58,8 @@ struct RootView: View {
                 // User is authenticated but hasn't completed onboarding
                 NavigationStack {
                     OnboardingView(
-                        viewModel: onboardingViewModel,
                         onComplete: {
-                        onboardingComplete = true
+                            onboardingComplete = true
                         }
                     )
                 }
@@ -220,18 +213,6 @@ struct RootView: View {
     private func openSettings() {
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
-        }
-    }
-
-    private func syncOnboardingFlow(for authState: AuthState) {
-        switch authState {
-        case .authenticated:
-            onboardingViewModel.resumeAuthenticatedOnboarding()
-        case .unauthenticated:
-            onboardingComplete = false
-            onboardingViewModel.resetForSignedOutUser()
-        case .loading:
-            break
         }
     }
 

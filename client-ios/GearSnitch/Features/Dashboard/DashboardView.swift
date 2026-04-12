@@ -85,6 +85,40 @@ struct DashboardView: View {
                 )
             }
         }
+        .alert(
+            bleManager.pendingDisconnectPrompt?.deviceName ?? "Device disconnected",
+            isPresented: Binding(
+                get: { bleManager.pendingDisconnectPrompt != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        bleManager.dismissPendingDisconnectPrompt()
+                    }
+                }
+            )
+        ) {
+            Button("End Session") {
+                bleManager.resolvePendingDisconnectAsEndedSession()
+                if sessionManager.isSessionActive {
+                    Task {
+                        await sessionManager.endSession()
+                    }
+                }
+            }
+
+            Button("Lost Gear", role: .destructive) {
+                bleManager.resolvePendingDisconnectAsLostGear()
+            }
+
+            Button("Keep Monitoring", role: .cancel) {
+                bleManager.dismissPendingDisconnectPrompt()
+            }
+        } message: {
+            if let prompt = bleManager.pendingDisconnectPrompt {
+                Text(
+                    "We lost the connection to \(prompt.deviceName). End this gym session if you are done, or escalate to Lost Gear if the item is missing."
+                )
+            }
+        }
         .task {
             await viewModel.loadDashboard()
         }
