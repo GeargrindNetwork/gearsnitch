@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "minimumSupportedVersion": "1.0.0",
+  "forceUpgrade": false,
+  "publishedAt": "2026-04-12T00:00:00.000Z",
+  "releaseNotes": [
+    "Launch release of the shared GearSnitch version system.",
+    "Adds live release metadata and minimum supported version enforcement."
+  ],
+  "environment": "production"
+}

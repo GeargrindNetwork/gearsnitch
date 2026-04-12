@@ -32,6 +32,20 @@ struct ProfileDTO: Decodable {
     }
 }
 
+enum AvatarUploadError: LocalizedError {
+    case encodingFailed
+    case imageTooLarge
+
+    var errorDescription: String? {
+        switch self {
+        case .encodingFailed:
+            return "GearSnitch could not prepare that image for upload."
+        case .imageTooLarge:
+            return "That photo is still too large. Try a smaller image."
+        }
+    }
+}
+
 // MARK: - ViewModel
 
 @MainActor
@@ -49,6 +63,7 @@ final class ProfileViewModel: ObservableObject {
     @Published var profileImage: UIImage?
     @Published var showPhotoPicker = false
     @Published var selectedPhoto: PhotosPickerItem?
+    @Published var isUpdatingAvatar = false
 
     // Edit sheet
     @Published var showEditProfile = false
@@ -179,22 +194,7 @@ final class ProfileViewModel: ObservableObject {
 
         do {
             let fetched: ProfileDTO = try await apiClient.request(APIEndpoint.Users.me)
-            profile = fetched
-
-            // Pre-populate edit fields
-            editFirstName = fetched.firstName ?? ""
-            editLastName = fetched.lastName ?? ""
-            if let dob = fetched.dateOfBirth,
-               let date = ISO8601DateFormatter.standard.date(from: dob) {
-                editDateOfBirth = date
-            }
-            editHeightInches = fetched.heightInches ?? 70
-            editWeightLbs = fetched.weightLbs ?? 170
-
-            // Load avatar image if URL exists
-            if let urlString = fetched.avatarURL, let url = URL(string: urlString) {
-                await loadAvatarImage(from: url)
-            }
+            await applyProfile(fetched)
         } catch {
             self.error = error.localizedDescription
         }
@@ -206,29 +206,46 @@ final class ProfileViewModel: ObservableObject {
 
     func loadSelectedPhoto() async {
         guard let item = selectedPhoto else { return }
+        selectedPhoto = nil
+        isUpdatingAvatar = true
 
         do {
             if let data = try await item.loadTransferable(type: Data.self),
                let image = UIImage(data: data) {
-                profileImage = image
-                // TODO: Upload image to backend
+                let prepared = try prepareAvatarPayload(from: image)
+                let updated: ProfileDTO = try await apiClient.request(
+                    APIEndpoint.Users.updateAvatar(
+                        UpdateAvatarBody(avatarURL: prepared.dataURL)
+                    )
+                )
+                profileImage = prepared.previewImage
+                await applyProfile(updated)
             }
         } catch {
+            self.error = error.localizedDescription
             logger.error("Failed to load selected photo: \(error.localizedDescription)")
         }
 
-        selectedPhoto = nil
+        isUpdatingAvatar = false
     }
 
-    private func loadAvatarImage(from url: URL) async {
+    func removeAvatar() async {
+        isUpdatingAvatar = true
+        error = nil
+
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let image = UIImage(data: data) {
-                profileImage = image
-            }
+            let updated: ProfileDTO = try await apiClient.request(
+                APIEndpoint.Users.updateAvatar(
+                    UpdateAvatarBody(avatarURL: nil)
+                )
+            )
+            await applyProfile(updated)
         } catch {
-            logger.error("Failed to load avatar: \(error.localizedDescription)")
+            self.error = error.localizedDescription
+            logger.error("Failed to remove avatar: \(error.localizedDescription)")
         }
+
+        isUpdatingAvatar = false
     }
 
     // MARK: - HealthKit Import
@@ -379,6 +396,87 @@ final class ProfileViewModel: ObservableObject {
         }
 
         isDeleting = false
+    }
+
+    // MARK: - Profile Hydration
+
+    private func applyProfile(_ fetched: ProfileDTO) async {
+        profile = fetched
+
+        editFirstName = fetched.firstName ?? ""
+        editLastName = fetched.lastName ?? ""
+        if let dob = fetched.dateOfBirth,
+           let date = ISO8601DateFormatter.standard.date(from: dob) {
+            editDateOfBirth = date
+        }
+        editHeightInches = fetched.heightInches ?? 70
+        editWeightLbs = fetched.weightLbs ?? 170
+
+        await loadAvatarImage(from: fetched.avatarURL)
+    }
+
+    private func loadAvatarImage(from source: String?) async {
+        guard let source, !source.isEmpty else {
+            profileImage = nil
+            return
+        }
+
+        if let inlineData = decodeInlineImageData(from: source),
+           let image = UIImage(data: inlineData) {
+            profileImage = image
+            return
+        }
+
+        guard let url = URL(string: source) else {
+            profileImage = nil
+            return
+        }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            profileImage = UIImage(data: data)
+        } catch {
+            logger.error("Failed to load avatar: \(error.localizedDescription)")
+        }
+    }
+
+    private func decodeInlineImageData(from source: String) -> Data? {
+        guard source.hasPrefix("data:image/"),
+              let commaIndex = source.firstIndex(of: ",") else {
+            return nil
+        }
+
+        let base64 = String(source[source.index(after: commaIndex)...])
+        return Data(base64Encoded: base64)
+    }
+
+    private func prepareAvatarPayload(from image: UIImage) throws -> (dataURL: String, previewImage: UIImage) {
+        let maxDimension: CGFloat = 512
+        let size = image.size
+        let scale = min(1, maxDimension / max(size.width, size.height))
+        let targetSize = CGSize(
+            width: max(1, round(size.width * scale)),
+            height: max(1, round(size.height * scale))
+        )
+
+        let format = UIGraphicsImageRendererFormat.default()
+        format.opaque = false
+        format.scale = 1
+
+        let previewImage = UIGraphicsImageRenderer(size: targetSize, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+
+        guard let jpegData = previewImage.jpegData(compressionQuality: 0.82) else {
+            throw AvatarUploadError.encodingFailed
+        }
+
+        let dataURL = "data:image/jpeg;base64,\(jpegData.base64EncodedString())"
+        guard dataURL.count <= 2_000_000 else {
+            throw AvatarUploadError.imageTooLarge
+        }
+
+        return (dataURL, previewImage)
     }
 }
 

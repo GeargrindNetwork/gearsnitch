@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { initGA, trackPageView } from './lib/analytics';
 import { useLocation } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { AuthProvider, RequireAuth } from './lib/auth';
+import { ReleaseProvider, RequireSupportedRelease } from './lib/release';
 
 import LandingPage from './pages/LandingPage';
 import StorePage from './pages/StorePage';
@@ -26,50 +27,60 @@ function PageTracker() {
   return null;
 }
 
+function ProtectedAppRoute({ children }: { children: ReactNode }) {
+  return (
+    <RequireAuth>
+      <RequireSupportedRelease>{children}</RequireSupportedRelease>
+    </RequireAuth>
+  );
+}
+
 export default function App() {
   useEffect(() => { initGA(); }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          <PageTracker />
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/store/*" element={<StorePage />} />
-            <Route path="/sign-in" element={<SignInPage />} />
-            <Route
-              path="/account/*"
-              element={(
-                <RequireAuth>
-                  <AccountPage />
-                </RequireAuth>
-              )}
-            />
-            <Route
-              path="/metrics"
-              element={(
-                <RequireAuth>
-                  <MetricsPage />
-                </RequireAuth>
-              )}
-            />
-            <Route
-              path="/runs"
-              element={(
-                <RequireAuth>
-                  <RunMapPage />
-                </RequireAuth>
-              )}
-            />
-            <Route path="/privacy" element={<PrivacyPolicyPage />} />
-            <Route path="/terms" element={<TermsOfServicePage />} />
-            <Route path="/support" element={<SupportPage />} />
-            <Route path="/delete-account" element={<DeleteAccountPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-          <Toaster />
-        </BrowserRouter>
+        <ReleaseProvider>
+          <BrowserRouter>
+            <PageTracker />
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/store/*" element={<StorePage />} />
+              <Route path="/sign-in" element={<SignInPage />} />
+              <Route
+                path="/account/*"
+                element={(
+                  <ProtectedAppRoute>
+                    <AccountPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/metrics"
+                element={(
+                  <ProtectedAppRoute>
+                    <MetricsPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/runs"
+                element={(
+                  <ProtectedAppRoute>
+                    <RunMapPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route path="/privacy" element={<PrivacyPolicyPage />} />
+              <Route path="/terms" element={<TermsOfServicePage />} />
+              <Route path="/support" element={<SupportPage />} />
+              <Route path="/delete-account" element={<DeleteAccountPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+            <Toaster />
+          </BrowserRouter>
+        </ReleaseProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -80,6 +80,10 @@ extension APIEndpoint {
             APIEndpoint(path: "/api/v1/users/me", method: .PATCH, body: body)
         }
 
+        static func updateAvatar(_ body: UpdateAvatarBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/users/me/avatar", method: .PATCH, body: body)
+        }
+
         static var export: APIEndpoint {
             APIEndpoint(path: "/api/v1/users/me/export", method: .POST)
         }
@@ -189,7 +193,7 @@ extension APIEndpoint {
 extension APIEndpoint {
     enum Subscriptions {
         static var me: APIEndpoint {
-            APIEndpoint(path: "/api/v1/subscriptions/me")
+            APIEndpoint(path: "/api/v1/subscriptions")
         }
 
         static func validateApple(receipt: String) -> APIEndpoint {
@@ -342,6 +346,24 @@ extension APIEndpoint {
     }
 }
 
+// MARK: - Support Endpoints
+
+extension APIEndpoint {
+    enum Support {
+        static var faq: APIEndpoint {
+            APIEndpoint(path: "/api/v1/support/faq")
+        }
+
+        static var tickets: APIEndpoint {
+            APIEndpoint(path: "/api/v1/support/tickets")
+        }
+
+        static func createTicket(_ body: CreateSupportTicketBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/support/tickets", method: .POST, body: body)
+        }
+    }
+}
+
 // MARK: - Request Bodies
 
 struct AppleLoginBody: Encodable {
@@ -359,6 +381,10 @@ struct UpdateUserBody: Encodable {
     var avatarURL: String?
     var preferences: [String: String]?
     var onboardingCompletedAt: Date?
+}
+
+struct UpdateAvatarBody: Encodable {
+    let avatarURL: String?
 }
 
 struct CreateDeviceBody: Encodable {
@@ -486,4 +512,12 @@ struct CompleteWorkoutBody: Encodable {
 struct AddToCartBody: Encodable {
     let productId: String
     let quantity: Int
+}
+
+struct CreateSupportTicketBody: Encodable {
+    let name: String
+    let email: String
+    let subject: String
+    let message: String
+    let source: String
 }

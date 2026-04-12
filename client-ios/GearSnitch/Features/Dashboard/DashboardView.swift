@@ -4,54 +4,51 @@ struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
     @ObservedObject private var sessionManager = GymSessionManager.shared
     @ObservedObject private var bleManager = BLEManager.shared
-    @EnvironmentObject private var authManager: AuthManager
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Gym session status
-                    gymSessionStatusCard
+        ScrollView {
+            VStack(spacing: 20) {
+                // Gym session status
+                gymSessionStatusCard
 
-                    // Active alerts banner
-                    if viewModel.hasActiveAlerts {
-                        alertsBanner
-                    }
-
-                    // Device status cards
-                    deviceStatusSection
-
-                    // Signal strength indicator
-                    if !bleManager.connectedDevices.isEmpty {
-                        signalStrengthSection
-                    }
-
-                    // Gym status
-                    if let gym = viewModel.defaultGym {
-                        gymStatusCard(gym)
-                    }
-
-                    // Activity calendar link
-                    activityCalendarLink
-
-                    // Quick actions
-                    quickActionsSection
+                // Active alerts banner
+                if viewModel.hasActiveAlerts {
+                    alertsBanner
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 32)
-            }
-            .background(Color.gsBackground.ignoresSafeArea())
-            .navigationTitle("Dashboard")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .refreshable {
-                await viewModel.loadDashboard()
-            }
-            .overlay {
-                if viewModel.isLoading && viewModel.devices.isEmpty {
-                    LoadingView(message: "Loading dashboard...")
+
+                // Device status cards
+                deviceStatusSection
+
+                // Signal strength indicator
+                if !bleManager.connectedDevices.isEmpty {
+                    signalStrengthSection
                 }
+
+                // Gym status
+                if let gym = viewModel.defaultGym {
+                    gymStatusCard(gym)
+                }
+
+                // Activity calendar link
+                activityCalendarLink
+
+                // Quick actions
+                quickActionsSection
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
+        }
+        .background(Color.gsBackground.ignoresSafeArea())
+        .navigationTitle("Dashboard")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .refreshable {
+            await viewModel.loadDashboard()
+        }
+        .overlay {
+            if viewModel.isLoading && viewModel.devices.isEmpty {
+                LoadingView(message: "Loading dashboard...")
             }
         }
         .alert(

@@ -9,8 +9,7 @@ import {
 
 const router = Router();
 
-// GET /subscriptions — current user's subscription status
-router.get('/', isAuthenticated, async (req: Request, res: Response) => {
+async function respondWithCurrentSubscription(req: Request, res: Response) {
   try {
     const userId = req.user!.sub;
     const subscription = await getSubscriptionForUser(userId);
@@ -39,7 +38,13 @@ router.get('/', isAuthenticated, async (req: Request, res: Response) => {
     const message = err instanceof Error ? err.message : 'Failed to fetch subscription';
     errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, message);
   }
-});
+}
+
+// GET /subscriptions — current user's subscription status
+router.get('/', isAuthenticated, respondWithCurrentSubscription);
+
+// GET /subscriptions/me — backward-compatible alias for older clients
+router.get('/me', isAuthenticated, respondWithCurrentSubscription);
 
 // POST /subscriptions/validate-apple — validate a StoreKit 2 JWS transaction
 router.post('/validate-apple', isAuthenticated, async (req: Request, res: Response) => {

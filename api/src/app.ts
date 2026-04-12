@@ -41,7 +41,15 @@ export function createApp(): express.Application {
       origin: config.corsOrigins,
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-CSRF-Token'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Request-ID',
+        'X-CSRF-Token',
+        'X-Client-Platform',
+        'X-Client-Version',
+        'X-Client-Build',
+      ],
     }),
   );
 

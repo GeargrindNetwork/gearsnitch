@@ -17,6 +17,10 @@
 		0B9A3ABAC47E98AD17AB1D29 /* OfflineQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD649EBADF6DB15233E9E7B /* OfflineQueue.swift */; };
 		0C9FE86BBF60C61ED7D2DF24 /* APIEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026C428CF4CCF85191191B0B /* APIEndpoint.swift */; };
 		0E285A02CC5F1C22A9844918 /* StopwatchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BC18F04EE32D8091DFEABE /* StopwatchViewModel.swift */; };
+		10A1B2C3D4E5F60123456701 /* ReleaseGateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1B2C3D4E5F60123456711 /* ReleaseGateManager.swift */; };
+		10A1B2C3D4E5F60123456702 /* UpdateRequiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1B2C3D4E5F60123456712 /* UpdateRequiredView.swift */; };
+		10A1B2C3D4E5F60123456703 /* ReleaseGateManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1B2C3D4E5F60123456713 /* ReleaseGateManagerTests.swift */; };
+		10A1B2C3D4E5F60123456704 /* ResponseDecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10A1B2C3D4E5F60123456714 /* ResponseDecoderTests.swift */; };
 		13F8F93231A9B661FCA88C74 /* LogMealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FDAF6E82525532EB0FFC115 /* LogMealView.swift */; };
 		15B699379F824FAAA1706C08 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18DD21DE66D7C8932E06A0B4 /* ProfileViewModel.swift */; };
 		19A3F14B3BA79EFDF8053558 /* ActiveWorkoutViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CA942AC63EEB8075ECA7ECC /* ActiveWorkoutViewModel.swift */; };
@@ -97,6 +101,7 @@
 		AA827AD9EE3687FC55BD8648 /* gs-eye-iris-master.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 068EFCAE20763E29C80EF6FB /* gs-eye-iris-master.pdf */; };
 		AB6408C3F61982FF8C019496 /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9CFC2797AD596756034BBE /* TokenStore.swift */; };
 		B5C854334FABEF07A5FB39C7 /* DeviceMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E1A45B997811D066252B2D /* DeviceMapView.swift */; };
+		B7C595239251A97BE5D4D401 /* LaunchSmokeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7C595239251A97BE5D4D402 /* LaunchSmokeUITests.swift */; };
 		B9132BE19983FED0AB1F25E9 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 866D40788493E59429903BBA /* ActiveWorkoutView.swift */; };
 		BA214A124C701E9705A97225 /* MetricsLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67FDD9EA8D9439FA5BFE3EEC /* MetricsLogView.swift */; };
 		C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */; };
@@ -170,6 +175,10 @@
 		0ACA51E64EAF81AEFD81AAEA /* CalorieDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalorieDashboardView.swift; sourceTree = "<group>"; };
 		0CD649EBADF6DB15233E9E7B /* OfflineQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineQueue.swift; sourceTree = "<group>"; };
 		0D945F2BF6C97E6654C9BF18 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
+		10A1B2C3D4E5F60123456711 /* ReleaseGateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseGateManager.swift; sourceTree = "<group>"; };
+		10A1B2C3D4E5F60123456712 /* UpdateRequiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateRequiredView.swift; sourceTree = "<group>"; };
+		10A1B2C3D4E5F60123456713 /* ReleaseGateManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseGateManagerTests.swift; sourceTree = "<group>"; };
+		10A1B2C3D4E5F60123456714 /* ResponseDecoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseDecoderTests.swift; sourceTree = "<group>"; };
 		11EBE9A263604C413029119F /* DeviceListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceListView.swift; sourceTree = "<group>"; };
 		154B191CC69DFF3B28E36D37 /* NotificationPermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPermissionManager.swift; sourceTree = "<group>"; };
 		1620CF81D724DC3279BCC97D /* FeatureFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlags.swift; sourceTree = "<group>"; };
@@ -258,6 +267,7 @@
 		AFCE813887395F69511F0DF4 /* PanicAlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanicAlarmManager.swift; sourceTree = "<group>"; };
 		B3B4FD86275B132DA96B5D8A /* ReferralView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralView.swift; sourceTree = "<group>"; };
 		B6BFD5D2EE043E841AA7B600 /* MeshChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshChatView.swift; sourceTree = "<group>"; };
+		B7C595239251A97BE5D4D402 /* LaunchSmokeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSmokeUITests.swift; sourceTree = "<group>"; };
 		B9CF17771E707F32C8ECA907 /* ReferralViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralViewModel.swift; sourceTree = "<group>"; };
 		BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLESignalMonitor.swift; sourceTree = "<group>"; };
 		BBFC6CFBC32F137AA69630AF /* RealtimeEventBus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeEventBus.swift; sourceTree = "<group>"; };
@@ -396,6 +406,7 @@
 			children = (
 				DE42951C73C8E10689CD0AF8 /* GearSnitch */,
 				61458D73F00143D52E5C9979 /* GearSnitchTests */,
+				B7C595239251A97BE5D4D403 /* GearSnitchUITests */,
 				EF62A29CE9D588EE284200F7 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -503,9 +514,19 @@
 		61458D73F00143D52E5C9979 /* GearSnitchTests */ = {
 			isa = PBXGroup;
 			children = (
+				10A1B2C3D4E5F60123456713 /* ReleaseGateManagerTests.swift */,
 				8BC5E7BD7D09E97C49A0C967 /* RequestBuilderTests.swift */,
+				10A1B2C3D4E5F60123456714 /* ResponseDecoderTests.swift */,
 			);
 			path = GearSnitchTests;
+			sourceTree = "<group>";
+		};
+		B7C595239251A97BE5D4D403 /* GearSnitchUITests */ = {
+			isa = PBXGroup;
+			children = (
+				B7C595239251A97BE5D4D402 /* LaunchSmokeUITests.swift */,
+			);
+			path = GearSnitchUITests;
 			sourceTree = "<group>";
 		};
 		64EDC5694E70347DE12ED77B /* Persistence */ = {
@@ -562,6 +583,7 @@
 				24101B7A4A21ED111F3FF5EE /* MeshChat */,
 				34E5E4649638B2F5D73B0B1E /* Onboarding */,
 				5A1BC6EF24C073B6C2A0AAC1 /* Profile */,
+				10A1B2C3D4E5F60123456721 /* Release */,
 				8871A8158674B1FEAC34909C /* Referrals */,
 				31F16876E93956AE6C1761B5 /* RunTracking */,
 				8847634A7A6272A5B8C0976D /* Settings */,
@@ -570,6 +592,14 @@
 				3EF267817CAD34088F1CC9BD /* Workouts */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		10A1B2C3D4E5F60123456721 /* Release */ = {
+			isa = PBXGroup;
+			children = (
+				10A1B2C3D4E5F60123456712 /* UpdateRequiredView.swift */,
+			);
+			path = Release;
 			sourceTree = "<group>";
 		};
 		70780FDD04A23C06F7CE05EC /* App */ = {
@@ -755,6 +785,7 @@
 			isa = PBXGroup;
 			children = (
 				1620CF81D724DC3279BCC97D /* FeatureFlags.swift */,
+				10A1B2C3D4E5F60123456711 /* ReleaseGateManager.swift */,
 				FE6FCEFFBB75B66F4A88EC2A /* RemoteConfigClient.swift */,
 			);
 			path = Config;
@@ -937,6 +968,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B7C595239251A97BE5D4D401 /* LaunchSmokeUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -944,6 +976,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				10A1B2C3D4E5F60123456703 /* ReleaseGateManagerTests.swift in Sources */,
+				10A1B2C3D4E5F60123456704 /* ResponseDecoderTests.swift in Sources */,
 				8B2915D2D437967F466C8858 /* RequestBuilderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1018,6 +1052,7 @@
 				85BBA8AA90A6F84A7F713C59 /* HeatmapCalendarViewModel.swift in Sources */,
 				F1CC5FC68F6201B3F82437D4 /* KeychainStore.swift in Sources */,
 				84B6F8FA19AEF0FEFF7C2AFE /* LoadingView.swift in Sources */,
+				10A1B2C3D4E5F60123456701 /* ReleaseGateManager.swift in Sources */,
 				71104258EEAA7C7745815889 /* LocalStore.swift in Sources */,
 				D4F0427389476DE29BE009FD /* LocationManager.swift in Sources */,
 				13F8F93231A9B661FCA88C74 /* LogMealView.swift in Sources */,
@@ -1072,6 +1107,7 @@
 				FA5D6CCABA743DCD4C612B7F /* SubscriptionCardsView.swift in Sources */,
 				FEDFD0F6AC5AB05417853194 /* SubscriptionStatusView.swift in Sources */,
 				6465E3D90138805BB7744587 /* SubscriptionView.swift in Sources */,
+				10A1B2C3D4E5F60123456702 /* UpdateRequiredView.swift in Sources */,
 				AB6408C3F61982FF8C019496 /* TokenStore.swift in Sources */,
 				A66E9A1DACE3954AF9D666A7 /* User.swift in Sources */,
 				D583FA108DD2C41A75D2814C /* View+Modifiers.swift in Sources */,
@@ -1169,7 +1205,7 @@
 		5B5722AE7C2D3C1E4F941C60 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1209,6 +1245,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1224,7 +1261,7 @@
 		88E194C5DE118553B93D5AF3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1324,6 +1361,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

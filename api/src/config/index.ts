@@ -1,3 +1,50 @@
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+
+function loadLocalEnv(): void {
+  const candidates = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), 'api/.env'),
+  ];
+
+  for (const envPath of candidates) {
+    if (!existsSync(envPath)) {
+      continue;
+    }
+
+    const file = readFileSync(envPath, 'utf8');
+    for (const rawLine of file.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith('#')) {
+        continue;
+      }
+
+      const separator = line.indexOf('=');
+      if (separator <= 0) {
+        continue;
+      }
+
+      const key = line.slice(0, separator).trim();
+      let value = line.slice(separator + 1).trim();
+
+      if (
+        (value.startsWith('"') && value.endsWith('"'))
+        || (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      if (!(key in process.env)) {
+        process.env[key] = value;
+      }
+    }
+
+    return;
+  }
+}
+
+loadLocalEnv();
+
 const config = {
   port: parseInt(process.env.PORT ?? '4000', 10),
   nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -20,6 +67,7 @@ const config = {
   appleClientId: process.env.APPLE_CLIENT_ID ?? '',
   appleTeamId: process.env.APPLE_TEAM_ID ?? '',
   appleKeyId: process.env.APPLE_KEY_ID ?? '',
+  applePrivateKey: process.env.APPLE_PRIVATE_KEY ?? '',
 
   // Stripe
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? '',
@@ -33,6 +81,11 @@ const config = {
 
   // API
   apiVersion: process.env.API_VERSION ?? 'v1',
+
+  // Release metadata
+  releaseBuildId: process.env.K_REVISION ?? process.env.RELEASE_BUILD_ID ?? '',
+  releaseGitSha: process.env.GIT_SHA ?? '',
+  releaseBuiltAt: process.env.BUILD_TIME ?? '',
 } as const;
 
 export default config;

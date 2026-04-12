@@ -1,3 +1,5 @@
+import { APP_RELEASE } from '@/lib/release-meta';
+
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
 
 export interface ApiResponse<T> {
@@ -55,7 +57,12 @@ class ApiClient {
     body?: unknown,
     allowRefreshRetry = true,
   ): Promise<ApiResponse<T>> {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Client-Platform': APP_RELEASE.platform,
+      'X-Client-Version': APP_RELEASE.version,
+      'X-Client-Build': APP_RELEASE.buildId,
+    };
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
 
     const res = await fetch(`${this.baseUrl}${path}`, {

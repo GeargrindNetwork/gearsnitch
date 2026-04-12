@@ -1,3 +1,10 @@
+import {
+  getReleasePolicy,
+  getServerBuildInfo,
+  resolveReleaseCompatibility,
+  type ClientReleaseHeaders,
+} from './releasePolicy.js';
+
 export interface RemoteFeatureFlags {
   workoutsEnabled: boolean;
   storeEnabled: boolean;
@@ -6,10 +13,23 @@ export interface RemoteFeatureFlags {
   emergencyContactsEnabled: boolean;
 }
 
-export interface RemoteAppVersionConfig {
+export interface RemoteReleaseConfig {
   minimumVersion: string;
   currentVersion: string;
   forceUpdate: boolean;
+  releaseNotes: string[];
+  publishedAt: string;
+}
+
+export interface RemoteCompatibilityConfig {
+  status: 'supported' | 'blocked' | 'unknown';
+  reason: string | null;
+  clientVersion: string | null;
+  minimumSupportedVersion: string;
+  currentVersion: string;
+  forceUpgrade: boolean;
+  platform: string | null;
+  build: string | null;
 }
 
 export interface RemoteMaintenanceConfig {
@@ -17,10 +37,20 @@ export interface RemoteMaintenanceConfig {
   message: string | null;
 }
 
+export interface RemoteServerConfig {
+  version: string;
+  buildId: string | null;
+  gitSha: string | null;
+  builtAt: string | null;
+  environment: string;
+}
+
 export interface RemoteConfigPayload {
   featureFlags: RemoteFeatureFlags;
-  appVersion: RemoteAppVersionConfig;
+  release: RemoteReleaseConfig;
+  compatibility: RemoteCompatibilityConfig;
   maintenance: RemoteMaintenanceConfig;
+  server: RemoteServerConfig;
 }
 
 const featureFlags: RemoteFeatureFlags = {
@@ -31,22 +61,33 @@ const featureFlags: RemoteFeatureFlags = {
   emergencyContactsEnabled: true,
 };
 
-const appVersion: RemoteAppVersionConfig = {
-  minimumVersion: '1.0.0',
-  currentVersion: '1.0.0',
-  forceUpdate: false,
-};
-
 const maintenance: RemoteMaintenanceConfig = {
   isActive: false,
   message: null,
 };
 
-export function getRemoteConfigPayload(): RemoteConfigPayload {
+export function getRemoteConfigPayload(
+  client: ClientReleaseHeaders = {
+    platform: null,
+    version: null,
+    build: null,
+  },
+): RemoteConfigPayload {
+  const policy = getReleasePolicy();
+  const compatibility = resolveReleaseCompatibility(client, policy);
+
   return {
     featureFlags: { ...featureFlags },
-    appVersion: { ...appVersion },
+    release: {
+      minimumVersion: policy.minimumSupportedVersion,
+      currentVersion: policy.version,
+      forceUpdate: policy.forceUpgrade,
+      releaseNotes: [...policy.releaseNotes],
+      publishedAt: policy.publishedAt,
+    },
+    compatibility,
     maintenance: { ...maintenance },
+    server: getServerBuildInfo(policy),
   };
 }
 

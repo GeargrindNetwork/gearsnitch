@@ -2,7 +2,10 @@ import { Subscription, type ISubscription } from '../../models/Subscription.js';
 import logger from '../../utils/logger.js';
 import * as jose from 'jose';
 
-const ANNUAL_PRODUCT_ID = 'com.geargrind.gearsnitch.annual';
+const ANNUAL_PRODUCT_IDS = new Set([
+  'com.geargrind.gearsnitch.annual',
+  'com.gearsnitch.app.annual',
+]);
 const ANNUAL_DURATION_DAYS = 365;
 
 // ---------------------------------------------------------------------------
@@ -59,9 +62,9 @@ export async function validateAppleTransaction(
   }
 
   // ----- 2. Validate product ID -----
-  if (payload.productId !== ANNUAL_PRODUCT_ID) {
+  if (!ANNUAL_PRODUCT_IDS.has(payload.productId)) {
     throw new Error(
-      `Unexpected product ID: ${payload.productId}. Expected ${ANNUAL_PRODUCT_ID}`,
+      `Unexpected product ID: ${payload.productId}. Expected one of ${Array.from(ANNUAL_PRODUCT_IDS).join(', ')}`,
     );
   }
 

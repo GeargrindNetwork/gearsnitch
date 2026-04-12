@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -166,6 +166,48 @@ function downloadJson(filename: string, payload: unknown) {
   URL.revokeObjectURL(url);
 }
 
+async function createAvatarDataUrl(file: File): Promise<string> {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Choose a JPG, PNG, or WebP image.');
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const nextImage = new Image();
+      nextImage.onload = () => resolve(nextImage);
+      nextImage.onerror = () => reject(new Error('Failed to read the selected image.'));
+      nextImage.src = objectUrl;
+    });
+
+    const maxDimension = 512;
+    const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('Failed to prepare the selected image.');
+    }
+
+    context.drawImage(image, 0, 0, width, height);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    if (dataUrl.length > 2_000_000) {
+      throw new Error('That image is still too large. Try a smaller photo.');
+    }
+
+    return dataUrl;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -173,11 +215,17 @@ function downloadJson(filename: string, payload: unknown) {
 function ProfileTab({
   user,
   isExporting,
+  isSavingAvatar,
   onExport,
+  onPickAvatar,
+  onRemoveAvatar,
 }: {
   user: UserProfile;
   isExporting: boolean;
+  isSavingAvatar: boolean;
   onExport: () => void;
+  onPickAvatar: () => void;
+  onRemoveAvatar: () => void;
 }) {
   const subStatus =
     user.subscription?.status ?? (user.subscriptionTier === 'annual' ? 'active' : 'cancelled');
@@ -212,9 +260,31 @@ function ProfileTab({
                     ? 'border-emerald-700 text-emerald-400'
                     : 'border-zinc-700 text-zinc-500'
                 }
+                >
+                  {isSubscribed ? 'Subscribed' : 'Free'}
+                </Badge>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-zinc-700 text-zinc-200 hover:text-white"
+                onClick={onPickAvatar}
+                disabled={isSavingAvatar}
               >
-                {isSubscribed ? 'Subscribed' : 'Free'}
-              </Badge>
+                {isSavingAvatar ? 'Updating photo...' : 'Change Photo'}
+              </Button>
+              {user.avatarURL ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-zinc-400 hover:text-white"
+                  onClick={onRemoveAvatar}
+                  disabled={isSavingAvatar}
+                >
+                  Remove Photo
+                </Button>
+              ) : null}
             </div>
           </div>
         </CardContent>
@@ -238,7 +308,7 @@ function ProfileTab({
         </CardHeader>
         <CardContent>
           {isSubscribed ? (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {user.subscription?.plan && (
                 <p className="text-sm text-zinc-300">
                   Plan: <span className="font-medium text-white">{user.subscription.plan}</span>
@@ -249,9 +319,31 @@ function ProfileTab({
                   Renews: {formatDate(user.subscription.expiresAt)}
                 </p>
               )}
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  className="bg-emerald-500 font-semibold text-black hover:bg-emerald-400"
+                  onClick={() => window.open('https://apps.apple.com/account/subscriptions', '_blank', 'noopener,noreferrer')}
+                >
+                  Manage in App Store
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-zinc-700 text-zinc-200 hover:text-white"
+                  onClick={() => window.location.assign('/runs')}
+                >
+                  Open Run Replay
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="text-zinc-400 hover:text-white"
+                  onClick={() => window.location.assign('/support')}
+                >
+                  Billing Help
+                </Button>
+              </div>
             </div>
           ) : (
-            <div>
+            <div className="space-y-4">
               <p className="mb-4 text-zinc-400">
                 Subscribe through the iOS app to unlock unlimited device monitoring,
                 gym geofencing, and health tracking.
@@ -264,6 +356,21 @@ function ProfileTab({
                   </div>
                   <p className="text-xl font-bold text-white">$29.99/yr</p>
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  className="bg-gradient-to-r from-cyan-500 to-emerald-500 font-semibold text-black hover:from-cyan-400 hover:to-emerald-400"
+                  onClick={() => window.location.assign('/#download')}
+                >
+                  Download the iPhone App
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-zinc-700 text-zinc-200 hover:text-white"
+                  onClick={() => window.location.assign('/support')}
+                >
+                  See Subscription Help
+                </Button>
               </div>
             </div>
           )}
@@ -454,10 +561,13 @@ function CalendarTab() {
 
 export default function AccountPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { isAuthenticated, signOut } = useAuth();
   const { data: user, isLoading, error } = useProfile(isAuthenticated);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
@@ -487,9 +597,67 @@ export default function AccountPage() {
     }
   }, []);
 
+  const handleAvatarSelection = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+
+      if (!file) {
+        return;
+      }
+
+      setSavingAvatar(true);
+
+      try {
+        const avatarURL = await createAvatarDataUrl(file);
+        const res = await api.patch<UserProfile>('/users/me/avatar', { avatarURL });
+        if (!res.success || !res.data) {
+          throw new Error(res.error?.message ?? 'Failed to update your profile photo.');
+        }
+
+        queryClient.setQueryData<UserProfile>(['me'], res.data);
+        toast.success('Profile photo updated.');
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : 'Failed to update your profile photo.',
+        );
+      } finally {
+        setSavingAvatar(false);
+      }
+    },
+    [queryClient],
+  );
+
+  const handleRemoveAvatar = useCallback(async () => {
+    setSavingAvatar(true);
+
+    try {
+      const res = await api.patch<UserProfile>('/users/me/avatar', { avatarURL: null });
+      if (!res.success || !res.data) {
+        throw new Error(res.error?.message ?? 'Failed to remove your profile photo.');
+      }
+
+      queryClient.setQueryData<UserProfile>(['me'], res.data);
+      toast.success('Profile photo removed.');
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to remove your profile photo.',
+      );
+    } finally {
+      setSavingAvatar(false);
+    }
+  }, [queryClient]);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <Header />
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={handleAvatarSelection}
+      />
 
       <section className="px-6 py-16 pt-24 lg:px-8">
         <div className="mx-auto max-w-4xl">
@@ -538,7 +706,14 @@ export default function AccountPage() {
               </TabsList>
 
               <TabsContent value="profile" className="mt-6">
-                <ProfileTab user={user} isExporting={exporting} onExport={handleExport} />
+                <ProfileTab
+                  user={user}
+                  isExporting={exporting}
+                  isSavingAvatar={savingAvatar}
+                  onExport={handleExport}
+                  onPickAvatar={() => avatarInputRef.current?.click()}
+                  onRemoveAvatar={handleRemoveAvatar}
+                />
               </TabsContent>
 
               <TabsContent value="purchases" className="mt-6">

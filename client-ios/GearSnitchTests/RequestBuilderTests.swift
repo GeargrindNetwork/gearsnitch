@@ -3,6 +3,10 @@ import XCTest
 
 final class RequestBuilderTests: XCTestCase {
 
+    func testAppConfigDefaultsToHostedAPI() {
+        XCTAssertEqual(AppConfig.apiBaseURL, "https://api.gearsnitch.com")
+    }
+
     func testAppleLoginUsesSingleAPIVersionPrefix() throws {
         let request = try RequestBuilder.build(
             from: APIEndpoint.Auth.appleLogin(
@@ -72,6 +76,21 @@ final class RequestBuilderTests: XCTestCase {
         XCTAssertEqual(
             socketURL.absoluteString,
             "wss://ws.gearsnitch.com/ws?token=socket-token"
+        )
+    }
+
+    func testRequestsIncludeVersionHeaders() throws {
+        let request = try RequestBuilder.build(
+            from: APIEndpoint.Config.app,
+            baseURL: try XCTUnwrap(URL(string: AppConfig.apiBaseURL))
+        )
+
+        XCTAssertEqual(request.value(forHTTPHeaderField: "X-Client-Platform"), "ios")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "X-Client-Version"), AppConfig.appVersion)
+        XCTAssertEqual(request.value(forHTTPHeaderField: "X-Client-Build"), AppConfig.buildNumber)
+        XCTAssertEqual(
+            request.value(forHTTPHeaderField: "User-Agent"),
+            "GearSnitch-iOS/\(AppConfig.appVersion) (\(AppConfig.buildNumber))"
         )
     }
 }
