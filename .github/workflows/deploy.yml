@@ -29,10 +29,32 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Resolve web build config
+        run: |
+          API_URL="$(gcloud run services describe gearsnitch-api --region=us-central1 --project=gearsnitch --format='value(status.url)')/api/v1"
+          WS_URL="$(gcloud run services describe gearsnitch-realtime --region=us-central1 --project=gearsnitch --format='value(status.url)')"
+          GOOGLE_CLIENT_ID="$(gcloud secrets versions access latest --secret=google-oauth-client-id --project=gearsnitch 2>/dev/null || true)"
+          APPLE_SERVICE_ID="$(gcloud secrets versions access latest --secret=apple-service-id --project=gearsnitch 2>/dev/null || true)"
+          APPLE_REDIRECT_URI="$(gcloud secrets versions access latest --secret=apple-redirect-uri --project=gearsnitch 2>/dev/null || true)"
+          if [ "$GOOGLE_CLIENT_ID" = "placeholder" ]; then
+            GOOGLE_CLIENT_ID=""
+          fi
+          if [ "$APPLE_SERVICE_ID" = "placeholder" ]; then
+            APPLE_SERVICE_ID=""
+          fi
+          if [ "$APPLE_REDIRECT_URI" = "placeholder" ]; then
+            APPLE_REDIRECT_URI=""
+          fi
+          printf 'API_URL=%s\n' "$API_URL" >> "$GITHUB_ENV"
+          printf 'WS_URL=%s\n' "$WS_URL" >> "$GITHUB_ENV"
+          printf 'GOOGLE_CLIENT_ID=%s\n' "$GOOGLE_CLIENT_ID" >> "$GITHUB_ENV"
+          printf 'APPLE_SERVICE_ID=%s\n' "$APPLE_SERVICE_ID" >> "$GITHUB_ENV"
+          printf 'APPLE_REDIRECT_URI=%s\n' "$APPLE_REDIRECT_URI" >> "$GITHUB_ENV"
+
       - name: Submit Cloud Build
         run: |
           SHORT_SHA="${GITHUB_SHA::7}"
           gcloud builds submit \
             --config=infrastructure/cloudbuild/cloudbuild.yaml \
-            --substitutions=_TAG=${SHORT_SHA},_REGION=us-central1,_PROJECT_ID=gearsnitch \
+            --substitutions=_TAG=${SHORT_SHA},_REGION=us-central1,_PROJECT_ID=gearsnitch,_VITE_API_URL="${API_URL}",_VITE_WS_URL="${WS_URL}",_VITE_GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}",_VITE_APPLE_SERVICE_ID="${APPLE_SERVICE_ID}",_VITE_APPLE_REDIRECT_URI="${APPLE_REDIRECT_URI}" \
             --project=gearsnitch

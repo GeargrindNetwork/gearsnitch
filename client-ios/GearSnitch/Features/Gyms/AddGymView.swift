@@ -11,7 +11,7 @@ struct AddGymView: View {
 
     // MARK: - Map State
 
-    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var position: MapCameraPosition = .automatic
     @State private var selectedAnnotation: PlaceAnnotation?
 
     // MARK: - Form State
@@ -23,6 +23,7 @@ struct AddGymView: View {
     @State private var errorMessage: String?
     @State private var showLocationDeniedAlert = false
     @State private var isSearchFocused = false
+    @State private var pendingLocationFocus = false
 
     // MARK: - Callback
 
@@ -84,8 +85,24 @@ struct AddGymView: View {
         } message: {
             Text("Enable Location Services in Settings so GearSnitch can find gyms near you.")
         }
-        .onAppear {
-            checkLocationAuthorization()
+        .onChange(of: locationManager.authorizationStatus) { _, newStatus in
+            guard pendingLocationFocus else { return }
+
+            switch newStatus {
+            case .authorizedWhenInUse, .authorizedAlways:
+                pendingLocationFocus = false
+                focusOnCurrentLocation()
+            case .denied, .restricted:
+                pendingLocationFocus = false
+                showLocationDeniedAlert = true
+            case .notDetermined:
+                break
+            @unknown default:
+                pendingLocationFocus = false
+            }
+        }
+        .onDisappear {
+            locationManager.stopUpdatingLocation()
         }
     }
 
@@ -93,7 +110,9 @@ struct AddGymView: View {
 
     private var mapLayer: some View {
         Map(position: $position) {
-            UserAnnotation()
+            if locationAccessGranted {
+                UserAnnotation()
+            }
 
             if let annotation = selectedAnnotation {
                 Annotation(
@@ -222,9 +241,7 @@ struct AddGymView: View {
 
     private var currentLocationButton: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.4)) {
-                position = .userLocation(fallback: .automatic)
-            }
+            handleCurrentLocationTap()
         } label: {
             Image(systemName: "location.fill")
                 .font(.body.weight(.medium))
@@ -398,15 +415,35 @@ struct AddGymView: View {
     }
 
     private func checkLocationAuthorization() {
+        pendingLocationFocus = false
+
         switch locationManager.authorizationStatus {
         case .notDetermined:
+            pendingLocationFocus = true
             locationManager.requestWhenInUse()
         case .denied, .restricted:
             showLocationDeniedAlert = true
         case .authorizedWhenInUse, .authorizedAlways:
-            locationManager.startUpdatingLocation()
+            focusOnCurrentLocation()
         @unknown default:
             break
+        }
+    }
+
+    private var locationAccessGranted: Bool {
+        locationManager.authorizationStatus == .authorizedWhenInUse
+            || locationManager.authorizationStatus == .authorizedAlways
+    }
+
+    private func handleCurrentLocationTap() {
+        checkLocationAuthorization()
+    }
+
+    private func focusOnCurrentLocation() {
+        locationManager.startUpdatingLocation()
+
+        withAnimation(.easeInOut(duration: 0.4)) {
+            position = .userLocation(fallback: .automatic)
         }
     }
 

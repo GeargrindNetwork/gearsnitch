@@ -10,6 +10,7 @@ import {
 import { NotificationToken } from '../../models/NotificationToken.js'
 import { User } from '../../models/User.js'
 import logger from '../../utils/logger.js'
+import { normalizePermissionsState } from '../../utils/permissionsState.js'
 import { errorResponse, successResponse } from '../../utils/response.js'
 
 const router = Router()
@@ -250,11 +251,7 @@ router.get('/preferences', isAuthenticated, async (req, res) => {
     successResponse(
       res,
       {
-        permissionsState: user.permissionsState ?? {
-          bluetooth: false,
-          location: false,
-          notifications: false,
-        },
+        permissionsState: normalizePermissionsState(user.permissionsState),
         preferences: user.preferences ?? {
           pushEnabled: false,
           panicAlertsEnabled: false,
@@ -307,7 +304,7 @@ router.patch('/preferences', isAuthenticated, async (req, res) => {
     successResponse(
       res,
       {
-        permissionsState: user.permissionsState,
+        permissionsState: normalizePermissionsState(user.permissionsState),
         preferences: user.preferences,
       },
       StatusCodes.OK,
@@ -371,6 +368,16 @@ router.post('/register', isAuthenticated, async (req, res) => {
         upsert: true,
         setDefaultsOnInsert: true,
       },
+    ).exec()
+
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          'permissionsState.notifications': 'granted',
+        },
+      },
+      { new: false },
     ).exec()
 
     successResponse(

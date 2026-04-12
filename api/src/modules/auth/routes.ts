@@ -8,6 +8,7 @@ import { isAuthenticated, type JwtPayload } from '../../middleware/auth.js';
 import { getRedisClient } from '../../loaders/redis.js';
 import { Session } from '../../models/Session.js';
 import { AuthService, AuthServiceError, type DeviceInfo } from '../../services/AuthService.js';
+import { normalizePermissionsState } from '../../utils/permissionsState.js';
 
 const router = Router();
 
@@ -350,8 +351,8 @@ function sanitizeUser(user: { _id?: unknown; email?: string; displayName?: strin
     role: user.roles?.[0] ?? 'user',
     status: user.status,
     defaultGymId: user.defaultGymId ? String(user.defaultGymId) : null,
-    onboardingCompletedAt: user.onboardingCompletedAt,
-    permissionsState: user.permissionsState,
+    onboardingCompletedAt: user.onboardingCompletedAt?.toISOString?.() ?? null,
+    permissionsState: normalizePermissionsState(user.permissionsState),
     preferences: user.preferences,
   };
 }

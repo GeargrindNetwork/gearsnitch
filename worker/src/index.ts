@@ -1,3 +1,4 @@
+import http from 'node:http';
 import mongoose from 'mongoose';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
@@ -14,8 +15,21 @@ import { shutdownJobRuntime } from './utils/jobRuntime';
 
 const MONGODB_URI = process.env.MONGODB_URI || '';
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
 const redisConnection = new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
+let workerReady = false;
+
+const healthServer = http.createServer((req, res) => {
+  if (req.url === '/health') {
+    res.writeHead(workerReady ? 200 : 503);
+    res.end(workerReady ? 'OK' : 'STARTING');
+    return;
+  }
+
+  res.writeHead(404);
+  res.end();
+});
 
 // Queue definitions matching the spec
 const QUEUES = [
@@ -53,6 +67,15 @@ const workers: Worker[] = [];
 async function start() {
   logger.info('GearSnitch Worker starting...');
 
+  await new Promise<void>((resolve, reject) => {
+    healthServer.once('error', reject);
+    healthServer.listen(PORT, () => {
+      healthServer.off('error', reject);
+      logger.info(`Worker health server listening on port ${PORT}`);
+      resolve();
+    });
+  });
+
   // Connect to MongoDB
   await mongoose.connect(MONGODB_URI);
   logger.info('Connected to MongoDB');
@@ -84,11 +107,22 @@ async function start() {
     logger.info(`Worker started for queue: ${queueName}`);
   }
 
+  workerReady = true;
   logger.info(`GearSnitch Worker running with ${workers.length} queue processors`);
 }
 
 async function shutdown() {
   logger.info('Worker shutting down...');
+  workerReady = false;
+  await new Promise<void>((resolve, reject) => {
+    healthServer.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
   await Promise.all(workers.map((w) => w.close()));
   await shutdownJobRuntime();
   await mongoose.disconnect();

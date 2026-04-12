@@ -53,3 +53,4 @@ client-ios/*.xcodeproj/xcuserdata/
 *.pem
 *.key
 credentials.json
+APPLE_KEYS/

@@ -61,8 +61,21 @@ const DeviceSchema = new Schema<IDevice>(
     monitoringEnabled: { type: Boolean, default: true },
     lastSeenAt: { type: Date, default: null },
     lastSeenLocation: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number] },
+      type: {
+        type: String,
+        enum: ['Point'],
+        required: function requiresGeoType(this: { coordinates?: unknown[] }) {
+          return Array.isArray(this.coordinates) && this.coordinates.length === 2;
+        },
+      },
+      coordinates: {
+        type: [Number],
+        validate: {
+          validator: (value: unknown) => value == null || (Array.isArray(value) && value.length === 2),
+          message: 'Device lastSeenLocation coordinates must contain longitude and latitude.',
+        },
+      },
+      default: undefined,
     },
     lastSignalStrength: { type: Number },
   },

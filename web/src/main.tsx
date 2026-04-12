@@ -2,9 +2,21 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
+import { installGlobalWebErrorLogging, webLogger } from './lib/logger'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+installGlobalWebErrorLogging()
+
+try {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+} catch (error) {
+  webLogger.error('React root render failed', {
+    error: error instanceof Error
+      ? { name: error.name, message: error.message, stack: error.stack }
+      : String(error),
+  })
+  throw error
+}

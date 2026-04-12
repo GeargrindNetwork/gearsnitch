@@ -67,8 +67,17 @@ declare global {
   }
 }
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const APPLE_SERVICE_ID = import.meta.env.VITE_APPLE_SERVICE_ID;
+function getConfiguredEnvValue(value: string | undefined): string {
+  const normalized = value?.trim();
+  if (!normalized || normalized === 'placeholder') {
+    return '';
+  }
+
+  return normalized;
+}
+
+const GOOGLE_CLIENT_ID = getConfiguredEnvValue(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+const APPLE_SERVICE_ID = getConfiguredEnvValue(import.meta.env.VITE_APPLE_SERVICE_ID);
 
 const scriptCache = new Map<string, Promise<void>>();
 

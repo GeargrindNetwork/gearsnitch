@@ -3,6 +3,7 @@ import AuthenticationServices
 
 struct SignInView: View {
     @StateObject private var viewModel = SignInViewModel()
+    private let authButtonMaxWidth: CGFloat = 375
 
     /// Called when sign-in succeeds. Used by OnboardingView to advance steps.
     var onSignInComplete: (() -> Void)?
@@ -58,6 +59,7 @@ struct SignInView: View {
                             .stroke(Color.gsBorder, lineWidth: 1)
                     )
                 }
+                .frame(maxWidth: authButtonMaxWidth)
             }
             .padding(.horizontal, 24)
             .disabled(viewModel.isLoading)
@@ -128,6 +130,7 @@ struct SignInView: View {
                 viewModel.handleAppleSignIn(result: result)
             }
         )
+        .frame(maxWidth: authButtonMaxWidth)
         .frame(height: 54)
         .cornerRadius(14)
     }

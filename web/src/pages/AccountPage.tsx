@@ -26,18 +26,67 @@ interface UserProfile {
   role: string;
   status: string;
   linkedAccounts: string[];
-  subscriptionTier: 'annual' | 'free';
+  subscriptionTier: 'monthly' | 'annual' | 'lifetime' | 'free';
+  defaultGymId?: string | null;
+  onboardingCompletedAt?: string | null;
+  permissionsState?: {
+    bluetooth: 'granted' | 'denied' | 'not_determined';
+    location: 'granted' | 'denied' | 'not_determined';
+    backgroundLocation: 'granted' | 'denied' | 'not_determined';
+    notifications: 'granted' | 'denied' | 'not_determined';
+    healthKit: 'granted' | 'denied' | 'not_determined';
+  } | null;
   subscription?: {
     status: 'active' | 'expired' | 'grace_period' | 'cancelled';
     plan?: string | null;
     expiresAt?: string | null;
   } | null;
+  pinnedDeviceId?: string | null;
   devices?: Array<{
     _id: string;
     deviceName: string;
+    nickname?: string | null;
     platform: string;
+    bluetoothIdentifier?: string;
+    status?: string;
+    isFavorite?: boolean;
+    isMonitoring?: boolean;
     lastSeen?: string | null;
+    createdAt?: string | null;
   }>;
+  gyms?: Array<{
+    _id: string;
+    name: string;
+    isDefault: boolean;
+    radiusMeters: number;
+    location: {
+      latitude: number;
+      longitude: number;
+    };
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  defaultGym?: {
+    _id: string;
+    name: string;
+    isDefault: boolean;
+    radiusMeters: number;
+    location: {
+      latitude: number;
+      longitude: number;
+    };
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+  onboarding?: {
+    hasAddedGym: boolean;
+    hasPairedDevice: boolean;
+    bluetoothGranted: boolean;
+    locationGranted: boolean;
+    backgroundLocationGranted: boolean;
+    notificationsGranted: boolean;
+    healthKitGranted: boolean;
+  };
   referralCode?: string | null;
   orderCount?: number;
 }
@@ -153,6 +202,34 @@ function formatCurrency(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function permissionBadgeClass(
+  state: 'granted' | 'denied' | 'not_determined' | boolean | undefined,
+): string {
+  if (state === true || state === 'granted') {
+    return 'border-emerald-700 text-emerald-400';
+  }
+
+  if (state === false || state === 'denied') {
+    return 'border-rose-700 text-rose-400';
+  }
+
+  return 'border-zinc-700 text-zinc-400';
+}
+
+function permissionLabel(
+  state: 'granted' | 'denied' | 'not_determined' | boolean | undefined,
+): string {
+  if (state === true || state === 'granted') {
+    return 'Granted';
+  }
+
+  if (state === false || state === 'denied') {
+    return 'Denied';
+  }
+
+  return 'Pending';
+}
+
 function downloadJson(filename: string, payload: unknown) {
   const json = JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
@@ -228,7 +305,7 @@ function ProfileTab({
   onRemoveAvatar: () => void;
 }) {
   const subStatus =
-    user.subscription?.status ?? (user.subscriptionTier === 'annual' ? 'active' : 'cancelled');
+    user.subscription?.status ?? (user.subscriptionTier !== 'free' ? 'active' : 'cancelled');
   const isSubscribed = subStatus === 'active' || subStatus === 'grace_period';
 
   return (
@@ -351,10 +428,10 @@ function ProfileTab({
               <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-white">GearSnitch Annual</p>
-                    <p className="text-sm text-zinc-400">365-day subscription</p>
+                    <p className="font-semibold text-white">GearSnitch Premium</p>
+                    <p className="text-sm text-zinc-400">Monthly, annual, and lifetime plans are managed in the iPhone app.</p>
                   </div>
-                  <p className="text-xl font-bold text-white">$29.99/yr</p>
+                  <p className="text-xl font-bold text-white">iOS only</p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -407,8 +484,23 @@ function ProfileTab({
               {user.devices.map((device) => (
                 <li key={device._id} className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3">
                   <div>
-                    <p className="text-sm font-medium text-white">{device.deviceName}</p>
-                    <p className="text-xs text-zinc-500 capitalize">{device.platform}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-medium text-white">{device.nickname || device.deviceName}</p>
+                      {device.isFavorite ? (
+                        <Badge variant="outline" className="border-amber-700 text-amber-300">
+                          Pinned
+                        </Badge>
+                      ) : null}
+                      {device.isMonitoring ? (
+                        <Badge variant="outline" className="border-emerald-700 text-emerald-400">
+                          Monitoring
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-zinc-500 capitalize">
+                      {device.platform}
+                      {device.status ? ` • ${device.status.replace('_', ' ')}` : ''}
+                    </p>
                   </div>
                   {device.lastSeen && (
                     <span className="text-xs text-zinc-500">
@@ -423,6 +515,67 @@ function ProfileTab({
               Pair and manage your Bluetooth devices from the iOS app. Device status will appear here once connected.
             </p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-zinc-800 bg-zinc-900/50">
+        <CardHeader>
+          <CardTitle>Gyms</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {user.gyms && user.gyms.length > 0 ? (
+            <ul className="space-y-3">
+              {user.gyms.map((gym) => (
+                <li key={gym._id} className="rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-white">{gym.name}</p>
+                    {gym.isDefault ? (
+                      <Badge variant="outline" className="border-cyan-700 text-cyan-300">
+                        Default
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Radius {Math.round(gym.radiusMeters)}m • {gym.location.latitude.toFixed(4)}, {gym.location.longitude.toFixed(4)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-zinc-400">
+              No gyms are saved to this account yet.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-zinc-800 bg-zinc-900/50">
+        <CardHeader>
+          <CardTitle>App Permissions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {[
+              ['Bluetooth', user.permissionsState?.bluetooth],
+              ['Location', user.permissionsState?.location],
+              ['Background Location', user.permissionsState?.backgroundLocation],
+              ['Push Notifications', user.permissionsState?.notifications],
+              ['Apple Health', user.permissionsState?.healthKit],
+            ].map(([label, state]) => (
+              <Badge
+                key={label}
+                variant="outline"
+                className={permissionBadgeClass(state as 'granted' | 'denied' | 'not_determined' | undefined)}
+              >
+                {label}: {permissionLabel(state as 'granted' | 'denied' | 'not_determined' | undefined)}
+              </Badge>
+            ))}
+          </div>
+          {user.onboarding ? (
+            <p className="mt-4 text-sm text-zinc-500">
+              Onboarding gates: gym {user.onboarding.hasAddedGym ? 'saved' : 'missing'} • device {user.onboarding.hasPairedDevice ? 'paired' : 'missing'}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 

@@ -23,7 +23,8 @@
     "dev:realtime": "npm run dev --workspace=realtime",
     "build:api": "npm run build --workspace=api",
     "build:web": "npm run build --workspace=web",
-    "build:shared": "npm run build --workspace=shared"
+    "build:shared": "npm run build --workspace=shared",
+    "logs:feed": "bash scripts/feed-error-logs.sh"
   },
   "packageManager": "npm@11.12.1",
   "engines": {

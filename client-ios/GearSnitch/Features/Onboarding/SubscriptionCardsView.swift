@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 // MARK: - Subscription Tier
 
@@ -8,6 +9,14 @@ enum SubscriptionTier: String, CaseIterable, Identifiable {
     case babyMomma
 
     var id: String { rawValue }
+
+    var productID: String {
+        switch self {
+        case .hustle: return "com.gearsnitch.app.monthly"
+        case .hwmf: return "com.gearsnitch.app.annual"
+        case .babyMomma: return "com.gearsnitch.app.lifetime"
+        }
+    }
 
     var displayName: String {
         switch self {
@@ -86,17 +95,37 @@ enum SubscriptionTier: String, CaseIterable, Identifiable {
         case .babyMomma: return "Buy Lifetime"
         }
     }
+
+    static func tier(forProductID productID: String) -> SubscriptionTier? {
+        switch productID {
+        case "com.gearsnitch.app.monthly", "com.geargrind.gearsnitch.monthly":
+            return .hustle
+        case "com.gearsnitch.app.annual", "com.geargrind.gearsnitch.annual":
+            return .hwmf
+        case "com.gearsnitch.app.lifetime", "com.geargrind.gearsnitch.lifetime":
+            return .babyMomma
+        default:
+            return nil
+        }
+    }
 }
 
 // MARK: - Subscription Cards View
 
 struct SubscriptionCardsView: View {
+    @StateObject private var storeKit = StoreKitManager.shared
+    @State private var localErrorMessage: String?
+    @State private var hasAutoAdvancedForActiveSubscription = false
+
     let onSelect: (SubscriptionTier) -> Void
     let onSkip: () -> Void
 
+    private var activeErrorMessage: String? {
+        localErrorMessage ?? storeKit.errorMessage
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             VStack(spacing: 8) {
                 Text("Choose Your Plan")
                     .font(.title2.bold())
@@ -109,7 +138,31 @@ struct SubscriptionCardsView: View {
             .padding(.top, 24)
             .padding(.bottom, 20)
 
-            // Cards
+            if storeKit.isLoadingProducts {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .tint(.gsEmerald)
+                    Text("Loading App Store subscription…")
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                }
+                .padding(.bottom, 12)
+            }
+
+            if let activeErrorMessage {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.gsDanger)
+                        .font(.caption)
+                    Text(activeErrorMessage)
+                        .font(.caption)
+                        .foregroundColor(.gsDanger)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 12)
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
                     ForEach(SubscriptionTier.allCases) { tier in
@@ -122,7 +175,6 @@ struct SubscriptionCardsView: View {
 
             Spacer()
 
-            // Skip
             Button(action: onSkip) {
                 Text("Maybe Later")
                     .font(.subheadline)
@@ -134,6 +186,9 @@ struct SubscriptionCardsView: View {
             .padding(.bottom, 32)
         }
         .background(Color.gsBackground)
+        .task {
+            await loadSubscriptionState()
+        }
     }
 
     // MARK: - Card
@@ -141,11 +196,10 @@ struct SubscriptionCardsView: View {
     @ViewBuilder
     private func subscriptionCard(_ tier: SubscriptionTier) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Badge
             if let badge = tier.badge {
                 Text(badge)
                     .font(.caption.bold())
-                    .foregroundColor(tier == .babyMomma ? .black : .black)
+                    .foregroundColor(.black)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
                     .background(badgeColor(for: tier))
@@ -155,15 +209,13 @@ struct SubscriptionCardsView: View {
                 Spacer().frame(height: 26)
             }
 
-            // Name
             Text(tier.displayName)
                 .font(.headline)
                 .foregroundColor(.gsText)
                 .padding(.bottom, 4)
 
-            // Price
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(tier.price)
+                Text(priceText(for: tier))
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundColor(.gsText)
 
@@ -173,19 +225,16 @@ struct SubscriptionCardsView: View {
             }
             .padding(.bottom, 4)
 
-            // Subtitle
-            Text(tier.subtitle)
+            Text(subtitleText(for: tier))
                 .font(.caption)
                 .foregroundColor(subtitleColor(for: tier))
                 .padding(.bottom, 16)
 
-            // Divider
             Rectangle()
                 .fill(Color.gsBorder)
                 .frame(height: 1)
                 .padding(.bottom, 14)
 
-            // Features
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(tier.features, id: \.self) { feature in
                     HStack(spacing: 8) {
@@ -203,18 +252,27 @@ struct SubscriptionCardsView: View {
 
             Spacer()
 
-            // CTA
             Button {
-                onSelect(tier)
+                handleSelection(for: tier)
             } label: {
-                Text(tier.buttonTitle)
-                    .font(.subheadline.bold())
-                    .foregroundColor(tier == .hustle ? .gsText : .black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(buttonBackground(for: tier))
-                    .cornerRadius(10)
+                if storeKit.isPurchasing {
+                    ProgressView()
+                        .tint(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(buttonBackground(for: tier))
+                        .cornerRadius(10)
+                } else {
+                    Text(buttonTitle(for: tier))
+                        .font(.subheadline.bold())
+                        .foregroundColor(tier == .hustle ? .gsText : .black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(buttonBackground(for: tier))
+                        .cornerRadius(10)
+                }
             }
+            .disabled(isButtonDisabled(for: tier))
         }
         .padding(18)
         .background(Color.gsSurface)
@@ -259,6 +317,26 @@ struct SubscriptionCardsView: View {
         }
     }
 
+    private func priceText(for tier: SubscriptionTier) -> String {
+        storeKit.product(for: tier)?.displayPrice ?? tier.price
+    }
+
+    private func subtitleText(for tier: SubscriptionTier) -> String {
+        storeKit.product(for: tier) != nil ? "Available in the App Store" : tier.subtitle
+    }
+
+    private func buttonTitle(for tier: SubscriptionTier) -> String {
+        return tier.buttonTitle
+    }
+
+    private func isButtonDisabled(for _: SubscriptionTier) -> Bool {
+        if storeKit.isPurchasing {
+            return true
+        }
+
+        return storeKit.isLoadingProducts
+    }
+
     @ViewBuilder
     private func buttonBackground(for tier: SubscriptionTier) -> some View {
         switch tier {
@@ -276,6 +354,53 @@ struct SubscriptionCardsView: View {
                 startPoint: .leading,
                 endPoint: .trailing
             )
+        }
+    }
+
+    // MARK: - Subscription Flow
+
+    @MainActor
+    private func loadSubscriptionState() async {
+        if storeKit.availableProducts.isEmpty {
+            await storeKit.loadProducts()
+        }
+        await storeKit.checkSubscriptionStatus()
+
+        guard !hasAutoAdvancedForActiveSubscription else { return }
+        if case .active = storeKit.subscriptionStatus,
+           let currentTier = storeKit.currentTier {
+            hasAutoAdvancedForActiveSubscription = true
+            onSelect(currentTier)
+        }
+    }
+
+    @MainActor
+    private func handleSelection(for tier: SubscriptionTier) {
+        localErrorMessage = nil
+        storeKit.errorMessage = nil
+
+        Task { @MainActor in
+            if storeKit.availableProducts.isEmpty && !storeKit.isLoadingProducts {
+                await storeKit.loadProducts()
+            }
+
+            guard storeKit.product(for: tier) != nil else {
+                localErrorMessage = storeKit.errorMessage ?? "The \(tier.displayName) plan is unavailable right now."
+                return
+            }
+
+            do {
+                try await storeKit.purchase(tier: tier)
+                await storeKit.checkSubscriptionStatus()
+
+                if case .active = storeKit.subscriptionStatus {
+                    onSelect(tier)
+                } else if storeKit.errorMessage == nil {
+                    localErrorMessage = "Purchase did not complete. Please try again."
+                }
+            } catch {
+                localErrorMessage = error.localizedDescription
+            }
         }
     }
 }

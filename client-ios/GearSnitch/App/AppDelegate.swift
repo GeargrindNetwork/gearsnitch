@@ -2,11 +2,17 @@ import UIKit
 import UserNotifications
 import os
 
+private let runtimeDiagnosticsLogger = Logger(subsystem: "com.gearsnitch", category: "Runtime")
+
+private func handleUncaughtException(_ exception: NSException) {
+    let reason = exception.reason ?? "unknown"
+    let stack = exception.callStackSymbols.joined(separator: " | ")
+    runtimeDiagnosticsLogger.fault("Uncaught exception: \(exception.name.rawValue, privacy: .public) reason=\(reason, privacy: .public) stack=\(stack, privacy: .public)")
+}
+
 // MARK: - App Delegate
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
-
-    private let logger = Logger(subsystem: "com.gearsnitch", category: "AppDelegate")
 
     // MARK: - Launch
 
@@ -14,7 +20,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        configureNotifications(application)
+        RuntimeDiagnostics.install()
+        configureNotifications()
         return true
     }
 
@@ -24,11 +31,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        let token = deviceToken.map { String(format: "%02x", $0) }.joined()
-        logger.info("APNs device token: \(token)")
-
-        Task {
-            await sendDeviceTokenToBackend(token)
+        Task { @MainActor in
+            NotificationPermissionManager.shared.didRegisterForRemoteNotifications(
+                deviceToken: deviceToken
+            )
         }
     }
 
@@ -36,12 +42,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
-        logger.error("Failed to register for remote notifications: \(error.localizedDescription)")
+        Task { @MainActor in
+            NotificationPermissionManager.shared.didFailToRegisterForRemoteNotifications(error: error)
+        }
     }
 
     // MARK: - Private
 
-    private func configureNotifications(_ application: UIApplication) {
+    private func configureNotifications() {
         let center = UNUserNotificationCenter.current()
 
         // Register notification categories
@@ -76,18 +84,19 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
         // Set the notification handler as the delegate
         center.delegate = PushNotificationHandler.shared
-
-        // Register for remote notifications
-        application.registerForRemoteNotifications()
     }
+}
 
-    private func sendDeviceTokenToBackend(_ token: String) async {
-        do {
-            let endpoint = APIEndpoint.Notifications.registerToken(token: token)
-            let _: EmptyData = try await APIClient.shared.request(endpoint)
-            logger.info("Device token registered with backend")
-        } catch {
-            logger.error("Failed to register device token: \(error.localizedDescription)")
-        }
+private enum RuntimeDiagnostics {
+
+    private static var installed = false
+
+    static func install() {
+        guard !installed else { return }
+        installed = true
+
+        NSSetUncaughtExceptionHandler(handleUncaughtException)
+
+        runtimeDiagnosticsLogger.info("Runtime diagnostics installed")
     }
 }

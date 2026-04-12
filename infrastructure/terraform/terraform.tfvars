@@ -1,6 +1,7 @@
 project_id  = "gearsnitch"
 region      = "us-central1"
-environment = "dev"
+environment = "prod"
+use_placeholder_images = false
 domain      = "gearsnitch.com"
 
 # Sensitive values — these are initial placeholders.

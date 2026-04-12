@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { successResponse } from '../utils/response.js';
+import logger from '../utils/logger.js';
 
 import authRoutes from '../modules/auth/routes.js';
 import usersRoutes from '../modules/users/routes.js';
@@ -32,6 +33,33 @@ router.get('/health', (_req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });
+});
+
+router.post('/client-logs', (req, res) => {
+  const body = typeof req.body === 'object' && req.body !== null ? req.body as Record<string, unknown> : {};
+  const level = body.level === 'warn' ? 'warn' : body.level === 'info' ? 'info' : body.level === 'debug' ? 'debug' : 'error';
+  const message = typeof body.message === 'string' && body.message.trim() ? body.message.trim() : 'Client log';
+  const context = typeof body.context === 'object' && body.context !== null ? body.context : {};
+
+  const payload = {
+    correlationId: req.requestId,
+    source: 'web-client',
+    clientTimestamp: typeof body.ts === 'string' ? body.ts : undefined,
+    context,
+    userAgent: req.get('user-agent'),
+  };
+
+  if (level === 'warn') {
+    logger.warn(message, payload);
+  } else if (level === 'info') {
+    logger.info(message, payload);
+  } else if (level === 'debug') {
+    logger.debug(message, payload);
+  } else {
+    logger.error(message, payload);
+  }
+
+  successResponse(res, { accepted: true }, 202);
 });
 
 // Module routes

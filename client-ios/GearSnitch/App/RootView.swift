@@ -8,14 +8,19 @@ struct RootView: View {
 
     @State private var showFixPermissions = false
     @State private var onboardingComplete = false
+    @StateObject private var onboardingViewModel = OnboardingViewModel()
 
     var body: some View {
         content
             .animation(.easeInOut(duration: 0.35), value: authManager.authState)
             .animation(.easeInOut(duration: 0.35), value: showFixPermissions)
             .task {
+                onboardingViewModel.syncAuthenticationState(isAuthenticated: authManager.isAuthenticated)
                 await gateManager.checkAll()
                 await releaseGateManager.refreshIfNeeded()
+            }
+            .onChange(of: authManager.authState) { _, _ in
+                onboardingViewModel.syncAuthenticationState(isAuthenticated: authManager.isAuthenticated)
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 // Re-check permissions when app returns from Settings
@@ -45,24 +50,12 @@ struct RootView: View {
             splashView
 
         case .unauthenticated:
-            NavigationStack {
-                OnboardingView(
-                    onComplete: {
-                        onboardingComplete = true
-                    }
-                )
-            }
+            onboardingFlow
 
         case .authenticated(let user):
             if !user.hasCompletedOnboarding && !onboardingComplete {
                 // User is authenticated but hasn't completed onboarding
-                NavigationStack {
-                    OnboardingView(
-                        onComplete: {
-                            onboardingComplete = true
-                        }
-                    )
-                }
+                onboardingFlow
             } else if showFixPermissions {
                 // Required permission was revoked -- show fix flow
                 fixPermissionsView
@@ -72,6 +65,17 @@ struct RootView: View {
                         checkRequiredPermissions()
                     }
             }
+        }
+    }
+
+    private var onboardingFlow: some View {
+        NavigationStack {
+            OnboardingView(
+                viewModel: onboardingViewModel,
+                onComplete: {
+                    onboardingComplete = true
+                }
+            )
         }
     }
 

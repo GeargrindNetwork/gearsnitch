@@ -5,11 +5,20 @@ import { isAuthenticated, type JwtPayload } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate.js';
 import { User } from '../../models/User.js';
 import { Device } from '../../models/Device.js';
+import { Gym } from '../../models/Gym.js';
 import { Referral } from '../../models/Referral.js';
 import { Session } from '../../models/Session.js';
 import { StoreOrder } from '../../models/StoreOrder.js';
 import { AuthService } from '../../services/AuthService.js';
-import { getSubscriptionForUser } from '../subscriptions/subscriptionService.js';
+import {
+  PERMISSION_STATE_VALUES,
+  normalizePermissionsState,
+} from '../../utils/permissionsState.js';
+import {
+  getSubscriptionForUser,
+  getSubscriptionPlanFromProductId,
+  getSubscriptionTierFromProductId,
+} from '../subscriptions/subscriptionService.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
 
 const router = Router();
@@ -37,6 +46,13 @@ const updateMeSchema = z.object({
   avatarURL: z.string().trim().min(1).max(2048).optional(),
   preferences: z.record(z.string()).optional(),
   onboardingCompletedAt: z.string().datetime().optional(),
+  permissionsState: z.object({
+    bluetooth: z.enum(PERMISSION_STATE_VALUES).optional(),
+    location: z.enum(PERMISSION_STATE_VALUES).optional(),
+    backgroundLocation: z.enum(PERMISSION_STATE_VALUES).optional(),
+    notifications: z.enum(PERMISSION_STATE_VALUES).optional(),
+    healthKit: z.enum(PERMISSION_STATE_VALUES).optional(),
+  }).optional(),
 });
 
 const updateAvatarSchema = z.object({
@@ -121,6 +137,14 @@ router.patch(
 
       if (body.onboardingCompletedAt !== undefined) {
         user.onboardingCompletedAt = new Date(body.onboardingCompletedAt);
+      }
+
+      if (body.permissionsState !== undefined) {
+        const existingPermissions = normalizePermissionsState(user.permissionsState);
+        user.permissionsState = {
+          ...existingPermissions,
+          ...body.permissionsState,
+        };
       }
 
       if (body.preferences !== undefined) {
@@ -324,18 +348,7 @@ function toIsoString(value: Date | null | undefined): string | null {
 }
 
 function formatSubscriptionPlan(productId: string | null | undefined): string | null {
-  if (!productId) {
-    return null;
-  }
-
-  if (
-    productId === 'com.geargrind.gearsnitch.annual'
-    || productId === 'com.gearsnitch.app.annual'
-  ) {
-    return 'GearSnitch Annual';
-  }
-
-  return productId;
+  return getSubscriptionPlanFromProductId(productId);
 }
 
 function buildSubscriptionSummary(
@@ -353,6 +366,31 @@ function buildSubscriptionSummary(
     status: subscription.status,
     plan: formatSubscriptionPlan(subscription.productId),
     expiresAt: subscription.expiryDate.toISOString(),
+  };
+}
+
+function serializeGymSummary(gym: {
+  _id: { toString(): string };
+  name: string;
+  isDefault: boolean;
+  radiusMeters: number;
+  location: {
+    coordinates: [number, number];
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    _id: gym._id.toString(),
+    name: gym.name,
+    isDefault: gym.isDefault,
+    radiusMeters: gym.radiusMeters,
+    location: {
+      longitude: gym.location.coordinates[0],
+      latitude: gym.location.coordinates[1],
+    },
+    createdAt: gym.createdAt.toISOString(),
+    updatedAt: gym.updatedAt.toISOString(),
   };
 }
 
@@ -378,8 +416,8 @@ function buildUserResponse(user: {
     role: user.roles[0] ?? 'user',
     status: user.status,
     defaultGymId: user.defaultGymId ? user.defaultGymId.toString() : null,
-    onboardingCompletedAt: user.onboardingCompletedAt,
-    permissionsState: user.permissionsState,
+    onboardingCompletedAt: toIsoString(user.onboardingCompletedAt),
+    permissionsState: normalizePermissionsState(user.permissionsState),
     preferences: user.preferences,
   };
 }
@@ -390,15 +428,19 @@ async function buildProfileResponse(userId: string) {
     return null;
   }
 
-  const [referral, subscription, orderCount, devices] = await Promise.all([
+  const [referral, subscription, orderCount, devices, gyms] = await Promise.all([
     Referral.findOne({ referrerUserId: user._id }).sort({ createdAt: -1 }).lean(),
     getSubscriptionForUser(userId),
     StoreOrder.countDocuments({
       userId: user._id,
       status: { $ne: 'cancelled' },
     }),
-    Device.find({ userId: user._id }).sort({ createdAt: -1 }).lean(),
+    Device.find({ userId: user._id }).sort({ isFavorite: -1, updatedAt: -1, createdAt: -1 }).lean(),
+    Gym.find({ userId: user._id }).sort({ isDefault: -1, createdAt: -1 }).lean(),
   ]);
+
+  const normalizedPermissions = normalizePermissionsState(user.permissionsState);
+  const defaultGym = gyms.find((gym) => gym.isDefault);
 
   return {
     _id: user._id.toString(),
@@ -412,16 +454,42 @@ async function buildProfileResponse(userId: string) {
     referralCode: user.referralCode ?? referral?.referralCode ?? null,
     subscriptionTier:
       subscription && ['active', 'grace_period'].includes(subscription.status)
-        ? 'annual'
+        ? getSubscriptionTierFromProductId(subscription.productId)
         : 'free',
+    defaultGymId: user.defaultGymId ? String(user.defaultGymId) : null,
+    onboardingCompletedAt: toIsoString(user.onboardingCompletedAt),
+    permissionsState: normalizedPermissions,
+    preferences: user.preferences,
     linkedAccounts: user.authProviders,
     subscription: buildSubscriptionSummary(subscription),
     devices: devices.map((device) => ({
       _id: String(device._id),
       deviceName: device.name,
+      nickname: device.nickname ?? null,
       platform: device.type,
+      bluetoothIdentifier: device.identifier,
+      status: device.status,
+      isFavorite: device.isFavorite === true,
+      isMonitoring: device.monitoringEnabled === true,
       lastSeen: toIsoString(device.lastSeenAt),
+      createdAt: toIsoString(device.createdAt),
     })),
+    pinnedDeviceId:
+      devices.find((device) => device.isFavorite === true)?._id?.toString() ?? null,
+    gyms: gyms.map(serializeGymSummary),
+    defaultGym:
+      defaultGym?.location?.coordinates?.length === 2
+        ? serializeGymSummary(defaultGym)
+        : null,
+    onboarding: {
+      hasAddedGym: gyms.length > 0,
+      hasPairedDevice: devices.length > 0,
+      bluetoothGranted: normalizedPermissions.bluetooth === 'granted',
+      locationGranted: normalizedPermissions.location === 'granted',
+      backgroundLocationGranted: normalizedPermissions.backgroundLocation === 'granted',
+      notificationsGranted: normalizedPermissions.notifications === 'granted',
+      healthKitGranted: normalizedPermissions.healthKit === 'granted',
+    },
     createdAt: user.createdAt.toISOString(),
     dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString() : null,
     heightInches: cmToInches(user.heightCm),
@@ -436,19 +504,21 @@ async function buildDataExport(userId: string) {
     return null;
   }
 
-  const [subscription, referrals, orders, devices, sessions] = await Promise.all([
+  const [subscription, referrals, orders, devices, sessions, gyms] = await Promise.all([
     getSubscriptionForUser(userId),
     Referral.find({ referrerUserId: user._id }).sort({ createdAt: -1 }).lean(),
     StoreOrder.find({ userId: user._id }).sort({ createdAt: -1 }).lean(),
     Device.find({ userId: user._id }).sort({ createdAt: -1 }).lean(),
     Session.find({ userId: user._id }).sort({ createdAt: -1 }).lean(),
+    Gym.find({ userId: user._id }).sort({ isDefault: -1, createdAt: -1 }).lean(),
   ]);
 
   const latestReferralCode = referrals[0]?.referralCode ?? null;
   const subscriptionTier =
     subscription && ['active', 'grace_period'].includes(subscription.status)
-      ? 'annual'
+      ? getSubscriptionTierFromProductId(subscription.productId)
       : 'free';
+  const normalizedPermissions = normalizePermissionsState(user.permissionsState);
 
   return {
     exportVersion: 1,
@@ -472,7 +542,7 @@ async function buildDataExport(userId: string) {
       weightKg: user.weightKg ?? null,
       defaultGymId: user.defaultGymId ? String(user.defaultGymId) : null,
       onboardingCompletedAt: toIsoString(user.onboardingCompletedAt),
-      permissionsState: user.permissionsState,
+      permissionsState: normalizedPermissions,
       preferences: user.preferences,
     },
     summary: {
@@ -480,6 +550,7 @@ async function buildDataExport(userId: string) {
       referralCode: user.referralCode ?? latestReferralCode,
       orderCount: orders.length,
       deviceCount: devices.length,
+      gymCount: gyms.length,
       sessionCount: sessions.length,
     },
     subscription: subscription
@@ -532,11 +603,13 @@ async function buildDataExport(userId: string) {
     devices: devices.map((device) => ({
       _id: String(device._id),
       name: device.name,
+      nickname: device.nickname ?? null,
       type: device.type,
       identifier: device.identifier,
       hardwareModel: device.hardwareModel ?? null,
       firmwareVersion: device.firmwareVersion ?? null,
       status: device.status,
+      isFavorite: device.isFavorite === true,
       monitoringEnabled: device.monitoringEnabled,
       lastSeenAt: toIsoString(device.lastSeenAt),
       lastSeenLocation: device.lastSeenLocation ?? null,
@@ -544,6 +617,7 @@ async function buildDataExport(userId: string) {
       createdAt: device.createdAt.toISOString(),
       updatedAt: device.updatedAt.toISOString(),
     })),
+    gyms: gyms.map(serializeGymSummary),
     sessions: sessions.map((session) => ({
       _id: String(session._id),
       deviceName: session.deviceName,

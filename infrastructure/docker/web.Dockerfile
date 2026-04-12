@@ -5,6 +5,22 @@ WORKDIR /app
 
 # Copy workspace root files
 COPY package.json package-lock.json turbo.json ./
+COPY config/ ./config/
+
+ARG VITE_GOOGLE_CLIENT_ID=""
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+
+ARG VITE_APPLE_SERVICE_ID=""
+ENV VITE_APPLE_SERVICE_ID=$VITE_APPLE_SERVICE_ID
+
+ARG VITE_APPLE_REDIRECT_URI=""
+ENV VITE_APPLE_REDIRECT_URI=$VITE_APPLE_REDIRECT_URI
+
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
+
+ARG VITE_WS_URL=""
+ENV VITE_WS_URL=$VITE_WS_URL
 
 # Copy web package files (shared not needed for web build)
 COPY web/package.json ./web/

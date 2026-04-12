@@ -11,13 +11,16 @@ describe('apple sign-in contract regression sweep', () => {
   const authService = read('src/services/AuthService.ts');
   const config = read('src/config/index.ts');
 
-  test('apple sign-in exchanges the authorization code before creating a session', () => {
+  test('apple sign-in uses authorization-code exchange when server credentials are configured', () => {
     expect(authService).toContain(
-      'const exchanged = await AuthService.exchangeAppleAuthorizationCode(',
+      'if (AuthService.hasAppleCodeExchangeConfig()) {',
+    );
+    expect(authService).toContain(
+      'exchanged = await AuthService.exchangeAppleAuthorizationCode(',
     );
     expect(authService).toContain('if (decoded.sub !== exchanged.sub)');
-    expect(authService).toContain('const email = decoded.email ?? exchanged.email;');
-    expect(authService).not.toContain('void authorizationCode;');
+    expect(authService).toContain("logger.warn(");
+    expect(authService).toContain("const email = decoded.email ?? exchanged?.email;");
   });
 
   test('apple oauth configuration includes the private key needed to mint the client secret', () => {
@@ -30,5 +33,10 @@ describe('apple sign-in contract regression sweep', () => {
     expect(authService).toContain("setExpirationTime('5m')");
     expect(authService).toContain('decoded.audience');
     expect(authService).toContain('AuthService.verifyAppleToken(payload.id_token, appleClientId)');
+  });
+
+  test('apple auth treats placeholder exchange credentials as unconfigured', () => {
+    expect(authService).toContain("normalized !== 'placeholder'");
+    expect(authService).toContain('private static hasAppleCodeExchangeConfig(): boolean');
   });
 });

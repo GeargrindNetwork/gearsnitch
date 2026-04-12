@@ -124,7 +124,7 @@ final class AuthManager: ObservableObject {
 
         do {
             let response: AuthTokenResponse = try await apiClient.request(endpoint)
-            completeSignIn(response: response, method: "apple")
+            try await completeSignIn(response: response, method: "apple")
         } catch {
             authState = .unauthenticated
             logger.error("Apple sign-in failed: \(error.localizedDescription)")
@@ -141,7 +141,7 @@ final class AuthManager: ObservableObject {
 
         do {
             let response: AuthTokenResponse = try await apiClient.request(endpoint)
-            completeSignIn(response: response, method: "google")
+            try await completeSignIn(response: response, method: "google")
         } catch {
             authState = .unauthenticated
             logger.error("Google sign-in failed: \(error.localizedDescription)")
@@ -173,16 +173,31 @@ final class AuthManager: ObservableObject {
         }
 
         let endpoint = APIEndpoint.Auth.refresh
-        let response: AuthTokenResponse = try await apiClient.request(endpoint)
+        let response: TokenPairResponse = try await apiClient.request(endpoint)
         tokenStore.save(accessToken: response.accessToken, refreshToken: response.refreshToken)
         return response.accessToken
     }
 
     // MARK: - Private
 
-    private func completeSignIn(response: AuthTokenResponse, method: String = "unknown") {
+    private func completeSignIn(response: AuthTokenResponse, method: String = "unknown") async throws {
         tokenStore.save(accessToken: response.accessToken, refreshToken: response.refreshToken)
-        let user = GSUser(from: response.user)
+        let userDTO: UserDTO
+
+        if let embeddedUser = response.user {
+            logger.info("Sign-in response included embedded user payload")
+            userDTO = embeddedUser
+        } else {
+            logger.info("Sign-in response omitted user payload; fetching current profile")
+            do {
+                userDTO = try await apiClient.request(APIEndpoint.Auth.me)
+            } catch {
+                logger.error("Failed to fetch current profile after \(method) sign-in: \(error.localizedDescription)")
+                throw error
+            }
+        }
+
+        let user = GSUser(from: userDTO)
         authState = .authenticated(user)
         logger.info("Sign-in complete for user \(user.id) via \(method)")
 

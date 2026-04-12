@@ -19,10 +19,10 @@ enum BLEDeviceStatus: String, Codable, CaseIterable {
 final class BLEDevice: Identifiable, ObservableObject {
 
     let id: UUID
-    let name: String
     let identifier: UUID
     var persistedId: String?
 
+    @Published var name: String
     @Published var status: BLEDeviceStatus
     @Published var rssi: Int
     @Published var lastSeenAt: Date?
@@ -31,7 +31,10 @@ final class BLEDevice: Identifiable, ObservableObject {
 
     /// The underlying CoreBluetooth peripheral. Nil if the device was loaded
     /// from persistence and not yet rediscovered.
-    weak var peripheral: CBPeripheral?
+    ///
+    /// This is held strongly so a discovered device can still be connected
+    /// after the discovery callback completes.
+    var peripheral: CBPeripheral?
 
     init(
         id: UUID = UUID(),
@@ -58,9 +61,15 @@ final class BLEDevice: Identifiable, ObservableObject {
     }
 
     /// Convenience initializer from a discovered CBPeripheral.
-    convenience init(peripheral: CBPeripheral, rssi: Int) {
+    convenience init(peripheral: CBPeripheral, rssi: Int, name: String? = nil) {
+        let resolvedName = name?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .nilIfEmpty ?? peripheral.name?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .nilIfEmpty ?? "Unknown Device"
+
         self.init(
-            name: peripheral.name ?? "Unknown Device",
+            name: resolvedName,
             identifier: peripheral.identifier,
             status: .discovered,
             rssi: rssi,
@@ -75,6 +84,12 @@ final class BLEDevice: Identifiable, ObservableObject {
         }
 
         return name
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
     }
 }
 
