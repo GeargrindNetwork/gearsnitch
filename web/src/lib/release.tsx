@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -10,52 +8,15 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import ReleaseBlockedView from '@/components/release/ReleaseBlockedView';
 import { api } from '@/lib/api';
+import {
+  ReleaseContext,
+  type ReleaseContextValue,
+  type ReleasePayload,
+  type ReleaseStatus,
+  useRelease,
+} from '@/lib/release-context';
 import { APP_RELEASE } from '@/lib/release-meta';
 import { useAuth } from '@/lib/auth';
-
-interface ReleaseConfig {
-  minimumVersion: string;
-  currentVersion: string;
-  forceUpdate: boolean;
-  releaseNotes: string[];
-  publishedAt: string;
-}
-
-interface CompatibilityConfig {
-  status: 'supported' | 'blocked' | 'unknown';
-  reason: string | null;
-  clientVersion: string | null;
-  minimumSupportedVersion: string;
-  currentVersion: string;
-  forceUpgrade: boolean;
-  platform: string | null;
-  build: string | null;
-}
-
-interface ServerConfig {
-  version: string;
-  buildId: string | null;
-  gitSha: string | null;
-  builtAt: string | null;
-  environment: string;
-}
-
-interface ReleasePayload {
-  release: ReleaseConfig;
-  compatibility: CompatibilityConfig;
-  server: ServerConfig;
-}
-
-type ReleaseStatus = 'checking' | 'supported' | 'blocked' | 'error';
-
-interface ReleaseContextValue {
-  status: ReleaseStatus;
-  payload: ReleasePayload | null;
-  errorMessage: string | null;
-  refresh: () => Promise<void>;
-}
-
-const ReleaseContext = createContext<ReleaseContextValue | null>(null);
 
 export function ReleaseProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<ReleaseStatus>('checking');
@@ -95,14 +56,6 @@ export function ReleaseProvider({ children }: { children: ReactNode }) {
   );
 
   return <ReleaseContext.Provider value={value}>{children}</ReleaseContext.Provider>;
-}
-
-export function useRelease() {
-  const context = useContext(ReleaseContext);
-  if (!context) {
-    throw new Error('useRelease must be used within ReleaseProvider');
-  }
-  return context;
 }
 
 export function RequireSupportedRelease({ children }: { children: ReactNode }) {
