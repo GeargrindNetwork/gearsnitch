@@ -45,6 +45,27 @@ function loadLocalEnv(): void {
 
 loadLocalEnv();
 
+function parseEnvList(...values: Array<string | undefined>): string[] {
+  return Array.from(
+    new Set(
+      values
+        .flatMap((value) => (value ?? '').split(','))
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+const googleOAuthClientIds = parseEnvList(
+  process.env.GOOGLE_OAUTH_CLIENT_IDS,
+  process.env.GOOGLE_OAUTH_CLIENT_ID,
+);
+
+const appleClientIds = parseEnvList(
+  process.env.APPLE_CLIENT_IDS,
+  process.env.APPLE_CLIENT_ID,
+);
+
 const config = {
   port: parseInt(process.env.PORT ?? '4000', 10),
   nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -60,11 +81,13 @@ const config = {
   jwtPublicKey: process.env.JWT_PUBLIC_KEY ?? '',
 
   // OAuth — Google
-  googleOAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID ?? '',
+  googleOAuthClientId: googleOAuthClientIds[0] ?? '',
+  googleOAuthClientIds,
   googleOAuthClientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? '',
 
   // OAuth — Apple
-  appleClientId: process.env.APPLE_CLIENT_ID ?? '',
+  appleClientId: appleClientIds[0] ?? '',
+  appleClientIds,
   appleTeamId: process.env.APPLE_TEAM_ID ?? '',
   appleKeyId: process.env.APPLE_KEY_ID ?? '',
   applePrivateKey: process.env.APPLE_PRIVATE_KEY ?? '',

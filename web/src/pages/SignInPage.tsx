@@ -331,9 +331,9 @@ export default function SignInPage() {
                 Sign in to your GearSnitch account
               </h1>
               <p className="max-w-2xl text-lg text-zinc-400">
-                Use the same Apple or Google identity you use in the iOS app. Your
-                browser session is restored from a secure refresh cookie, so you stay
-                signed in across page reloads without a local token cache.
+                Use the same Apple or Google identity you already connected in the
+                iOS app. New accounts are provisioned from iPhone first, then the web
+                app restores your browser session from a secure refresh cookie.
               </p>
             </div>
 
@@ -357,7 +357,7 @@ export default function SignInPage() {
                     <p className="font-medium text-white">Shared account data</p>
                     <p className="text-sm text-zinc-400">
                       Profile, orders, devices, and activity calendar stay aligned with the
-                      live API contracts used by the native app.
+                      live account records created and maintained by the native app.
                     </p>
                   </div>
                 </CardContent>
@@ -414,8 +414,9 @@ export default function SignInPage() {
               )}
 
               <p className="text-xs leading-6 text-zinc-500">
-                Trouble signing in? Make sure your web OAuth client IDs are configured for the
-                current origin and that your API can set secure auth cookies for the browser.
+                Trouble signing in? Make sure the account was created in the iOS app first,
+                your web OAuth client IDs match this origin, and the API can set secure auth
+                cookies for the browser.
               </p>
 
               <p className="text-sm text-zinc-500">

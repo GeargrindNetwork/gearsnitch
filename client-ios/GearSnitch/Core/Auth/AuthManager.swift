@@ -215,12 +215,15 @@ final class AuthManager: ObservableObject {
 enum AuthError: LocalizedError {
     case missingAppleToken
     case missingGoogleToken
+    case googleConfigurationMissing
     case signInCancelled
 
     var errorDescription: String? {
         switch self {
         case .missingAppleToken: return "Apple identity token was not provided."
         case .missingGoogleToken: return "Google ID token was not provided."
+        case .googleConfigurationMissing:
+            return "Google Sign-In is not configured. Set GS_GOOGLE_CLIENT_ID, GS_GOOGLE_SERVER_CLIENT_ID, and GS_GOOGLE_REVERSED_CLIENT_ID."
         case .signInCancelled: return "Sign-in was cancelled."
         }
     }

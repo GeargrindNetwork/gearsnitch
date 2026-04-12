@@ -33,11 +33,23 @@
 				<string>gearsnitch</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.googleusercontent.apps</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GS_GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GS_GOOGLE_CLIENT_ID</key>
-	<string></string>
+	<string>$(GS_GOOGLE_CLIENT_ID)</string>
+	<key>GS_GOOGLE_REVERSED_CLIENT_ID</key>
+	<string>$(GS_GOOGLE_REVERSED_CLIENT_ID)</string>
+	<key>GS_GOOGLE_SERVER_CLIENT_ID</key>
+	<string>$(GS_GOOGLE_SERVER_CLIENT_ID)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSRequiresIPhoneOS</key>

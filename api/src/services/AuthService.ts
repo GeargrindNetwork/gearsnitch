@@ -40,6 +40,8 @@ export interface AuthResult {
   user: IUser;
 }
 
+type OAuthProvider = 'apple' | 'google';
+
 interface AppleTokenExchangeResponse {
   access_token?: string;
   expires_in?: number;
@@ -76,12 +78,7 @@ function requireConfiguredValue(value: string, message: string): string {
 
 function getGoogleClient(): OAuth2Client {
   if (!googleClient) {
-    googleClient = new OAuth2Client(
-      requireConfiguredValue(
-        config.googleOAuthClientId,
-        'Google OAuth client ID is not configured',
-      ),
-    );
+    googleClient = new OAuth2Client();
   }
   return googleClient;
 }
@@ -139,6 +136,8 @@ export class AuthService {
         }
         await user.save();
       } else {
+        AuthService.assertProvisioningAllowed('google', deviceInfo.platform);
+
         // Create new user
         user = await User.create({
           email: profile.email,
@@ -190,6 +189,7 @@ export class AuthService {
     const decoded = await AuthService.verifyAppleToken(identityToken);
     const exchanged = await AuthService.exchangeAppleAuthorizationCode(
       authorizationCode,
+      decoded.audience,
     );
 
     if (decoded.sub !== exchanged.sub) {
@@ -242,6 +242,8 @@ export class AuthService {
         }
         await user.save();
       } else {
+        AuthService.assertProvisioningAllowed('apple', deviceInfo.platform);
+
         user = await User.create({
           email,
           emailHash: emailHash,
@@ -413,9 +415,10 @@ export class AuthService {
   ): Promise<GoogleProfile> {
     const client = getGoogleClient();
     try {
+      const audiences = AuthService.getConfiguredGoogleAudiences();
       const ticket = await client.verifyIdToken({
         idToken,
-        audience: config.googleOAuthClientId,
+        audience: audiences,
       });
 
       const payload = ticket.getPayload();
@@ -442,12 +445,15 @@ export class AuthService {
 
   private static async verifyAppleToken(
     identityToken: string,
-  ): Promise<{ sub: string; email?: string }> {
+    expectedAudience?: string,
+  ): Promise<{ sub: string; email?: string; audience: string }> {
     try {
-      const appleClientId = requireConfiguredValue(
-        config.appleClientId,
-        'Apple OAuth client ID is not configured',
-      );
+      const appleAudiences = expectedAudience
+        ? [expectedAudience]
+        : AuthService.getConfiguredAppleAudiences();
+      const audienceClaim = appleAudiences.length === 1
+        ? appleAudiences[0]
+        : appleAudiences as [string, ...string[]];
 
       // Decode the header to get the key ID (kid)
       const header = jwt.decode(identityToken, { complete: true })?.header;
@@ -464,20 +470,22 @@ export class AuthService {
       const payload = jwt.verify(identityToken, publicKey, {
         algorithms: ['RS256'],
         issuer: 'https://appleid.apple.com',
-        audience: appleClientId,
+        audience: audienceClaim,
       }) as {
         sub?: string;
         email?: string;
         email_verified?: string | boolean;
         iss?: string;
-        aud?: string;
+        aud?: string | string[];
       };
 
-      if (!payload.sub) {
+      const audience = Array.isArray(payload.aud) ? payload.aud[0] : payload.aud;
+
+      if (!payload.sub || !audience) {
         throw new Error('Missing sub in Apple token payload');
       }
 
-      return { sub: payload.sub, email: payload.email };
+      return { sub: payload.sub, email: payload.email, audience };
     } catch (err) {
       logger.error('Apple token verification failed', {
         error: err instanceof Error ? err.message : String(err),
@@ -491,12 +499,9 @@ export class AuthService {
 
   private static async exchangeAppleAuthorizationCode(
     authorizationCode: string,
-  ): Promise<{ sub: string; email?: string }> {
+    appleClientId: string,
+  ): Promise<{ sub: string; email?: string; audience: string }> {
     try {
-      const appleClientId = requireConfiguredValue(
-        config.appleClientId,
-        'Apple OAuth client ID is not configured',
-      );
       const appleTeamId = requireConfiguredValue(
         config.appleTeamId,
         'Apple OAuth team ID is not configured',
@@ -546,7 +551,7 @@ export class AuthService {
         );
       }
 
-      return AuthService.verifyAppleToken(payload.id_token);
+      return AuthService.verifyAppleToken(payload.id_token, appleClientId);
     } catch (err) {
       if (err instanceof AuthServiceError) {
         throw err;
@@ -695,6 +700,41 @@ export class AuthService {
     return createHash('sha256')
       .update(email.toLowerCase().trim())
       .digest('hex');
+  }
+
+  private static getConfiguredGoogleAudiences(): string[] {
+    if (config.googleOAuthClientIds.length === 0) {
+      const message = 'Google OAuth client IDs are not configured';
+      logger.error(message);
+      throw new AuthServiceError(message, StatusCodes.INTERNAL_SERVER_ERROR);
+    }
+
+    return config.googleOAuthClientIds;
+  }
+
+  private static getConfiguredAppleAudiences(): string[] {
+    if (config.appleClientIds.length === 0) {
+      const message = 'Apple OAuth client IDs are not configured';
+      logger.error(message);
+      throw new AuthServiceError(message, StatusCodes.INTERNAL_SERVER_ERROR);
+    }
+
+    return config.appleClientIds;
+  }
+
+  private static assertProvisioningAllowed(
+    provider: OAuthProvider,
+    platform: DeviceInfo['platform'],
+  ): void {
+    if (platform === 'ios') {
+      return;
+    }
+
+    const providerName = provider === 'apple' ? 'Apple' : 'Google';
+    throw new AuthServiceError(
+      `No GearSnitch account exists for this ${providerName} identity yet. Create it in the iOS app first, then use the same sign-in here.`,
+      StatusCodes.FORBIDDEN,
+    );
   }
 
   private static scopesForRole(role: string): string[] {

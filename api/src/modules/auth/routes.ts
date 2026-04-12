@@ -34,9 +34,16 @@ const refreshSchema = z.object({
 // ---------------------------------------------------------------------------
 
 function extractDeviceInfo(req: Request): DeviceInfo {
+  const rawPlatform = String(req.headers['x-client-platform'] ?? 'ios').toLowerCase();
+  const platform: DeviceInfo['platform'] = rawPlatform === 'web'
+    ? 'web'
+    : rawPlatform === 'watchos'
+      ? 'watchos'
+      : 'ios';
+
   return {
     deviceName: (req.headers['x-device-name'] as string) || 'Unknown Device',
-    platform: ((req.headers['x-client-platform'] as string) || 'ios') as DeviceInfo['platform'],
+    platform,
     userAgent: req.headers['user-agent'] || 'Unknown',
     ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
       || req.socket.remoteAddress

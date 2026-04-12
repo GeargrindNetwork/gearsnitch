@@ -21,10 +21,14 @@ describe('apple sign-in contract regression sweep', () => {
   });
 
   test('apple oauth configuration includes the private key needed to mint the client secret', () => {
+    expect(config).toContain('const appleClientIds = parseEnvList(');
+    expect(config).toContain('process.env.APPLE_CLIENT_IDS');
     expect(config).toContain("applePrivateKey: process.env.APPLE_PRIVATE_KEY ?? ''");
     expect(authService).toContain("import { SignJWT, importPKCS8 } from 'jose';");
     expect(authService).toContain("grant_type: 'authorization_code'");
     expect(authService).toContain("setAudience('https://appleid.apple.com')");
     expect(authService).toContain("setExpirationTime('5m')");
+    expect(authService).toContain('decoded.audience');
+    expect(authService).toContain('AuthService.verifyAppleToken(payload.id_token, appleClientId)');
   });
 });
