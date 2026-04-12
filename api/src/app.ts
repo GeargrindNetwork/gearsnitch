@@ -24,7 +24,9 @@ export function createApp(): express.Application {
   app.set('trust proxy', 1);
 
   // 4. Request logging
-  app.use((req, _res, next) => {
+  app.use((req, res, next) => {
+    const startedAt = Date.now();
+
     logger.info('Incoming request', {
       correlationId: req.requestId,
       method: req.method,
@@ -32,6 +34,38 @@ export function createApp(): express.Application {
       ip: req.ip,
       userAgent: req.get('user-agent'),
     });
+
+    res.on('finish', () => {
+      const durationMs = Date.now() - startedAt;
+      const payload = {
+        correlationId: req.requestId,
+        method: req.method,
+        url: req.originalUrl,
+        statusCode: res.statusCode,
+        durationMs,
+      };
+
+      if (res.statusCode >= 500) {
+        logger.error('Request failed', payload);
+      } else if (res.statusCode >= 400) {
+        logger.warn('Request completed with client error', payload);
+      } else {
+        logger.info('Request completed', payload);
+      }
+    });
+
+    res.on('close', () => {
+      if (res.writableEnded) {
+        return;
+      }
+
+      logger.warn('Request aborted before completion', {
+        correlationId: req.requestId,
+        method: req.method,
+        url: req.originalUrl,
+      });
+    });
+
     next();
   });
 

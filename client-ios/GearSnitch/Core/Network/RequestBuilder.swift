@@ -51,6 +51,7 @@ struct RequestBuilder {
         request.setValue("ios", forHTTPHeaderField: "X-Client-Platform")
         request.setValue(AppConfig.appVersion, forHTTPHeaderField: "X-Client-Version")
         request.setValue(AppConfig.buildNumber, forHTTPHeaderField: "X-Client-Build")
+        request.setValue(UUID().uuidString, forHTTPHeaderField: "X-Request-ID")
 
         // Auth header
         if let token = accessToken {

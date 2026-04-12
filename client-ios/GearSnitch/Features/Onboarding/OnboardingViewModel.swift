@@ -3,6 +3,7 @@ import CoreBluetooth
 import CoreLocation
 import UserNotifications
 import HealthKit
+import UIKit
 import os
 
 // MARK: - Onboarding Step
@@ -127,7 +128,14 @@ final class OnboardingViewModel: ObservableObject {
             return
         }
 
-        guard let next = OnboardingStep(rawValue: currentStep.rawValue + 1) else { return }
+        let nextRawValue: Int
+        if currentStep == .welcome && isSignedIn {
+            nextRawValue = OnboardingStep.subscription.rawValue
+        } else {
+            nextRawValue = currentStep.rawValue + 1
+        }
+
+        guard let next = OnboardingStep(rawValue: nextRawValue) else { return }
 
         withAnimationOnMain {
             self.currentStep = next
@@ -163,19 +171,39 @@ final class OnboardingViewModel: ObservableObject {
     // MARK: - Sign In
 
     func handleSignInSuccess() {
+        let shouldAdvance = !isSignedIn && currentStep == .signIn
         isSignedIn = true
-        advance()
+        if shouldAdvance {
+            advance()
+        }
     }
 
     func handleSignInError(_ message: String) {
         error = message
     }
 
+    func syncAuthenticationState(isAuthenticated: Bool) {
+        let wasSignedIn = isSignedIn
+        isSignedIn = isAuthenticated
+
+        guard isAuthenticated != wasSignedIn else { return }
+
+        if isAuthenticated {
+            if currentStep == .signIn {
+                advance()
+            }
+            return
+        }
+
+        if currentStep.rawValue > OnboardingStep.signIn.rawValue {
+            goToStep(.signIn)
+        }
+    }
+
     // MARK: - Subscription
 
     func selectSubscription(tier: String) {
-        logger.info("Selected subscription tier: \(tier)")
-        // In production, this would initiate StoreKit purchase
+        logger.info("Subscription completed for tier: \(tier)")
         advance()
     }
 
@@ -186,11 +214,26 @@ final class OnboardingViewModel: ObservableObject {
     // MARK: - Permission Requests
 
     func requestBluetoothPermission() {
+        let authorization = CBManager.authorization
+
+        if authorization != .notDetermined {
+            if authorization == .allowedAlways {
+                bluetoothGranted = true
+                Task { await syncPermissionsState() }
+                advance()
+            } else {
+                openAppSettings()
+                error = "Bluetooth access is required to monitor your gear. Please enable it in Settings."
+            }
+            return
+        }
+
         // Create a CBCentralManager to trigger the system prompt.
         // We hold a strong reference to the delegate to keep it alive.
         bleDelegate = BLEAuthorizationDelegate { [weak self] authorized in
             Task { @MainActor in
                 self?.bluetoothGranted = authorized
+                await self?.syncPermissionsState()
                 if authorized {
                     self?.advance()
                 } else {
@@ -198,14 +241,34 @@ final class OnboardingViewModel: ObservableObject {
                 }
             }
         }
-        centralManager = CBCentralManager(delegate: bleDelegate, queue: nil)
+        centralManager = CBCentralManager(
+            delegate: bleDelegate,
+            queue: nil,
+            options: [CBCentralManagerOptionShowPowerAlertKey: true]
+        )
     }
 
     func requestLocationWhenInUse() {
+        let currentStatus = CLLocationManager().authorizationStatus
+        if currentStatus != .notDetermined {
+            let granted = (currentStatus == .authorizedWhenInUse || currentStatus == .authorizedAlways)
+            locationWhenInUseGranted = granted
+            Task { await syncPermissionsState() }
+
+            if granted {
+                advance()
+            } else {
+                openAppSettings()
+                error = "Location access is required for gym detection. Please enable it in Settings."
+            }
+            return
+        }
+
         locationDelegate = OnboardingLocationDelegate { [weak self] status in
             Task { @MainActor in
                 let granted = (status == .authorizedWhenInUse || status == .authorizedAlways)
                 self?.locationWhenInUseGranted = granted
+                await self?.syncPermissionsState()
                 if granted {
                     self?.advance()
                 } else {
@@ -219,10 +282,26 @@ final class OnboardingViewModel: ObservableObject {
     }
 
     func requestLocationAlways() {
+        let currentStatus = CLLocationManager().authorizationStatus
+        if currentStatus == .authorizedAlways {
+            locationAlwaysGranted = true
+            Task { await syncPermissionsState() }
+            advance()
+            return
+        }
+
+        if currentStatus != .authorizedWhenInUse && currentStatus != .notDetermined {
+            locationAlwaysGranted = false
+            Task { await syncPermissionsState() }
+            openAppSettings()
+            return
+        }
+
         locationDelegate = OnboardingLocationDelegate { [weak self] status in
             Task { @MainActor in
                 let granted = (status == .authorizedAlways)
                 self?.locationAlwaysGranted = granted
+                await self?.syncPermissionsState()
                 // Always advance -- background location is not required
                 self?.advance()
             }
@@ -233,34 +312,68 @@ final class OnboardingViewModel: ObservableObject {
     }
 
     func requestNotifications() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge, .criticalAlert]) { [weak self] granted, _ in
-            Task { @MainActor in
-                self?.notificationsGranted = granted
-                self?.advance()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            await NotificationPermissionManager.shared.refreshPermissionState()
+            if !NotificationPermissionManager.shared.canPrompt {
+                self.notificationsGranted =
+                    NotificationPermissionManager.shared.permissionState == .authorized
+                    || NotificationPermissionManager.shared.permissionState == .provisional
+                    || NotificationPermissionManager.shared.permissionState == .ephemeral
+                await self.syncPermissionsState()
+                if self.notificationsGranted {
+                    self.advance()
+                } else {
+                    self.openAppSettings()
+                }
+                return
             }
+
+            do {
+                let granted = try await NotificationPermissionManager.shared.requestPermission()
+                self.notificationsGranted = granted
+            } catch {
+                self.notificationsGranted = false
+            }
+
+            await self.syncPermissionsState()
+            self.advance()
         }
     }
 
     func requestHealthKitAuthorization() {
-        guard HKHealthStore.isHealthDataAvailable() else {
-            advance()
-            return
-        }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
 
-        let store = HKHealthStore()
-        let typesToRead: Set<HKObjectType> = [
-            HKObjectType.quantityType(forIdentifier: .bodyMass)!,
-            HKObjectType.quantityType(forIdentifier: .height)!,
-            HKObjectType.quantityType(forIdentifier: .stepCount)!,
-            HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
-            HKObjectType.quantityType(forIdentifier: .restingHeartRate)!,
-        ]
-
-        store.requestAuthorization(toShare: nil, read: typesToRead) { [weak self] success, _ in
-            Task { @MainActor in
-                self?.healthKitAuthorized = success
-                self?.advance()
+            guard HealthKitManager.shared.isAvailable else {
+                await self.syncPermissionsState()
+                self.advance()
+                return
             }
+
+            HealthKitPermissions.shared.updateState()
+
+            if !HealthKitPermissions.shared.isReadyToPrompt {
+                self.healthKitAuthorized = HealthKitPermissions.shared.canQuery
+                await self.syncPermissionsState()
+                if !self.healthKitAuthorized {
+                    self.openAppSettings()
+                }
+                self.advance()
+                return
+            }
+
+            do {
+                try await HealthKitPermissions.shared.requestAuthorization()
+                self.healthKitAuthorized = HealthKitPermissions.shared.canQuery
+            } catch {
+                self.healthKitAuthorized = false
+                self.logger.warning("HealthKit authorization failed: \(error.localizedDescription)")
+            }
+
+            await self.syncPermissionsState()
+            self.advance()
         }
     }
 
@@ -270,6 +383,7 @@ final class OnboardingViewModel: ObservableObject {
         selectedGymName = name
         selectedGymCoordinate = (latitude, longitude)
         hasAddedGym = true
+        PermissionGateManager.shared.setHasGym(true)
         advance()
     }
 
@@ -278,6 +392,7 @@ final class OnboardingViewModel: ObservableObject {
     func devicePaired(name: String) {
         pairedDeviceName = name
         hasPairedDevice = true
+        PermissionGateManager.shared.setHasPairedDevice(true)
         advance()
     }
 
@@ -288,7 +403,10 @@ final class OnboardingViewModel: ObservableObject {
         error = nil
 
         do {
-            let body = UpdateUserBody(onboardingCompletedAt: Date())
+            let body = UpdateUserBody(
+                onboardingCompletedAt: Date(),
+                permissionsState: currentPermissionsStatePayload()
+            )
             let _: EmptyData = try await APIClient.shared.request(APIEndpoint.Users.updateMe(body))
             logger.info("Onboarding completion recorded on backend")
 
@@ -309,6 +427,86 @@ final class OnboardingViewModel: ObservableObject {
 
     private func withAnimationOnMain(_ body: @escaping () -> Void) {
         body()
+    }
+
+    private func syncPermissionsState() async {
+        guard isSignedIn else { return }
+
+        do {
+            let body = UpdateUserBody(permissionsState: currentPermissionsStatePayload())
+            let _: UserDTO = try await APIClient.shared.request(APIEndpoint.Users.updateMe(body))
+        } catch {
+            logger.warning("Failed to sync permission state: \(error.localizedDescription)")
+        }
+    }
+
+    private func currentPermissionsStatePayload() -> PermissionStateSyncBody {
+        HealthKitPermissions.shared.updateState()
+
+        return PermissionStateSyncBody(
+            bluetooth: bluetoothPermissionStateString(),
+            location: locationPermissionStateString(includeBackground: false),
+            backgroundLocation: locationPermissionStateString(includeBackground: true),
+            notifications: notificationPermissionStateString(),
+            healthKit: healthKitPermissionStateString()
+        )
+    }
+
+    private func bluetoothPermissionStateString() -> String {
+        switch CBManager.authorization {
+        case .allowedAlways:
+            return PermissionStatus.granted.rawValue
+        case .denied, .restricted:
+            return PermissionStatus.denied.rawValue
+        case .notDetermined:
+            return PermissionStatus.notDetermined.rawValue
+        @unknown default:
+            return PermissionStatus.notDetermined.rawValue
+        }
+    }
+
+    private func locationPermissionStateString(includeBackground: Bool) -> String {
+        let status = CLLocationManager().authorizationStatus
+
+        switch status {
+        case .authorizedAlways:
+            return PermissionStatus.granted.rawValue
+        case .authorizedWhenInUse:
+            return includeBackground ? PermissionStatus.denied.rawValue : PermissionStatus.granted.rawValue
+        case .denied, .restricted:
+            return PermissionStatus.denied.rawValue
+        case .notDetermined:
+            return PermissionStatus.notDetermined.rawValue
+        @unknown default:
+            return PermissionStatus.notDetermined.rawValue
+        }
+    }
+
+    private func notificationPermissionStateString() -> String {
+        switch NotificationPermissionManager.shared.permissionState {
+        case .authorized, .provisional, .ephemeral:
+            return PermissionStatus.granted.rawValue
+        case .denied:
+            return PermissionStatus.denied.rawValue
+        case .notDetermined:
+            return PermissionStatus.notDetermined.rawValue
+        }
+    }
+
+    private func healthKitPermissionStateString() -> String {
+        switch HealthKitPermissions.shared.state {
+        case .authorized:
+            return PermissionStatus.granted.rawValue
+        case .denied:
+            return PermissionStatus.denied.rawValue
+        case .notDetermined, .unavailable:
+            return PermissionStatus.notDetermined.rawValue
+        }
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 }
 

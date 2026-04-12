@@ -43,6 +43,16 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       env {
+        name  = "CORS_ORIGINS"
+        value = join(",", distinct([
+          "https://${var.domain}",
+          "https://www.${var.domain}",
+          "http://localhost:3000",
+          "http://localhost:5173",
+        ]))
+      }
+
+      env {
         name = "MONGODB_URI"
         value_source {
           secret_key_ref {
@@ -97,6 +107,46 @@ resource "google_cloud_run_v2_service" "api" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.secrets["google-oauth-client-secret"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "APPLE_CLIENT_ID"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["apple-client-id"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "APPLE_TEAM_ID"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["apple-team-id"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "APPLE_KEY_ID"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["apple-key-id"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "APPLE_PRIVATE_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["apple-private-key"].secret_id
             version = "latest"
           }
         }

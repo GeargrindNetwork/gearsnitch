@@ -1,0 +1,91 @@
+{
+  "identifier" : "B4C1E90A",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "99.99",
+      "familyShareable" : false,
+      "internalID" : "D8F84A52",
+      "localizations" : [
+        {
+          "description" : "Lifetime access to every GearSnitch premium feature, unlimited devices, mesh chat, and future updates.",
+          "displayName" : "GearSnitch BABY MOMMA Lifetime",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.gearsnitch.app.lifetime",
+      "referenceName" : "GearSnitch Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitError" : 0,
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "6FA5304C",
+      "localizations" : [
+
+      ],
+      "name" : "GearSnitch Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "7C24B0F3",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Real-time BLE monitoring, disconnect alerts, one gym location, and three tracked devices.",
+              "displayName" : "GearSnitch HUSTLE Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.gearsnitch.app.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "GearSnitch Monthly",
+          "subscriptionGroupID" : "6FA5304C",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "displayPrice" : "59.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "A1FE904B",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited gyms, 10 tracked devices, panic alarm, health sync, and priority support.",
+              "displayName" : "GearSnitch HWMF Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.gearsnitch.app.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "GearSnitch Annual",
+          "subscriptionGroupID" : "6FA5304C",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 1,
+    "minor" : 1
+  }
+}

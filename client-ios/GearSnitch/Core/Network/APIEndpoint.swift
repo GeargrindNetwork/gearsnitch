@@ -381,6 +381,7 @@ struct UpdateUserBody: Encodable {
     var avatarURL: String?
     var preferences: [String: String]?
     var onboardingCompletedAt: Date?
+    var permissionsState: PermissionStateSyncBody?
 }
 
 struct UpdateAvatarBody: Encodable {
@@ -434,6 +435,14 @@ struct DeviceDisconnectedBody: Encodable {
     let lastSeenAt: Date
     let latitude: Double?
     let longitude: Double?
+}
+
+struct PermissionStateSyncBody: Encodable {
+    let bluetooth: String?
+    let location: String?
+    let backgroundLocation: String?
+    let notifications: String?
+    let healthKit: String?
 }
 
 struct RegisterTokenBody: Encodable {

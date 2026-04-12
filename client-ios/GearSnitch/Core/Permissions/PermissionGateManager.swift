@@ -118,8 +118,9 @@ final class PermissionGateManager: ObservableObject {
     }
 
     func checkHealthKit() {
-        healthKitGranted = HKHealthStore.isHealthDataAvailable()
-        logger.debug("HealthKit available: \(self.healthKitGranted)")
+        HealthKitPermissions.shared.updateState()
+        healthKitGranted = HealthKitPermissions.shared.state == .authorized
+        logger.debug("HealthKit authorized: \(self.healthKitGranted ? "granted" : "denied")")
     }
 
     // MARK: - Update Data Gates

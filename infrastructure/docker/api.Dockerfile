@@ -5,6 +5,7 @@ WORKDIR /app
 
 # Copy workspace root files
 COPY package.json package-lock.json turbo.json ./
+COPY config/ ./config/
 
 # Copy shared and api package files
 COPY shared/ ./shared/
@@ -28,6 +29,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 gearsnitch
 
 # Copy built artifacts
+COPY --from=builder /app/config ./config
 COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/shared/package.json ./shared/
 COPY --from=builder /app/api/dist ./api/dist

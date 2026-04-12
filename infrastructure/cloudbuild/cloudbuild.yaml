@@ -14,15 +14,20 @@ steps:
 
   # Build Web image
   - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
     args:
-      - 'build'
-      - '-t'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${_TAG}'
-      - '-t'
-      - '${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:latest'
-      - '-f'
-      - 'infrastructure/docker/web.Dockerfile'
-      - '.'
+      - '-c'
+      - >
+        docker build
+        --build-arg VITE_API_URL="${_VITE_API_URL}"
+        --build-arg VITE_WS_URL="${_VITE_WS_URL}"
+        --build-arg VITE_GOOGLE_CLIENT_ID="${_VITE_GOOGLE_CLIENT_ID}"
+        --build-arg VITE_APPLE_SERVICE_ID="${_VITE_APPLE_SERVICE_ID}"
+        --build-arg VITE_APPLE_REDIRECT_URI="${_VITE_APPLE_REDIRECT_URI}"
+        -t ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:${_TAG}
+        -t ${_REGION}-docker.pkg.dev/${_PROJECT_ID}/gearsnitch/web:latest
+        -f infrastructure/docker/web.Dockerfile
+        .
     id: 'build-web'
 
   # Build Worker image
@@ -85,6 +90,8 @@ steps:
       - '${_REGION}'
       - '--platform'
       - 'managed'
+      - '--update-env-vars'
+      - 'NODE_ENV=production'
       - '--quiet'
     waitFor: ['push-api']
     id: 'deploy-api'
@@ -119,6 +126,8 @@ steps:
       - '${_REGION}'
       - '--platform'
       - 'managed'
+      - '--update-env-vars'
+      - 'NODE_ENV=production'
       - '--quiet'
     waitFor: ['push-worker']
     id: 'deploy-worker'
@@ -136,6 +145,8 @@ steps:
       - '${_REGION}'
       - '--platform'
       - 'managed'
+      - '--update-env-vars'
+      - 'NODE_ENV=production'
       - '--quiet'
     waitFor: ['push-realtime']
     id: 'deploy-realtime'
@@ -150,6 +161,11 @@ substitutions:
   _REGION: 'us-central1'
   _PROJECT_ID: 'gearsnitch'
   _TAG: 'latest'
+  _VITE_API_URL: ''
+  _VITE_WS_URL: ''
+  _VITE_GOOGLE_CLIENT_ID: ''
+  _VITE_APPLE_SERVICE_ID: ''
+  _VITE_APPLE_REDIRECT_URI: ''
 
 options:
   logging: CLOUD_LOGGING_ONLY

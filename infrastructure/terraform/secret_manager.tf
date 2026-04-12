@@ -7,6 +7,8 @@ locals {
     "google-oauth-client-id",
     "google-oauth-client-secret",
     "apple-client-id",
+    "apple-service-id",
+    "apple-redirect-uri",
     "apple-team-id",
     "apple-key-id",
     "apple-private-key",

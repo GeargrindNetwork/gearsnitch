@@ -1,4 +1,5 @@
 import { APP_RELEASE } from '@/lib/release-meta';
+import { createRequestId, webLogger } from '@/lib/logger';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
 
@@ -57,20 +58,35 @@ class ApiClient {
     body?: unknown,
     allowRefreshRetry = true,
   ): Promise<ApiResponse<T>> {
+    const requestId = createRequestId();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-Request-ID': requestId,
       'X-Client-Platform': APP_RELEASE.platform,
       'X-Client-Version': APP_RELEASE.version,
       'X-Client-Build': APP_RELEASE.buildId,
     };
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
 
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-      credentials: 'include',
-    });
+    let res: Response
+    try {
+      res = await fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        credentials: 'include',
+      });
+    } catch (error) {
+      webLogger.error('API request threw before receiving a response', {
+        method,
+        path,
+        requestId,
+        error: error instanceof Error
+          ? { name: error.name, message: error.message, stack: error.stack }
+          : String(error),
+      });
+      throw error;
+    }
 
     if (
       res.status === 401
@@ -78,13 +94,29 @@ class ApiClient {
       && this.refreshHandler
       && this.canRetryWithRefresh(path)
     ) {
+      webLogger.warn('API request received 401; attempting token refresh', {
+        method,
+        path,
+        requestId,
+      });
       const refreshedToken = await this.refreshHandler();
       if (refreshedToken) {
         return this.request<T>(method, path, body, false);
       }
     }
 
-    return this.parseResponse<T>(res);
+    const parsed = await this.parseResponse<T>(res);
+    if (!res.ok || parsed.success === false) {
+      webLogger.error('API request failed', {
+        method,
+        path,
+        requestId,
+        statusCode: res.status,
+        error: parsed.error?.message ?? 'Unknown API failure',
+      });
+    }
+
+    return parsed;
   }
 
   get<T>(path: string) { return this.request<T>('GET', path); }

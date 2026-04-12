@@ -5,6 +5,7 @@ import { StatusCodes } from 'http-status-codes';
 import {
   validateAppleTransaction,
   getSubscriptionForUser,
+  getSubscriptionTierFromProductId,
 } from './subscriptionService.js';
 
 const router = Router();
@@ -28,10 +29,12 @@ async function respondWithCurrentSubscription(req: Request, res: Response) {
 
     successResponse(res, {
       status: subscription.status,
-      tier: 'annual',
+      tier: getSubscriptionTierFromProductId(subscription.productId),
       expiresAt: subscription.expiryDate,
       extensionDays: subscription.extensionDays,
-      autoRenew: subscription.status === 'active',
+      autoRenew:
+        subscription.status === 'active'
+        && getSubscriptionTierFromProductId(subscription.productId) !== 'lifetime',
       platform: subscription.provider,
     });
   } catch (err) {

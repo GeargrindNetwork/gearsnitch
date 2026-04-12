@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
+import type { PermissionStateValue } from '../utils/permissionsState.js';
 
 export interface IUser extends Document {
   _id: Types.ObjectId;
@@ -22,9 +23,11 @@ export interface IUser extends Document {
   defaultGymId: Types.ObjectId | null;
   onboardingCompletedAt: Date | null;
   permissionsState: {
-    bluetooth: boolean;
-    location: boolean;
-    notifications: boolean;
+    bluetooth: PermissionStateValue | boolean;
+    location: PermissionStateValue | boolean;
+    backgroundLocation: PermissionStateValue | boolean;
+    notifications: PermissionStateValue | boolean;
+    healthKit: PermissionStateValue | boolean;
   };
   preferences: {
     pushEnabled: boolean;
@@ -69,9 +72,11 @@ const UserSchema = new Schema<IUser>(
     defaultGymId: { type: Schema.Types.ObjectId, ref: 'Gym', default: null },
     onboardingCompletedAt: { type: Date, default: null },
     permissionsState: {
-      bluetooth: { type: Boolean, default: false },
-      location: { type: Boolean, default: false },
-      notifications: { type: Boolean, default: false },
+      bluetooth: { type: Schema.Types.Mixed, default: 'not_determined' },
+      location: { type: Schema.Types.Mixed, default: 'not_determined' },
+      backgroundLocation: { type: Schema.Types.Mixed, default: 'not_determined' },
+      notifications: { type: Schema.Types.Mixed, default: 'not_determined' },
+      healthKit: { type: Schema.Types.Mixed, default: 'not_determined' },
     },
     preferences: {
       pushEnabled: { type: Boolean, default: false },

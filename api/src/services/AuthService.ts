@@ -67,8 +67,13 @@ const ACCESS_TOKEN_TTL_SECONDS = 15 * 60; // 15 minutes
 
 let googleClient: OAuth2Client | null = null;
 
+function hasConfiguredValue(value: string | undefined): boolean {
+  const normalized = value?.trim();
+  return Boolean(normalized) && normalized !== 'placeholder';
+}
+
 function requireConfiguredValue(value: string, message: string): string {
-  if (!value) {
+  if (!hasConfiguredValue(value)) {
     logger.error(message);
     throw new AuthServiceError(message, StatusCodes.INTERNAL_SERVER_ERROR);
   }
@@ -187,20 +192,30 @@ export class AuthService {
     deviceInfo: DeviceInfo,
   ): Promise<AuthResult> {
     const decoded = await AuthService.verifyAppleToken(identityToken);
-    const exchanged = await AuthService.exchangeAppleAuthorizationCode(
-      authorizationCode,
-      decoded.audience,
-    );
+    let exchanged:
+      | Awaited<ReturnType<typeof AuthService.exchangeAppleAuthorizationCode>>
+      | null = null;
 
-    if (decoded.sub !== exchanged.sub) {
-      throw new AuthServiceError(
-        'Apple authorization code did not match the identity token',
-        StatusCodes.UNAUTHORIZED,
+    if (AuthService.hasAppleCodeExchangeConfig()) {
+      exchanged = await AuthService.exchangeAppleAuthorizationCode(
+        authorizationCode,
+        decoded.audience,
+      );
+
+      if (decoded.sub !== exchanged.sub) {
+        throw new AuthServiceError(
+          'Apple authorization code did not match the identity token',
+          StatusCodes.UNAUTHORIZED,
+        );
+      }
+    } else {
+      logger.warn(
+        'Skipping Apple authorization code exchange because Apple OAuth exchange credentials are not fully configured',
       );
     }
 
     const appleId = decoded.sub;
-    const email = decoded.email ?? exchanged.email;
+    const email = decoded.email ?? exchanged?.email;
     const normalizedFullName = fullName?.trim() || undefined;
 
     let user = await User.findOne({ appleId });
@@ -592,6 +607,14 @@ export class AuthService {
 
   private static normalizePemKey(value: string): string {
     return value.replace(/\\n/g, '\n');
+  }
+
+  private static hasAppleCodeExchangeConfig(): boolean {
+    return [
+      config.appleTeamId,
+      config.appleKeyId,
+      config.applePrivateKey,
+    ].every((value) => hasConfiguredValue(value));
   }
 
   private static async issueTokenPair(

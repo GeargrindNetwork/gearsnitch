@@ -4,7 +4,7 @@ import CoreLocation
 import CoreBluetooth
 
 struct OnboardingView: View {
-    @StateObject private var viewModel = OnboardingViewModel()
+    @ObservedObject var viewModel: OnboardingViewModel
     @EnvironmentObject private var bleManager: BLEManager
     let onComplete: () -> Void
 
@@ -709,7 +709,9 @@ struct OnboardingPairDeviceView: View {
     let onDevicePaired: (String) -> Void
 
     @State private var isPairing = false
+    @State private var isRegisteringDevice = false
     @State private var pairingDevice: BLEDevice?
+    @State private var pairingStatusMessage: String?
     @State private var error: String?
 
     var body: some View {
@@ -752,6 +754,18 @@ struct OnboardingPairDeviceView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 8)
+            }
+
+            if isPairing, let pairingStatusMessage {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .tint(.gsEmerald)
+                    Text(pairingStatusMessage)
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 12)
             }
 
             // Device list
@@ -818,6 +832,14 @@ struct OnboardingPairDeviceView: View {
                 bleManager.startScanning()
             }
         }
+        .onChange(of: bleManager.bluetoothState) { _, newState in
+            guard newState == .poweredOn else { return }
+            guard !bleManager.isScanning else { return }
+            bleManager.startScanning()
+        }
+        .onChange(of: bleManager.connectedDevices.map(\.identifier)) { _, connectedIdentifiers in
+            handleConnectedDeviceChange(connectedIdentifiers)
+        }
         .onDisappear {
             bleManager.stopScanning()
         }
@@ -868,7 +890,7 @@ struct OnboardingPairDeviceView: View {
             }
             .cardStyle()
         }
-        .disabled(isPairing)
+        .disabled(isPairing || isRegisteringDevice)
     }
 
     private func connectedDeviceCard(_ device: BLEDevice) -> some View {
@@ -914,13 +936,34 @@ struct OnboardingPairDeviceView: View {
 
     private func pairDevice(_ device: BLEDevice) {
         isPairing = true
+        isRegisteringDevice = false
         pairingDevice = device
+        pairingStatusMessage = "Connecting to \(device.name)…"
         error = nil
 
-        bleManager.connect(to: device)
+        guard bleManager.connect(to: device) else {
+            isPairing = false
+            pairingDevice = nil
+            pairingStatusMessage = nil
+            error = "Unable to connect to \(device.name). Try scanning again with the tracker nearby."
+            return
+        }
 
-        // Register the device on the backend
-        Task {
+        schedulePairingTimeout(for: device)
+    }
+
+    private func handleConnectedDeviceChange(_ connectedIdentifiers: [UUID]) {
+        guard isPairing, !isRegisteringDevice, let pairingDevice else { return }
+        guard connectedIdentifiers.contains(pairingDevice.identifier) else { return }
+
+        registerConnectedDevice(pairingDevice)
+    }
+
+    private func registerConnectedDevice(_ device: BLEDevice) {
+        isRegisteringDevice = true
+        pairingStatusMessage = "Registering \(device.name)…"
+
+        Task { @MainActor in
             let body = CreateDeviceBody(
                 name: device.name,
                 bluetoothIdentifier: device.identifier.uuidString,
@@ -928,20 +971,44 @@ struct OnboardingPairDeviceView: View {
             )
 
             do {
-                let _: EmptyData = try await APIClient.shared.request(APIEndpoint.Devices.create(body))
+                let _: DeviceDTO = try await APIClient.shared.request(APIEndpoint.Devices.create(body))
+                bleManager.stopScanning()
                 isPairing = false
+                isRegisteringDevice = false
+                pairingDevice = nil
+                pairingStatusMessage = nil
                 onDevicePaired(device.name)
             } catch {
                 isPairing = false
-                self.error = "Failed to register device: \(error.localizedDescription)"
+                isRegisteringDevice = false
+                pairingDevice = nil
+                pairingStatusMessage = nil
+                self.error = "Connected to \(device.name), but registration failed: \(error.localizedDescription)"
             }
+        }
+    }
+
+    private func schedulePairingTimeout(for device: BLEDevice) {
+        let deviceIdentifier = device.identifier
+
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 15_000_000_000)
+
+            guard isPairing, !isRegisteringDevice else { return }
+            guard pairingDevice?.identifier == deviceIdentifier else { return }
+            guard !bleManager.connectedDevices.contains(where: { $0.identifier == deviceIdentifier }) else { return }
+
+            isPairing = false
+            pairingDevice = nil
+            pairingStatusMessage = nil
+            error = "Unable to connect to \(device.name). Make sure it is powered on and nearby, then try again."
         }
     }
 }
 
 #Preview {
     NavigationStack {
-        OnboardingView(onComplete: {})
+        OnboardingView(viewModel: OnboardingViewModel(), onComplete: {})
             .environmentObject(BLEManager())
     }
     .preferredColorScheme(.dark)

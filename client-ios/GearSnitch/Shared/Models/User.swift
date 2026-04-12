@@ -43,6 +43,7 @@ enum UserStatus: String, Codable, Sendable {
 struct PermissionsState: Codable, Equatable, Sendable {
     let bluetooth: PermissionStatus?
     let location: PermissionStatus?
+    let backgroundLocation: PermissionStatus?
     let notifications: PermissionStatus?
     let healthKit: PermissionStatus?
 }
@@ -79,9 +80,9 @@ extension GSUser {
             photoUrl: dto.avatarURL,
             roles: [dto.role ?? "user"],
             status: .active,
-            defaultGymId: nil,
-            onboardingCompletedAt: nil,
-            permissionsState: nil,
+            defaultGymId: dto.defaultGymId,
+            onboardingCompletedAt: dto.onboardingCompletedAt,
+            permissionsState: dto.permissionsState,
             preferences: nil
         )
     }

@@ -36,15 +36,26 @@ class StoreKitManager: ObservableObject {
     // MARK: Published State
 
     @Published var subscriptionStatus: SubscriptionStatus = .none
+    @Published var currentTier: SubscriptionTier?
     @Published var availableProducts: [Product] = []
+    @Published var isLoadingProducts: Bool = false
     @Published var isPurchasing: Bool = false
     @Published var errorMessage: String?
 
     // MARK: Private
 
-    private let productId = "com.gearsnitch.app.annual"
     private let logger = Logger(subsystem: "com.gearsnitch", category: "StoreKit")
     private var transactionListener: Task<Void, Never>?
+    private let productIDsByTier: [SubscriptionTier: String] = [
+        .hustle: "com.gearsnitch.app.monthly",
+        .hwmf: "com.gearsnitch.app.annual",
+        .babyMomma: "com.gearsnitch.app.lifetime",
+    ]
+    private let tierPriority: [SubscriptionTier: Int] = [
+        .hustle: 1,
+        .hwmf: 2,
+        .babyMomma: 3,
+    ]
 
     private init() {
         listenForTransactions()
@@ -57,9 +68,25 @@ class StoreKitManager: ObservableObject {
     // MARK: - Load Products
 
     func loadProducts() async {
+        guard !isLoadingProducts else { return }
+
+        isLoadingProducts = true
+        errorMessage = nil
+
+        defer { isLoadingProducts = false }
+
         do {
-            let products = try await Product.products(for: [productId])
-            availableProducts = products
+            let products = try await Product.products(for: Array(productIDsByTier.values))
+            availableProducts = products.sorted { lhs, rhs in
+                let lhsPriority = tierPriority[tier(for: lhs.id) ?? .hustle] ?? 0
+                let rhsPriority = tierPriority[tier(for: rhs.id) ?? .hustle] ?? 0
+                return lhsPriority < rhsPriority
+            }
+
+            if products.isEmpty {
+                errorMessage = "Unable to load subscription options."
+            }
+
             logger.info("Loaded \(products.count) product(s)")
         } catch {
             logger.error("Failed to load products: \(error.localizedDescription)")
@@ -69,8 +96,8 @@ class StoreKitManager: ObservableObject {
 
     // MARK: - Purchase
 
-    func purchase() async throws {
-        guard let product = availableProducts.first else {
+    func purchase(tier: SubscriptionTier) async throws {
+        guard let product = product(for: tier) else {
             throw StoreKitError.productNotFound
         }
 
@@ -87,7 +114,7 @@ class StoreKitManager: ObservableObject {
             await sendReceiptToBackend(transaction: transaction)
             await transaction.finish()
             await checkSubscriptionStatus()
-            logger.info("Purchase successful: \(transaction.id)")
+            logger.info("Purchase successful for \(tier.displayName): \(transaction.id)")
 
         case .userCancelled:
             logger.info("User cancelled purchase")
@@ -104,36 +131,38 @@ class StoreKitManager: ObservableObject {
     // MARK: - Check Subscription Status
 
     func checkSubscriptionStatus() async {
-        var foundActive = false
+        var resolvedStatus: SubscriptionStatus = .none
+        var resolvedTier: SubscriptionTier?
 
         for await result in Transaction.currentEntitlements {
             do {
                 let transaction = try verifyTransaction(result)
+                guard transaction.revocationDate == nil else { continue }
+                guard let tier = tier(for: transaction.productID) else { continue }
 
-                guard transaction.productID == productId else { continue }
-
-                if let expirationDate = transaction.expirationDate {
-                    if expirationDate > Date() {
-                        if transaction.isUpgraded {
-                            continue
-                        }
-                        // Check grace period via revocation
-                        if transaction.revocationDate != nil {
-                            subscriptionStatus = .inGracePeriod
-                        } else {
-                            subscriptionStatus = .active(expiryDate: expirationDate)
-                        }
-                        foundActive = true
+                if tier == .babyMomma {
+                    if shouldPrefer(tier: tier, over: resolvedTier) {
+                        resolvedTier = tier
+                        resolvedStatus = .active(expiryDate: .distantFuture)
                     }
+                    continue
+                }
+
+                guard let expirationDate = transaction.expirationDate else { continue }
+                guard expirationDate > Date() else { continue }
+                guard !transaction.isUpgraded else { continue }
+
+                if shouldPrefer(tier: tier, over: resolvedTier) {
+                    resolvedTier = tier
+                    resolvedStatus = .active(expiryDate: expirationDate)
                 }
             } catch {
                 logger.error("Failed to verify entitlement: \(error.localizedDescription)")
             }
         }
 
-        if !foundActive {
-            subscriptionStatus = .none
-        }
+        currentTier = resolvedTier
+        subscriptionStatus = resolvedStatus
     }
 
     // MARK: - Listen for Transactions
@@ -171,6 +200,20 @@ class StoreKitManager: ObservableObject {
 
     // MARK: - Helpers
 
+    func product(for tier: SubscriptionTier) -> Product? {
+        guard let productID = productIDsByTier[tier] else { return nil }
+        return availableProducts.first(where: { $0.id == productID })
+    }
+
+    private func tier(for productID: String) -> SubscriptionTier? {
+        SubscriptionTier.tier(forProductID: productID)
+    }
+
+    private func shouldPrefer(tier: SubscriptionTier, over currentTier: SubscriptionTier?) -> Bool {
+        guard let currentTier else { return true }
+        return (tierPriority[tier] ?? 0) > (tierPriority[currentTier] ?? 0)
+    }
+
     private func verifyTransaction(
         _ result: VerificationResult<Transaction>
     ) throws -> Transaction {
@@ -184,7 +227,7 @@ class StoreKitManager: ObservableObject {
     }
 
     private func handleUpdatedTransaction(_ transaction: Transaction) async {
-        guard transaction.productID == productId else { return }
+        guard tier(for: transaction.productID) != nil else { return }
         await sendReceiptToBackend(transaction: transaction)
         await checkSubscriptionStatus()
     }
@@ -192,7 +235,6 @@ class StoreKitManager: ObservableObject {
     /// Sends the JWS representation of the transaction to the backend for
     /// server-side validation and subscription record creation.
     private func sendReceiptToBackend(transaction: Transaction) async {
-        // Send transaction ID and original JSON for backend validation
         let receiptData = String(data: transaction.jsonRepresentation, encoding: .utf8) ?? ""
 
         do {

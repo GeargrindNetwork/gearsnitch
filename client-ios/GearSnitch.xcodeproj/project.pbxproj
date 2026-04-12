@@ -130,6 +130,7 @@
 		EA3B60AED7DB06423FF6DA62 /* BMICalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC366A48A139E8E12577C17 /* BMICalculatorView.swift */; };
 		EB6DDAF8056E408BA49857D0 /* HeatmapCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9865ACC598B773EBE5646783 /* HeatmapCalendarView.swift */; };
 		ECE1F3509A9C2837F0EB1685 /* RequestBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A51F4F70A487D475FF0DACC /* RequestBuilder.swift */; };
+		EF2664825895989401CE8026 /* GearSnitch.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3FB6FF132F60FB46F1F2B652 /* GearSnitch.storekit */; };
 		F085C3A9EB1ACADE41784C58 /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC4503FD69B7AD8694A9DCA /* ErrorView.swift */; };
 		F0DA7AD286B5A3BF2E2C87F9 /* CheckoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44012CC8C69A572397415B6 /* CheckoutView.swift */; };
 		F1CC5FC68F6201B3F82437D4 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7447513075EF893EBB81204 /* KeychainStore.swift */; };
@@ -198,6 +199,7 @@
 		3685DC0D9F363BEE0B9CE350 /* PushNotificationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationHandler.swift; sourceTree = "<group>"; };
 		39816E569B3E18B77A216951 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3EE29CA9BC70E2FAFEB84C00 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		3FB6FF132F60FB46F1F2B652 /* GearSnitch.storekit */ = {isa = PBXFileReference; path = GearSnitch.storekit; sourceTree = "<group>"; };
 		417D0CABD8C8B4785A6C1AE1 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		42009BC43B94A4D85AACE6A6 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		4AADEB4E2DE2686C4781E1B7 /* CartViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModel.swift; sourceTree = "<group>"; };
@@ -721,6 +723,14 @@
 			path = Analytics;
 			sourceTree = "<group>";
 		};
+		BBA67F808BE14070B782458E /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				3FB6FF132F60FB46F1F2B652 /* GearSnitch.storekit */,
+			);
+			path = Configuration;
+			sourceTree = "<group>";
+		};
 		C698C72A95C0638F2040BBCD /* Auth */ = {
 			isa = PBXGroup;
 			children = (
@@ -752,6 +762,7 @@
 			children = (
 				D632ACA61A645F4E35EC3315 /* GearSnitch.entitlements */,
 				70780FDD04A23C06F7CE05EC /* App */,
+				BBA67F808BE14070B782458E /* Configuration */,
 				87F5C9F7049A9215B9788171 /* Core */,
 				704E38CE066412186711714F /* Features */,
 				8B63A603199D203BB58300EF /* Resources */,
@@ -958,6 +969,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7E04278C553EA8D3F1C45847 /* Assets.xcassets in Resources */,
+				EF2664825895989401CE8026 /* GearSnitch.storekit in Resources */,
 				CF443E352F433E5677219483 /* coverage.geojson in Resources */,
 				AA827AD9EE3687FC55BD8648 /* gs-eye-iris-master.pdf in Resources */,
 			);

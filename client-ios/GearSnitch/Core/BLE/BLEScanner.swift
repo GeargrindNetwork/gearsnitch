@@ -26,6 +26,23 @@ final class BLEScanner {
 
     // MARK: - Process Discovery
 
+    private func resolvedName(
+        peripheral: CBPeripheral,
+        advertisementData: [String: Any]
+    ) -> String? {
+        let advertisedLocalName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
+
+        for candidate in [advertisedLocalName, peripheral.name] {
+            guard let trimmed = candidate?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !trimmed.isEmpty else {
+                continue
+            }
+            return trimmed
+        }
+
+        return nil
+    }
+
     /// Process a newly discovered peripheral. Returns the updated device if it
     /// passes filtering, or nil if filtered out.
     @discardableResult
@@ -41,8 +58,9 @@ final class BLEScanner {
             return nil
         }
 
-        // Filter out devices with no name (unless they advertise our service)
-        let hasName = peripheral.name != nil && !peripheral.name!.isEmpty
+        // Many BLE peripherals only expose a local name in advertisement data.
+        let name = resolvedName(peripheral: peripheral, advertisementData: advertisementData)
+        let hasName = name != nil
         let advertisedServices = advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID]
         let matchesServiceFilter: Bool = {
             guard let filter = serviceFilter, let advertised = advertisedServices else {
@@ -59,13 +77,20 @@ final class BLEScanner {
 
         if let existing = deviceMap[identifier] {
             // Update existing device
+            if let name, existing.name != name {
+                existing.name = name
+            }
             existing.rssi = rssiValue
             existing.lastSeenAt = Date()
             existing.peripheral = peripheral
             return existing
         } else {
             // New device
-            let device = BLEDevice(peripheral: peripheral, rssi: rssiValue)
+            let device = BLEDevice(
+                peripheral: peripheral,
+                rssi: rssiValue,
+                name: name
+            )
             deviceMap[identifier] = device
             logger.debug("Discovered new device: \(device.name) (RSSI: \(rssiValue))")
             return device

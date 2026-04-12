@@ -30,7 +30,12 @@ actor APIClient {
     /// Execute a typed request, decoding the response from the standard `ApiResponse<T>` envelope.
     func request<T: Decodable>(_ endpoint: APIEndpoint) async throws -> T {
         let data = try await executeWithAuth(endpoint)
-        return try ResponseDecoder.decode(T.self, from: data.0, statusCode: data.1)
+        do {
+            return try ResponseDecoder.decode(T.self, from: data.0, statusCode: data.1)
+        } catch {
+            logDecodeFailureIfNeeded(for: endpoint, data: data.0, statusCode: data.1, error: error)
+            throw error
+        }
     }
 
     /// Execute a request and return raw `Data` (for binary downloads, images, etc.).
@@ -79,12 +84,15 @@ actor APIClient {
             refreshToken: TokenStore.shared.refreshToken
         )
 
-        logger.debug("\(endpoint.method.rawValue) \(urlRequest.url?.absoluteString ?? "?")")
+        let requestID = urlRequest.value(forHTTPHeaderField: "X-Request-ID") ?? "unknown"
+
+        logger.debug("[\(requestID, privacy: .public)] \(endpoint.method.rawValue) \(urlRequest.url?.absoluteString ?? "?")")
 
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await session.data(for: urlRequest)
         } catch let urlError as URLError {
+            logger.error("[\(requestID, privacy: .public)] Network request failed for \(endpoint.path, privacy: .public): \(urlError.localizedDescription, privacy: .public)")
             switch urlError.code {
             case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
                 throw NetworkError.networkUnavailable
@@ -98,6 +106,16 @@ actor APIClient {
         }
 
         let statusCode = httpResponse.statusCode
+
+        if statusCode >= 400 {
+            logger.error(
+                "[\(requestID, privacy: .public)] HTTP \(statusCode) for \(endpoint.path, privacy: .public)"
+            )
+        } else {
+            logger.debug(
+                "[\(requestID, privacy: .public)] HTTP \(statusCode) for \(endpoint.path, privacy: .public)"
+            )
+        }
 
         if statusCode == 401 {
             throw NetworkError.unauthorized
@@ -131,7 +149,7 @@ actor APIClient {
             }
 
             let tokenResponse = try ResponseDecoder.decode(
-                AuthTokenResponse.self,
+                TokenPairResponse.self,
                 from: data,
                 statusCode: statusCode
             )
@@ -176,6 +194,73 @@ actor APIClient {
                 object: nil
             )
         }
+    }
+
+    private func logDecodeFailureIfNeeded(
+        for endpoint: APIEndpoint,
+        data: Data,
+        statusCode: Int,
+        error: Error
+    ) {
+        guard endpoint.path.hasPrefix("/api/v1/auth/") else {
+            return
+        }
+
+        logger.error("Auth decode failure for \(endpoint.path, privacy: .public) (status: \(statusCode), error: \(error.localizedDescription, privacy: .public))")
+        logger.error("\(self.sanitizedAuthResponseSummary(from: data), privacy: .public)")
+    }
+
+    private func sanitizedAuthResponseSummary(from data: Data) -> String {
+        guard
+            let jsonObject = try? JSONSerialization.jsonObject(with: data),
+            let root = jsonObject as? [String: Any]
+        else {
+            if let raw = String(data: data, encoding: .utf8), !raw.isEmpty {
+                return "Auth response body (raw): \(String(raw.prefix(300)))"
+            }
+            return "Auth response body was empty or non-JSON"
+        }
+
+        let topLevelKeys = root.keys.sorted().joined(separator: ",")
+        let successDescription = String(describing: root["success"] ?? "nil")
+
+        if let dataObject = root["data"] as? [String: Any] {
+            let dataKeys = dataObject.keys.sorted().joined(separator: ",")
+            let hasUser = dataObject["user"] != nil
+            let hasProfile = dataObject["profile"] != nil
+            let hasAccessToken = dataObject["accessToken"] != nil || dataObject["access_token"] != nil
+            let hasRefreshToken = dataObject["refreshToken"] != nil || dataObject["refresh_token"] != nil
+            let nestedTokenKeys = ((dataObject["tokens"] as? [String: Any])?.keys.sorted().joined(separator: ",")) ?? "none"
+
+            let embeddedUserKeys: String
+            if let userObject = dataObject["user"] as? [String: Any] {
+                embeddedUserKeys = userObject.keys.sorted().joined(separator: ",")
+            } else if let profileObject = dataObject["profile"] as? [String: Any] {
+                embeddedUserKeys = profileObject.keys.sorted().joined(separator: ",")
+            } else {
+                embeddedUserKeys = "none"
+            }
+
+            return
+                "Auth response summary: topLevelKeys=[\(topLevelKeys)] " +
+                "success=\(successDescription) " +
+                "dataKeys=[\(dataKeys)] " +
+                "hasUser=\(hasUser) hasProfile=\(hasProfile) " +
+                "hasAccessToken=\(hasAccessToken) hasRefreshToken=\(hasRefreshToken) " +
+                "nestedTokenKeys=[\(nestedTokenKeys)] " +
+                "embeddedUserKeys=[\(embeddedUserKeys)]"
+        }
+
+        if let errorObject = root["error"] as? [String: Any] {
+            let errorKeys = errorObject.keys.sorted().joined(separator: ",")
+            return
+                "Auth response summary: topLevelKeys=[\(topLevelKeys)] " +
+                "success=\(successDescription) errorKeys=[\(errorKeys)]"
+        }
+
+        return
+            "Auth response summary: topLevelKeys=[\(topLevelKeys)] " +
+            "success=\(successDescription) dataType=\(String(describing: type(of: root["data"] as Any)))"
     }
 }
 

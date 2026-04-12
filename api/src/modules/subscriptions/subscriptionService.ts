@@ -2,11 +2,70 @@ import { Subscription, type ISubscription } from '../../models/Subscription.js';
 import logger from '../../utils/logger.js';
 import * as jose from 'jose';
 
-const ANNUAL_PRODUCT_IDS = new Set([
-  'com.geargrind.gearsnitch.annual',
-  'com.gearsnitch.app.annual',
-]);
-const ANNUAL_DURATION_DAYS = 365;
+export type SubscriptionTier = 'free' | 'monthly' | 'annual' | 'lifetime';
+
+interface AppleProductConfig {
+  tier: Exclude<SubscriptionTier, 'free'>;
+  plan: string;
+  fallbackDurationDays?: number;
+}
+
+const LIFETIME_EXPIRY_DATE = new Date('2099-12-31T23:59:59.999Z');
+
+const APPLE_PRODUCT_CONFIG: Record<string, AppleProductConfig> = {
+  'com.geargrind.gearsnitch.monthly': {
+    tier: 'monthly',
+    plan: 'GearSnitch HUSTLE Monthly',
+    fallbackDurationDays: 30,
+  },
+  'com.gearsnitch.app.monthly': {
+    tier: 'monthly',
+    plan: 'GearSnitch HUSTLE Monthly',
+    fallbackDurationDays: 30,
+  },
+  'com.geargrind.gearsnitch.annual': {
+    tier: 'annual',
+    plan: 'GearSnitch HWMF Annual',
+    fallbackDurationDays: 365,
+  },
+  'com.gearsnitch.app.annual': {
+    tier: 'annual',
+    plan: 'GearSnitch HWMF Annual',
+    fallbackDurationDays: 365,
+  },
+  'com.geargrind.gearsnitch.lifetime': {
+    tier: 'lifetime',
+    plan: 'GearSnitch BABY MOMMA Lifetime',
+  },
+  'com.gearsnitch.app.lifetime': {
+    tier: 'lifetime',
+    plan: 'GearSnitch BABY MOMMA Lifetime',
+  },
+};
+
+function getAppleProductConfig(productId: string): AppleProductConfig | undefined {
+  return APPLE_PRODUCT_CONFIG[productId];
+}
+
+export function getSubscriptionTierFromProductId(
+  productId: string | null | undefined,
+): SubscriptionTier {
+  if (!productId) {
+    return 'free';
+  }
+
+  return getAppleProductConfig(productId)?.tier ?? 'free';
+}
+
+export function getSubscriptionPlanFromProductId(
+  productId: string | null | undefined,
+): string | null {
+  if (!productId) {
+    return null;
+  }
+
+  return getAppleProductConfig(productId)?.plan ?? productId;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -62,9 +121,10 @@ export async function validateAppleTransaction(
   }
 
   // ----- 2. Validate product ID -----
-  if (!ANNUAL_PRODUCT_IDS.has(payload.productId)) {
+  const productConfig = getAppleProductConfig(payload.productId);
+  if (!productConfig) {
     throw new Error(
-      `Unexpected product ID: ${payload.productId}. Expected one of ${Array.from(ANNUAL_PRODUCT_IDS).join(', ')}`,
+      `Unexpected product ID: ${payload.productId}. Expected one of ${Object.keys(APPLE_PRODUCT_CONFIG).join(', ')}`,
     );
   }
 
@@ -72,7 +132,11 @@ export async function validateAppleTransaction(
   const purchaseDate = new Date(payload.purchaseDate);
   const baseExpiry = payload.expiresDate
     ? new Date(payload.expiresDate)
-    : new Date(purchaseDate.getTime() + ANNUAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
+    : productConfig.fallbackDurationDays
+      ? new Date(
+          purchaseDate.getTime() + productConfig.fallbackDurationDays * 24 * 60 * 60 * 1000,
+        )
+      : LIFETIME_EXPIRY_DATE;
 
   // ----- 4. Upsert subscription -----
   const existing = await Subscription.findOne({

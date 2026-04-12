@@ -121,6 +121,8 @@ export class DeviceService {
     input: CreateDeviceInput,
   ): Promise<DeviceResponse> {
     const normalizedUserId = assertObjectId(userId, 'userId');
+    const shouldPinDevice =
+      (await Device.exists({ userId: normalizedUserId, isFavorite: true })) == null;
 
     let device = await Device.findOne({
       userId: normalizedUserId,
@@ -134,6 +136,7 @@ export class DeviceService {
         type: input.type,
         identifier: input.bluetoothIdentifier,
         status: 'monitoring',
+        isFavorite: shouldPinDevice,
         monitoringEnabled: true,
         lastSeenAt: new Date(),
       });
@@ -141,6 +144,9 @@ export class DeviceService {
       device.name = input.name;
       device.type = input.type;
       device.status = 'monitoring';
+      if (shouldPinDevice) {
+        device.isFavorite = true;
+      }
       device.monitoringEnabled = true;
       device.lastSeenAt = new Date();
       await device.save();

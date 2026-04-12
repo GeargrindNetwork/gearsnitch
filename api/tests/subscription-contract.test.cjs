@@ -17,11 +17,14 @@ describe('subscription contract regression sweep', () => {
     expect(subscriptionRoutes).toContain("router.get('/me', isAuthenticated, respondWithCurrentSubscription);");
   });
 
-  test('annual plan formatting and Apple validation accept both known product identifiers', () => {
-    expect(subscriptionService).toContain('const ANNUAL_PRODUCT_IDS = new Set([');
+  test('subscription formatting and Apple validation accept all supported product identifiers', () => {
+    expect(subscriptionService).toContain('const APPLE_PRODUCT_CONFIG: Record<string, AppleProductConfig> = {');
+    expect(subscriptionService).toContain("'com.geargrind.gearsnitch.monthly'");
+    expect(subscriptionService).toContain("'com.gearsnitch.app.monthly'");
     expect(subscriptionService).toContain("'com.geargrind.gearsnitch.annual'");
     expect(subscriptionService).toContain("'com.gearsnitch.app.annual'");
-    expect(userRoutes).toContain("productId === 'com.geargrind.gearsnitch.annual'");
-    expect(userRoutes).toContain("productId === 'com.gearsnitch.app.annual'");
+    expect(subscriptionService).toContain("'com.geargrind.gearsnitch.lifetime'");
+    expect(subscriptionService).toContain("'com.gearsnitch.app.lifetime'");
+    expect(userRoutes).toContain('getSubscriptionPlanFromProductId(productId)');
   });
 });

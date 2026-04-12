@@ -45,6 +45,16 @@ resource "google_cloud_run_v2_service" "web" {
         name  = "VITE_WS_URL"
         value = google_cloud_run_v2_service.realtime.uri
       }
+
+      env {
+        name = "VITE_GOOGLE_CLIENT_ID"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.secrets["google-oauth-client-id"].secret_id
+            version = "latest"
+          }
+        }
+      }
     }
   }
 

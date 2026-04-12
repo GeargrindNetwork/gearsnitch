@@ -46,7 +46,7 @@ final class BLEManager: NSObject, ObservableObject {
 
     // MARK: - Private Properties
 
-    private var centralManager: CBCentralManager!
+    private var centralManager: CBCentralManager?
     private let scanner = BLEScanner()
     private let logger = Logger(subsystem: "com.gearsnitch", category: "BLEManager")
 
@@ -59,18 +59,15 @@ final class BLEManager: NSObject, ObservableObject {
     override init() {
         super.init()
 
-        let options: [String: Any] = [
-            CBCentralManagerOptionRestoreIdentifierKey: Self.restorationIdentifier,
-            CBCentralManagerOptionShowPowerAlertKey: true,
-        ]
-
-        centralManager = CBCentralManager(
-            delegate: self,
-            queue: nil,
-            options: options
-        )
-
         scanner.serviceFilter = Self.registeredServiceUUIDs.isEmpty ? nil : Self.registeredServiceUUIDs
+        bluetoothState = Self.derivedState(for: CBCentralManager.authorization)
+
+        // Avoid triggering the first-use Bluetooth prompt on app launch. If the
+        // user has already made a permission choice, we can safely restore the
+        // manager immediately for state observation and restoration.
+        if CBCentralManager.authorization != .notDetermined {
+            configureCentralManager(showPowerAlert: false)
+        }
     }
 
     // MARK: - Scanning
@@ -78,6 +75,11 @@ final class BLEManager: NSObject, ObservableObject {
     /// Start scanning for BLE peripherals. Filters by registered service UUIDs
     /// when available, otherwise scans for all devices.
     func startScanning() {
+        guard let centralManager = configureCentralManagerIfAuthorized() else {
+            logger.info("Skipping BLE scan until Bluetooth permission is explicitly requested")
+            return
+        }
+
         guard bluetoothState == .poweredOn else {
             logger.warning("Cannot scan: Bluetooth not powered on (state: \(self.bluetoothState.rawValue))")
             return
@@ -104,7 +106,7 @@ final class BLEManager: NSObject, ObservableObject {
 
     /// Stop scanning for BLE peripherals.
     func stopScanning() {
-        guard isScanning else { return }
+        guard isScanning, let centralManager else { return }
         centralManager.stopScan()
         isScanning = false
         logger.info("Stopped BLE scanning")
@@ -113,10 +115,16 @@ final class BLEManager: NSObject, ObservableObject {
     // MARK: - Connection
 
     /// Connect to a discovered BLE device.
-    func connect(to device: BLEDevice) {
+    @discardableResult
+    func connect(to device: BLEDevice) -> Bool {
+        guard let centralManager = configureCentralManagerIfAuthorized() else {
+            logger.error("Cannot connect: Bluetooth manager unavailable before authorization")
+            return false
+        }
+
         guard let peripheral = device.peripheral else {
             logger.error("Cannot connect: no peripheral reference for \(device.name)")
-            return
+            return false
         }
 
         device.status = .connecting
@@ -126,10 +134,12 @@ final class BLEManager: NSObject, ObservableObject {
         ])
 
         logger.info("Connecting to \(device.name)")
+        return true
     }
 
     /// Disconnect from a connected BLE device.
     func disconnect(from device: BLEDevice) {
+        guard let centralManager else { return }
         guard let peripheral = device.peripheral else { return }
 
         cancelReconnection(for: device.identifier)
@@ -213,7 +223,7 @@ final class BLEManager: NSObject, ObservableObject {
         }
 
         // Attempt immediate reconnection
-        if let peripheral = device.peripheral {
+        if let centralManager, let peripheral = device.peripheral {
             centralManager.connect(peripheral, options: nil)
         }
     }
@@ -487,6 +497,55 @@ extension BLEManager: CBPeripheralDelegate {
 }
 
 private extension BLEManager {
+    @discardableResult
+    func configureCentralManager(showPowerAlert: Bool) -> CBCentralManager {
+        if let centralManager {
+            bluetoothState = centralManager.state
+            return centralManager
+        }
+
+        let options: [String: Any] = [
+            CBCentralManagerOptionRestoreIdentifierKey: Self.restorationIdentifier,
+            CBCentralManagerOptionShowPowerAlertKey: showPowerAlert,
+        ]
+
+        let manager = CBCentralManager(
+            delegate: self,
+            queue: nil,
+            options: options
+        )
+        centralManager = manager
+        bluetoothState = manager.state
+        return manager
+    }
+
+    func configureCentralManagerIfAuthorized() -> CBCentralManager? {
+        switch CBCentralManager.authorization {
+        case .allowedAlways:
+            return configureCentralManager(showPowerAlert: false)
+        case .denied, .restricted:
+            bluetoothState = .unauthorized
+            return nil
+        case .notDetermined:
+            bluetoothState = .unknown
+            return nil
+        @unknown default:
+            bluetoothState = .unknown
+            return nil
+        }
+    }
+
+    static func derivedState(for authorization: CBManagerAuthorization) -> CBManagerState {
+        switch authorization {
+        case .denied, .restricted:
+            return .unauthorized
+        case .allowedAlways, .notDetermined:
+            return .unknown
+        @unknown default:
+            return .unknown
+        }
+    }
+
     static func normalizedIdentifier(_ value: String) -> String {
         value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }

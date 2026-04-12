@@ -28,7 +28,7 @@ struct ResponseError: Decodable {
 struct AuthTokenResponse: Decodable {
     let accessToken: String
     let refreshToken: String
-    let user: UserDTO
+    let user: UserDTO?
 
     private enum CodingKeys: String, CodingKey {
         case accessToken
@@ -71,10 +71,53 @@ struct AuthTokenResponse: Decodable {
                 container.decode(String.self, forKey: .refreshTokenSnake)
         }
 
-        if let decodedUser = try container.decodeIfPresent(UserDTO.self, forKey: .user) {
-            user = decodedUser
+        user =
+            try container.decodeIfPresent(UserDTO.self, forKey: .user) ??
+            container.decodeIfPresent(UserDTO.self, forKey: .profile)
+    }
+}
+
+struct TokenPairResponse: Decodable {
+    let accessToken: String
+    let refreshToken: String
+
+    private enum CodingKeys: String, CodingKey {
+        case accessToken
+        case accessTokenSnake = "access_token"
+        case refreshToken
+        case refreshTokenSnake = "refresh_token"
+        case token
+        case tokens
+    }
+
+    private enum TokenCodingKeys: String, CodingKey {
+        case accessToken
+        case accessTokenSnake = "access_token"
+        case refreshToken
+        case refreshTokenSnake = "refresh_token"
+        case token
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        if container.contains(.tokens) {
+            let tokenContainer = try container.nestedContainer(keyedBy: TokenCodingKeys.self, forKey: .tokens)
+            accessToken =
+                try tokenContainer.decodeIfPresent(String.self, forKey: .accessToken) ??
+                tokenContainer.decodeIfPresent(String.self, forKey: .accessTokenSnake) ??
+                tokenContainer.decode(String.self, forKey: .token)
+            refreshToken =
+                try tokenContainer.decodeIfPresent(String.self, forKey: .refreshToken) ??
+                tokenContainer.decode(String.self, forKey: .refreshTokenSnake)
         } else {
-            user = try container.decode(UserDTO.self, forKey: .profile)
+            accessToken =
+                try container.decodeIfPresent(String.self, forKey: .accessToken) ??
+                container.decodeIfPresent(String.self, forKey: .accessTokenSnake) ??
+                container.decode(String.self, forKey: .token)
+            refreshToken =
+                try container.decodeIfPresent(String.self, forKey: .refreshToken) ??
+                container.decode(String.self, forKey: .refreshTokenSnake)
         }
     }
 }
@@ -88,6 +131,9 @@ struct UserDTO: Decodable, Identifiable {
     let referralCode: String?
     let subscriptionTier: String?
     let createdAt: String?
+    let defaultGymId: String?
+    let onboardingCompletedAt: Date?
+    let permissionsState: PermissionsState?
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
@@ -97,6 +143,9 @@ struct UserDTO: Decodable, Identifiable {
         case photoUrl
         case roles
         case referralCode, subscriptionTier, createdAt
+        case defaultGymId
+        case onboardingCompletedAt
+        case permissionsState
     }
 
     init(from decoder: Decoder) throws {
@@ -117,6 +166,9 @@ struct UserDTO: Decodable, Identifiable {
         referralCode = try container.decodeIfPresent(String.self, forKey: .referralCode)
         subscriptionTier = try container.decodeIfPresent(String.self, forKey: .subscriptionTier)
         createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
+        defaultGymId = try container.decodeIfPresent(String.self, forKey: .defaultGymId)
+        onboardingCompletedAt = try container.decodeIfPresent(Date.self, forKey: .onboardingCompletedAt)
+        permissionsState = try container.decodeIfPresent(PermissionsState.self, forKey: .permissionsState)
     }
 }
 

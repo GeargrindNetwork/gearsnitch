@@ -26,7 +26,7 @@ struct SubscriptionView: View {
         .alert("Subscription Activated", isPresented: $showSuccessConfirmation) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Your annual subscription is now active. Enjoy full access to GearSnitch premium features.")
+            Text(successMessage)
         }
         .onChange(of: storeKit.subscriptionStatus) { _, newValue in
             if case .active = newValue {
@@ -55,35 +55,43 @@ struct SubscriptionView: View {
     // MARK: - Active Card
 
     private func activeCard(expiryDate: Date) -> some View {
-        VStack(spacing: 16) {
+        let activeTier = storeKit.currentTier
+
+        return VStack(spacing: 16) {
             Image(systemName: "crown.fill")
                 .font(.system(size: 44))
                 .foregroundColor(.gsWarning)
 
-            Text("Annual Subscription")
+            Text(activeTitle(for: activeTier))
                 .font(.title3.weight(.bold))
                 .foregroundColor(.gsText)
 
             statusPill(text: "ACTIVE", color: .gsSuccess)
 
             VStack(spacing: 0) {
-                detailRow(label: "Renews", value: expiryDate.shortDateString())
-                Divider().background(Color.gsBorder)
-                detailRow(label: "Auto-Renew", value: "Managed by App Store")
+                if activeTier == .babyMomma {
+                    detailRow(label: "Access", value: "Lifetime")
+                } else {
+                    detailRow(label: "Renews", value: expiryDate.shortDateString())
+                    Divider().background(Color.gsBorder)
+                    detailRow(label: "Auto-Renew", value: "Managed by App Store")
+                }
             }
             .background(Color.gsSurfaceRaised)
             .cornerRadius(12)
 
-            Button {
-                openSubscriptionManagement()
-            } label: {
-                Label("Manage Subscription", systemImage: "arrow.up.right.square")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(.gsEmerald)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(Color.gsEmerald.opacity(0.1))
-                    .cornerRadius(12)
+            if activeTier != .babyMomma {
+                Button {
+                    openSubscriptionManagement()
+                } label: {
+                    Label("Manage Subscription", systemImage: "arrow.up.right.square")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.gsEmerald)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Color.gsEmerald.opacity(0.1))
+                        .cornerRadius(12)
+                }
             }
         }
         .cardStyle()
@@ -144,40 +152,27 @@ struct SubscriptionView: View {
 
     private var productCard: some View {
         VStack(spacing: 20) {
-            // Header
             VStack(spacing: 8) {
                 Image(systemName: "crown")
                     .font(.system(size: 44))
                     .foregroundStyle(Color.gsBrandGradient)
 
-                Text("GearSnitch Annual")
+                Text("Choose a Plan")
                     .font(.title3.weight(.bold))
                     .foregroundColor(.gsText)
 
-                if let product = storeKit.availableProducts.first {
-                    Text(product.displayPrice + " / year")
-                        .font(.title2.weight(.heavy))
-                        .foregroundColor(.gsEmerald)
-                } else {
-                    Text("$29.99 / year")
-                        .font(.title2.weight(.heavy))
-                        .foregroundColor(.gsEmerald)
+                Text("Monthly, annual, and lifetime plans are available in the App Store.")
+                    .font(.subheadline)
+                    .foregroundColor(.gsTextSecondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            VStack(spacing: 12) {
+                ForEach(SubscriptionTier.allCases) { tier in
+                    tierPurchaseRow(tier)
                 }
             }
 
-            // Feature list
-            VStack(alignment: .leading, spacing: 10) {
-                featureRow("Unlimited device monitoring")
-                featureRow("Priority theft alerts (< 10s)")
-                featureRow("Extended location history (90 days)")
-                featureRow("Mesh chat with nearby users")
-                featureRow("Advanced dosing calculator")
-                featureRow("Referral bonus days")
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 4)
-
-            // Error
             if let error = storeKit.errorMessage {
                 Text(error)
                     .font(.caption)
@@ -185,20 +180,6 @@ struct SubscriptionView: View {
                     .multilineTextAlignment(.center)
             }
 
-            // Subscribe button
-            PrimaryButton(
-                title: storeKit.isPurchasing ? "Processing..." : "Subscribe Now",
-                isLoading: storeKit.isPurchasing
-            ) {
-                Task {
-                    do {
-                        try await storeKit.purchase()
-                    } catch {
-                        // Error is set on storeKit.errorMessage
-                    }
-                }
-            }
-            .disabled(storeKit.isPurchasing || storeKit.availableProducts.isEmpty)
         }
         .cardStyle()
     }
@@ -216,7 +197,7 @@ struct SubscriptionView: View {
                     .underline()
             }
 
-            Text("Subscription auto-renews annually. Cancel anytime in Settings.")
+            Text("Auto-renewing plans can be cancelled anytime in Settings. Lifetime purchases are one-time unlocks.")
                 .font(.caption2)
                 .foregroundColor(.gsTextSecondary.opacity(0.7))
                 .multilineTextAlignment(.center)
@@ -226,16 +207,115 @@ struct SubscriptionView: View {
 
     // MARK: - Helpers
 
-    private func featureRow(_ text: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.subheadline)
-                .foregroundColor(.gsEmerald)
+    private var successMessage: String {
+        let tierName = storeKit.currentTier?.displayName ?? "premium"
+        return "Your \(tierName) purchase is now active. Enjoy full access to GearSnitch premium features."
+    }
 
-            Text(text)
+    private func activeTitle(for tier: SubscriptionTier?) -> String {
+        switch tier {
+        case .babyMomma:
+            return "Lifetime Access"
+        case .hustle, .hwmf:
+            return "\(tier?.displayName ?? "Premium") Plan"
+        case nil:
+            return "Premium Plan"
+        }
+    }
+
+    private func tierPurchaseRow(_ tier: SubscriptionTier) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(tier.displayName)
+                    .font(.headline.weight(.semibold))
+                    .foregroundColor(.gsText)
+
+                Spacer()
+
+                Text(displayPrice(for: tier) + tier.period)
+                    .font(.headline.weight(.bold))
+                    .foregroundColor(color(for: tier))
+            }
+
+            Text(tier.subtitle)
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+
+            Button {
+                Task {
+                    do {
+                        try await storeKit.purchase(tier: tier)
+                    } catch {
+                        // Error is surfaced through storeKit.errorMessage
+                    }
+                }
+            } label: {
+                Text(storeKit.isPurchasing ? "Processing..." : tier.buttonTitle)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(tier == .hustle ? .gsText : .black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(buttonBackground(for: tier))
+                    .cornerRadius(12)
+            }
+            .disabled(storeKit.isPurchasing || storeKit.product(for: tier) == nil)
+        }
+        .padding(16)
+        .background(Color.gsSurfaceRaised)
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(color(for: tier).opacity(0.35), lineWidth: 1)
+        )
+    }
+
+    private func displayPrice(for tier: SubscriptionTier) -> String {
+        storeKit.product(for: tier)?.displayPrice ?? tier.price
+    }
+
+    private func color(for tier: SubscriptionTier) -> Color {
+        switch tier {
+        case .hustle:
+            return .mint
+        case .hwmf:
+            return .gsEmerald
+        case .babyMomma:
+            return .gsWarning
+        }
+    }
+
+    @ViewBuilder
+    private func buttonBackground(for tier: SubscriptionTier) -> some View {
+        switch tier {
+        case .hustle:
+            Color.gsSurface
+        case .hwmf:
+            LinearGradient(
+                colors: [Color.gsEmerald, Color.gsEmerald.opacity(0.8)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        case .babyMomma:
+            LinearGradient(
+                colors: [Color.gsWarning, Color.gsWarning.opacity(0.8)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
+    }
+
+    private func detailRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
                 .font(.subheadline)
                 .foregroundColor(.gsText)
+            Spacer()
+            Text(value)
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.gsText)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private func statusPill(text: String, color: Color) -> some View {
@@ -246,20 +326,6 @@ struct SubscriptionView: View {
             .padding(.vertical, 4)
             .background(color.opacity(0.15))
             .cornerRadius(6)
-    }
-
-    private func detailRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label)
-                .font(.subheadline)
-                .foregroundColor(.gsTextSecondary)
-            Spacer()
-            Text(value)
-                .font(.subheadline.weight(.medium))
-                .foregroundColor(.gsText)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
     }
 
     private func openSubscriptionManagement() {

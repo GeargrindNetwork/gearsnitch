@@ -26,9 +26,12 @@ describe('device priority and disconnect UX regression sweep', () => {
     expect(deviceModel).toContain('isFavorite: boolean;');
     expect(deviceModel).toContain("nickname: { type: String, default: null }");
     expect(deviceModel).toContain("isFavorite: { type: Boolean, default: false }");
+    expect(deviceModel).toContain("default: undefined");
+    expect(deviceModel).not.toContain("default: 'Point'");
     expect(deviceService).toContain('nickname: device.nickname ?? null,');
     expect(deviceService).toContain('isFavorite: device.isFavorite === true,');
     expect(deviceService).toContain(".sort({ isFavorite: -1, updatedAt: -1, createdAt: -1 });");
+    expect(deviceService).toContain('const shouldPinDevice =');
     expect(deviceRoutes).toContain('nickname: z.preprocess(');
     expect(deviceRoutes).toContain('isFavorite: z.boolean().optional(),');
   });
