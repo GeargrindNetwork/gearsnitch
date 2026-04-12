@@ -1,10 +1,31 @@
 # GearSnitch — Session Handoff & Action Plan
 
-**Date:** April 10, 2026
-**Session:** Built from zero to deployed in one session (~12 hours)
-**Repo:** https://github.com/GeargrindNetwork/gearsnitch (26 commits on main)
+**Date:** April 11, 2026
+**Session:** Initial build plus post-QA integration-gap closure and re-verification
+**Repo:** https://github.com/GeargrindNetwork/gearsnitch (30 commits on main)
 
 ---
+
+## Update — April 11, 2026
+
+The original QA closure was too optimistic. A follow-on audit found remaining internal client or backend contract gaps in alerts, referrals, account deletion, support, store checkout, Apple Pay, and BLE disconnect handling. Those gaps are now closed in source and revalidated.
+
+### Verified in this follow-up
+
+- `npm test --workspace=api` — PASS (`5` suites / `25` tests)
+- `npm run type-check` — PASS
+- `npm run test` — PASS
+- `npm run launch:check` — PASS (`21/21`)
+- `xcodebuild -project client-ios/GearSnitch.xcodeproj -target GearSnitch -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build` — PASS
+
+### Internal launch-path fixes now landed
+
+- Alerts ship live list, disconnect, and acknowledge routes instead of `501` stubs.
+- Referrals ship live `/referrals/me` and `/referrals/qr` contracts with persisted referral codes.
+- Delete-account and support pages now submit real API-backed requests.
+- The web store uses live catalog and cart data, and checkout finalizes real backend orders.
+- iOS Apple Pay now creates and confirms real payment intents against the same cart-backed order contract.
+- BLE reconnect timeout now invokes the real disconnect haptic and alert helpers, and BLE service filtering is configurable through app config.
 
 ## Current State
 
@@ -17,7 +38,7 @@
 | **Terms of Service** | 200 LIVE | https://gearsnitch.com/terms |
 | **Support** | 200 LIVE | https://gearsnitch.com/support |
 | **Delete Account** | 200 LIVE | https://gearsnitch.com/delete-account |
-| **API** | 200 LIVE | https://api.gearsnitch.com (most routes return 501 stubs) |
+| **API** | 200 LIVE | https://api.gearsnitch.com (launch-critical routes are implemented; some non-launch modules remain outside the current slice) |
 | **Realtime** | 200 LIVE | https://gearsnitch-realtime-6okk4hvbdq-uc.a.run.app |
 | **Worker** | Deployed | https://gearsnitch-worker-6okk4hvbdq-uc.a.run.app |
 | **MongoDB Atlas** | Connected | Cluster: gearsnitch-dev (M0, us-east-1), DB user: gearsnitch-api |
@@ -62,7 +83,7 @@
 ## Codebase Structure
 
 ```
-gearsnitch/ (26 commits, ~300 files, ~40k lines)
+gearsnitch/ (30 commits, ~300 files, ~40k lines)
 ├── api/                          # Express TypeScript API
 │   ├── src/
 │   │   ├── config/               # Env var config
@@ -80,7 +101,7 @@ gearsnitch/ (26 commits, ~300 files, ~40k lines)
 │   │   ├── pages/                # Landing, Store, Account, Privacy, Terms, Support, DeleteAccount, 404
 │   │   └── lib/                  # API client, analytics
 ├── shared/                       # Types, Zod schemas, constants
-├── worker/                       # BullMQ (13 queues, 7 job processors — stubs)
+├── worker/                       # BullMQ (13 queues, launch-path processors live, some deferred follow-up work)
 ├── realtime/                     # Socket.IO + Redis adapter
 ├── client-ios/                   # Native SwiftUI iOS app
 │   ├── GearSnitch/
@@ -151,121 +172,31 @@ gearsnitch/ (26 commits, ~300 files, ~40k lines)
 | Stopwatch | Yes | — | — | **iOS only** |
 | Auth (Google OAuth) | Yes | Yes (AuthService) | — | **Partial** (needs Google client ID) |
 | Auth (Apple Sign-In) | Yes | Yes (JWKS verified) | — | **Partial** (needs Apple config) |
-| Apple Pay | Yes | Yes (Stripe) | Yes (Elements) | **No** (needs Merchant ID cert) |
+| Apple Pay | Yes | Yes (Stripe) | Yes (Elements) | **Partial** (code paths are live; merchant setup and live verification remain external) |
 | StoreKit subscriptions | Yes | Yes (JWS validate) | — | **No** (needs StoreKit config) |
-| Gym CRUD | Yes (UI) | **501 stub** | — | **No** |
-| Device CRUD | Yes (UI) | **501 stub** | — | **No** |
-| User profile | Yes (UI) | **501 stub** | Yes (UI) | **No** |
+| Gym CRUD | Yes (UI) | Yes | — | **Partial** |
+| Device CRUD | Yes (UI) | Yes | — | **Partial** |
+| User profile / account basics | Yes (UI) | Yes | Yes (UI) | **Partial** |
 | Sessions | Yes (UI) | Routes built | — | **Partial** (routes exist but not deployed) |
 | Calendar | Yes (UI) | Routes built | Yes (UI) | **Partial** |
 | Health metrics | Yes (UI) | **501 stub** | — | **No** |
 | Calories/meals | Yes (UI) | **501 stub** | — | **No** |
-| Workouts | Yes (UI) | **501 stub** | — | **No** |
-| Store products | Yes (UI) | **501 stub** | Yes (UI) | **No** |
-| Referrals | Yes (UI) | **501 stub** | — | **No** |
+| Workouts | Yes (UI) | Yes | — | **Partial** |
+| Store products / cart / checkout | Yes (UI) | Yes | Yes (UI) | **Partial** (live merchant verification still external) |
+| Referrals | Yes (UI) | Yes | — | **YES** |
 | Event logging | — | Routes built | — | **Partial** |
 | Push notifications | Yes (handler) | Token registration | — | **No** (needs APNs cert) |
 | WebSocket realtime | Yes (client) | Yes (server) | — | **Deployed but untested** |
-| Run tracking | **Not built** | **Not built** | **Not built** | **No** |
-| Web metrics dashboard | **N/A** | **Not built** | **Not built** | **No** |
+| Run tracking | Yes | Yes | Yes | **Partial** (physical-device GPS QA still manual) |
+| Web metrics dashboard | **N/A** | Yes | Yes | **YES** |
 
 ---
 
 ## Launch Action Plan — Priority Order
 
-### P0: Backend Service Layer (blocks everything)
+### P0: External Launch Verification
 
-These API routes currently return 501. Need real Mongoose CRUD operations.
-
-| Module | File to Create/Update | Routes |
-|--------|-----------------------|--------|
-| **Gyms** | `api/src/services/GymService.ts` | CRUD + evaluate-location |
-| **Devices** | `api/src/services/DeviceService.ts` | CRUD + status + bulk-sync |
-| **Users** | `api/src/services/UserService.ts` | GET/PATCH /me + preferences |
-| **Health** | `api/src/services/HealthService.ts` | Metrics CRUD + Apple sync |
-| **Calories** | `api/src/services/CalorieService.ts` | Daily + meals + water + goals |
-| **Workouts** | `api/src/services/WorkoutService.ts` | CRUD + exercises |
-| **Referrals** | `api/src/services/ReferralService.ts` | Code + QR + claim + reward |
-| **Store** | `api/src/services/StoreService.ts` | Products + cart + checkout |
-| **Notifications** | `api/src/services/NotificationService.ts` | Token registration + preferences |
-| **Config** | Update existing | Return real feature flags |
-
-Each service: import Mongoose model, implement CRUD, wire into existing route.
-Then: redeploy API via Cloud Build.
-
-### P1: Enhanced BLE Alarm (iOS)
-
-**Files to modify:**
-- `Core/BLE/BLESignalMonitor.swift` — Add half-strength detection with per-device baseline calibration
-- `Core/BLE/PanicAlarmManager.swift` — Add "End Session" vs "Lost Gear" interactive notification
-- `Core/BLE/BLEAlarmSoundPlayer.swift` — Add `.mixWithOthers` + `.duckOthers` for chirp over music
-- `Core/BLE/BLEManager.swift` — Store GPS at disconnect, favorite device priority
-
-**New files:**
-- `Core/BLE/HapticPatternEngine.swift` — CHHapticEngine custom patterns for progressive vibration
-- `Core/BLE/DeviceBatteryMonitor.swift` — BLE Battery Service (0x180F) reading
-
-**Signal → Response mapping:**
-```
-100-50% RSSI: No alert
-50% RSSI:     Phone vibrate (light) + slow chirp (1/3s) + AirPods chirp over music
-30% RSSI:     Phone vibrate (medium) + faster chirp (1/2s) + AirPods faster chirp
-15% RSSI:     Phone vibrate (heavy) + rapid chirp (1/s) + AirPods rapid chirp
-Disconnect:   Notification: "End Session" | "Lost Gear"
-              Lost Gear → max volume panic + GPS snapshot
-              End Session → silent disarm + log session end
-```
-
-### P1: Run Tracking (NEW — iOS + Backend + Web)
-
-**iOS files to create:**
-- `Core/RunTracking/RunTrackingManager.swift` — CoreLocation continuous GPS, polyline recording, auto-pause
-- `Core/RunTracking/RunSession.swift` — Model: id, startedAt, endedAt, distance, duration, pace, coordinates
-- `Features/RunTracking/ActiveRunView.swift` — Live map with polyline, pace/distance/duration overlay
-- `Features/RunTracking/RunHistoryView.swift` — List of past runs
-- `Features/RunTracking/RunDetailView.swift` — Map with pace-colored polyline, splits
-
-**Backend files:**
-- `api/src/models/Run.ts` — userId, startedAt, endedAt, distance, duration, polyline (encoded), pace, calories
-- `api/src/modules/runs/routes.ts` — POST start, PATCH end (with polyline), GET list, GET detail
-
-**Web files:**
-- `web/src/pages/RunMapPage.tsx` — Interactive run map viewer
-- `web/src/components/maps/RunPolyline.tsx` — Leaflet/MapKit JS polyline renderer
-
-### P1: Favorite/Pin Devices
-
-- Add `isFavorite: Boolean` to Device model (MongoDB + iOS)
-- Star toggle on DeviceListView
-- Favorites shown first, get priority RSSI monitoring
-- Device nickname editing
-
-### P1: Session Logging & Calendar
-
-- All session start/end times logged to GymSession collection
-- "End Session" notification creates the record
-- Calendar shows gym sessions (emerald) + runs (cyan) + purchases (gold dots)
-- Metrics: average gym time, streak, total sessions
-
-### P2: Web Metrics Dashboard
-
-**New web page:** `web/src/pages/MetricsPage.tsx`
-- Average gym session duration (rolling 30 days)
-- Total sessions this week/month
-- Current streak + longest streak
-- Total distance run
-- Peak workout hours chart
-- Weekly trend arrows
-- Device status cards with last-seen GPS
-- Run map gallery
-
-### P2: Redeploy API + Web
-
-After backend service layer is implemented:
-1. `cd /Users/shawn/Documents/GearSnitch && gcloud builds submit --project=gearsnitch --region=us-central1 --config=infrastructure/cloudbuild/cloudbuild.yaml --substitutions=_TAG=v1.0.0`
-2. This rebuilds all 4 Docker images and deploys to Cloud Run
-
-### P3: Manual Setup (Apple Developer + Google)
+These are the remaining blockers for true end-to-end launch validation. They are outside the code already landed in this repo.
 
 | Task | Where |
 |------|-------|
@@ -277,6 +208,20 @@ After backend service layer is implemented:
 | Add `gearsnitch://oauth/google/callback` as redirect URI | Same |
 | Create StoreKit products in App Store Connect | appstoreconnect.apple.com |
 | Add internal testers to TestFlight | appstoreconnect.apple.com |
+
+### P1: Redeploy And Smoke Test Current Revisions
+
+If production is still running an older image revision, redeploy from the current repo state and verify these launch paths against live services:
+
+1. `cd /Users/shawn/Documents/GearSnitch && gcloud builds submit --project=gearsnitch --region=us-central1 --config=infrastructure/cloudbuild/cloudbuild.yaml --substitutions=_TAG=v1.0.0`
+2. Verify browser sign-in bootstrap, support ticket submission, delete-account flow, store catalog load, Stripe checkout, and referral/account surfaces against the deployed API.
+3. Verify iOS sign-in, alert list, referrals, cart, Apple Pay, and BLE disconnect behavior against the deployed API plus worker/realtime services.
+
+### P2: Remaining Non-Launch Product Follow-Up
+
+- Finish non-launch modules that are still outside the current slice (`health-data`, `calories`, `content`, `admin`, `config`) if those surfaces are promoted to active client paths.
+- Add the missing Widget Extension target so WidgetKit files are no longer parked in the app tree without a shipping target.
+- Replace any remaining worker TODO processors that are not on the launch-critical path today but would matter for broader production hardening.
 
 ### P3: Missed Opportunity Features (Post-Launch)
 
@@ -311,14 +256,12 @@ After backend service layer is implemented:
 
 ## Known Issues
 
-1. **API routes return 501** — Backend service layer not implemented for most modules
-2. **Deployed API is old build** — Latest code (AuthService, payment routes) not redeployed
-3. **Apple Sign-In error 1000** — Entitlement added but needs Apple Developer portal App ID config
-4. **Google OAuth not configured** — Needs client ID creation in Cloud Console
-5. **Widget Extension target missing** — WidgetKit files excluded from main app, need separate target
-6. **Worker job processors are stubs** — All 7 BullMQ processors have TODO implementations
-7. **Push notifications not functional** — No APNs certificate configured
-8. **Web profile shows placeholder data** — API /auth/me needs to return real user data
+1. **Apple Sign-In still needs portal setup** — The entitlement is present in code, but live service/app identifier configuration is still external.
+2. **Google OAuth still needs real client IDs** — Browser and iOS flows require Cloud Console credentials plus redirect verification.
+3. **Push notifications still need APNs provisioning** — Repo wiring is in place, but live delivery cannot be validated without Apple credentials.
+4. **Live Stripe and Apple Pay still need merchant validation** — The app code now uses the correct contracts, but real payment verification depends on live credentials and merchant certificates.
+5. **Widget Extension target is still missing** — WidgetKit files exist but still need their own shipping target.
+6. **Some dormant modules remain outside the active launch slice** — `health-data`, `calories`, `content`, `admin`, and `config` still need dedicated follow-up if those surfaces become launch-critical.
 
 ---
 

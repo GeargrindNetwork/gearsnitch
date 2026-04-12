@@ -1,0 +1,75 @@
+{
+  "version": 3,
+  "track_id": "gps_route_capture_20260411",
+  "name": "GPS Route Capture And Replay",
+  "type": "feature",
+  "status": "complete",
+  "priority": "P2",
+  "created_at": "2026-04-12T04:14:26Z",
+  "updated_at": "2026-04-12T04:43:40Z",
+  "superpower_enhanced": true,
+  "dependencies": [
+    "run_tracking_metrics_20260411"
+  ],
+  "summary": "Add native iOS GPS run capture, backend run persistence, and basic replay surfaces.",
+  "loop_state": {
+    "current_step": "COMPLETE",
+    "step_status": "PASSED",
+    "fix_cycle_count": 0,
+    "max_fix_cycles": 3,
+    "checkpoints": {
+      "PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T04:14:26Z",
+        "completed_at": "2026-04-12T04:14:26Z",
+        "agent": "loop-planner",
+        "plan_version": 1
+      },
+      "EVALUATE_PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T04:26:52Z",
+        "completed_at": "2026-04-12T04:26:52Z",
+        "agent": "loop-plan-evaluator"
+      },
+      "EXECUTE": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T04:26:52Z",
+        "completed_at": "2026-04-12T04:43:40Z",
+        "agent": "loop-executor",
+        "tasks_completed": 6,
+        "tasks_total": 6,
+        "last_task": "Task 4.1"
+      },
+      "EVALUATE_EXECUTION": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T04:43:40Z",
+        "completed_at": "2026-04-12T04:43:40Z",
+        "agent": "loop-execution-evaluator",
+        "verdict": "PASS",
+        "checks": {
+          "api_test": true,
+          "api_lint": true,
+          "api_type_check": true,
+          "api_build": true,
+          "web_build": true,
+          "ios_simulator_build": true,
+          "web_targeted_lint": true
+        },
+        "notes": [
+          "The web workspace still has pre-existing lint failures in shared UI components and StorePage lint directives.",
+          "The shipped run replay surface introduced no additional web lint failures beyond that baseline.",
+          "Target-based xcodebuild validation was used because the project does not include a checked-in shared GearSnitch scheme."
+        ]
+      },
+      "FIX": { "status": "NOT_STARTED" },
+      "ENRICH": { "status": "NOT_STARTED" }
+    }
+  },
+  "lead_consultations": [],
+  "discovered_work": [
+    "Repo-wide web lint still fails on pre-existing react-refresh export violations in shared UI components.",
+    "StorePage still has pre-existing unused eslint-disable directives that fail the workspace lint run.",
+    "Target-based xcodebuild is the stable iOS validation path because a checked-in shared GearSnitch scheme is absent."
+  ],
+  "blockers": []
+}

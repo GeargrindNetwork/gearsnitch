@@ -26,10 +26,7 @@ struct RequestBuilder {
         refreshToken: String? = nil
     ) throws -> URLRequest {
         // Construct URL
-        guard var components = URLComponents(
-            url: baseURL.appendingPathComponent(endpoint.path),
-            resolvingAgainstBaseURL: true
-        ) else {
+        guard var components = buildURLComponents(baseURL: baseURL, endpoint: endpoint) else {
             throw NetworkError.invalidURL
         }
 
@@ -71,6 +68,29 @@ struct RequestBuilder {
     }
 
     // MARK: - Private
+
+    private static func buildURLComponents(baseURL: URL, endpoint: APIEndpoint) -> URLComponents? {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: true) else {
+            return nil
+        }
+
+        let baseSegments = components.path
+            .split(separator: "/")
+            .map(String.init)
+        let endpointSegments = endpoint.path
+            .split(separator: "/")
+            .map(String.init)
+
+        let mergedSegments: [String]
+        if endpointSegments.starts(with: baseSegments) {
+            mergedSegments = endpointSegments
+        } else {
+            mergedSegments = baseSegments + endpointSegments
+        }
+
+        components.path = mergedSegments.isEmpty ? "/" : "/" + mergedSegments.joined(separator: "/")
+        return components
+    }
 
     private static func encodeBody(_ body: any Encodable) throws -> Data {
         do {

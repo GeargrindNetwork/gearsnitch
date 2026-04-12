@@ -2,26 +2,39 @@ import Foundation
 
 // MARK: - Workout DTO
 
+private let kgPerPound = 0.45359237
+
 struct WorkoutDTO: Identifiable, Decodable {
     let id: String
-    let type: String
-    let startDate: Date
-    let endDate: Date
-    let caloriesBurned: Double?
-    let heartRateAvg: Double?
+    let name: String
+    let startedAt: Date
+    let endedAt: Date?
+    let durationMinutes: Double
+    let durationSeconds: Int
+    let exerciseCount: Int
     let notes: String?
-    let exercises: [ExerciseDTO]?
+    let exercises: [ExerciseDTO]
     let gymName: String?
+    let source: String?
     let createdAt: Date?
+    let updatedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
-        case type, startDate, endDate, caloriesBurned
-        case heartRateAvg, notes, exercises, gymName, createdAt
+        case name, startedAt, endedAt, durationMinutes, durationSeconds
+        case exerciseCount, notes, exercises, gymName, source, createdAt, updatedAt
     }
 
     var duration: TimeInterval {
-        endDate.timeIntervalSince(startDate)
+        if durationSeconds > 0 {
+            return TimeInterval(durationSeconds)
+        }
+
+        if let endedAt {
+            return endedAt.timeIntervalSince(startedAt)
+        }
+
+        return durationMinutes * 60
     }
 
     var durationString: String {
@@ -31,31 +44,29 @@ struct WorkoutDTO: Identifiable, Decodable {
         }
         return "\(minutes)m"
     }
-
-    var exerciseCount: Int {
-        exercises?.count ?? 0
-    }
 }
 
 struct ExerciseDTO: Identifiable, Decodable {
-    let id: String
+    let id = UUID()
     let name: String
     let sets: [SetDTO]
 
     enum CodingKeys: String, CodingKey {
-        case id = "_id"
         case name, sets
     }
 }
 
 struct SetDTO: Identifiable, Decodable {
-    let id: String
+    let id = UUID()
     let reps: Int
-    let weight: Double?
+    let weightKg: Double
 
     enum CodingKeys: String, CodingKey {
-        case id = "_id"
-        case reps, weight
+        case reps, weightKg
+    }
+
+    var weightLbs: Double {
+        weightKg / kgPerPound
     }
 }
 
@@ -76,7 +87,7 @@ final class WorkoutListViewModel: ObservableObject {
 
         do {
             let fetched: [WorkoutDTO] = try await apiClient.request(APIEndpoint.Workouts.list)
-            workouts = fetched.sorted { $0.startDate > $1.startDate }
+            workouts = fetched.sorted { $0.startedAt > $1.startedAt }
         } catch {
             self.error = error.localizedDescription
         }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { api } from '@/lib/api';
 
 const faqs = [
   {
@@ -69,11 +70,27 @@ export default function SupportPage() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // In production this would POST to the API
+    setIsSubmitting(true);
+    setError(null);
+
+    const res = await api.post<{ ticketId: string; status: string }>('/support/tickets', {
+      ...formData,
+      source: 'web',
+    });
+
+    if (!res.success) {
+      setError(res.error?.message ?? 'Could not send your message.');
+      setIsSubmitting(false);
+      return;
+    }
+
     setSubmitted(true);
+    setIsSubmitting(false);
   }
 
   function handleChange(
@@ -247,11 +264,15 @@ export default function SupportPage() {
                       className="w-full rounded-md border border-white/10 bg-zinc-800/50 px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:border-cyan-500/50 focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
                     />
                   </div>
+                  {error && (
+                    <p className="text-sm text-red-400">{error}</p>
+                  )}
                   <Button
                     type="submit"
+                    disabled={isSubmitting}
                     className="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 font-semibold text-black hover:from-cyan-400 hover:to-emerald-400 sm:w-auto"
                   >
-                    Send Message
+                    {isSubmitting ? 'Sending...' : 'Send Message'}
                   </Button>
                 </form>
               )}

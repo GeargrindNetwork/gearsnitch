@@ -29,6 +29,54 @@ struct AuthTokenResponse: Decodable {
     let accessToken: String
     let refreshToken: String
     let user: UserDTO
+
+    private enum CodingKeys: String, CodingKey {
+        case accessToken
+        case accessTokenSnake = "access_token"
+        case refreshToken
+        case refreshTokenSnake = "refresh_token"
+        case token
+        case user
+        case profile
+        case tokens
+    }
+
+    private enum TokenCodingKeys: String, CodingKey {
+        case accessToken
+        case accessTokenSnake = "access_token"
+        case refreshToken
+        case refreshTokenSnake = "refresh_token"
+        case token
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        if container.contains(.tokens) {
+            let tokenContainer = try container.nestedContainer(keyedBy: TokenCodingKeys.self, forKey: .tokens)
+            accessToken =
+                try tokenContainer.decodeIfPresent(String.self, forKey: .accessToken) ??
+                tokenContainer.decodeIfPresent(String.self, forKey: .accessTokenSnake) ??
+                tokenContainer.decode(String.self, forKey: .token)
+            refreshToken =
+                try tokenContainer.decodeIfPresent(String.self, forKey: .refreshToken) ??
+                tokenContainer.decode(String.self, forKey: .refreshTokenSnake)
+        } else {
+            accessToken =
+                try container.decodeIfPresent(String.self, forKey: .accessToken) ??
+                container.decodeIfPresent(String.self, forKey: .accessTokenSnake) ??
+                container.decode(String.self, forKey: .token)
+            refreshToken =
+                try container.decodeIfPresent(String.self, forKey: .refreshToken) ??
+                container.decode(String.self, forKey: .refreshTokenSnake)
+        }
+
+        if let decodedUser = try container.decodeIfPresent(UserDTO.self, forKey: .user) {
+            user = decodedUser
+        } else {
+            user = try container.decode(UserDTO.self, forKey: .profile)
+        }
+    }
 }
 
 struct UserDTO: Decodable, Identifiable {
@@ -43,8 +91,32 @@ struct UserDTO: Decodable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
+        case plainID = "id"
         case email, displayName, avatarURL, role
+        case avatarUrl
+        case photoUrl
+        case roles
         case referralCode, subscriptionTier, createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id =
+            try container.decodeIfPresent(String.self, forKey: .id) ??
+            container.decode(String.self, forKey: .plainID)
+        email = try container.decodeIfPresent(String.self, forKey: .email)
+        displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
+        avatarURL =
+            try container.decodeIfPresent(String.self, forKey: .avatarURL) ??
+            container.decodeIfPresent(String.self, forKey: .avatarUrl) ??
+            container.decodeIfPresent(String.self, forKey: .photoUrl)
+        role =
+            try container.decodeIfPresent(String.self, forKey: .role) ??
+            container.decodeIfPresent([String].self, forKey: .roles)?.first
+        referralCode = try container.decodeIfPresent(String.self, forKey: .referralCode)
+        subscriptionTier = try container.decodeIfPresent(String.self, forKey: .subscriptionTier)
+        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
     }
 }
 
@@ -56,6 +128,7 @@ struct ResponseDecoder {
 
     private static let decoder: JSONDecoder = {
         let d = JSONDecoder()
+        d.keyDecodingStrategy = .convertFromSnakeCase
         d.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let dateString = try container.decode(String.self)
@@ -123,7 +196,11 @@ struct ResponseDecoder {
         } catch let error as NetworkError {
             throw error
         } catch {
-            throw NetworkError.decodingFailed(context: error.localizedDescription)
+            do {
+                return try decoder.decode(T.self, from: data)
+            } catch {
+                throw NetworkError.decodingFailed(context: error.localizedDescription)
+            }
         }
     }
 

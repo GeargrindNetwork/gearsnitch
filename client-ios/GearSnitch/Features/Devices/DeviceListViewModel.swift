@@ -6,9 +6,11 @@ import Combine
 struct DeviceDTO: Identifiable, Decodable {
     let id: String
     let name: String
+    let nickname: String?
     let type: String
     let bluetoothIdentifier: String
     let status: String
+    let isFavorite: Bool
     let firmwareVersion: String?
     let signalStrength: Int?
     let lastSeenAt: Date?
@@ -17,13 +19,30 @@ struct DeviceDTO: Identifiable, Decodable {
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
-        case name, type, bluetoothIdentifier, status
+        case name, nickname, type, bluetoothIdentifier, status
         case firmwareVersion, signalStrength, lastSeenAt
-        case isMonitoring, createdAt
+        case isFavorite, isMonitoring, createdAt
     }
 
     var isConnected: Bool {
         status == "connected" || status == "monitoring"
+    }
+
+    var displayName: String {
+        if let nickname, !nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return nickname
+        }
+
+        return name
+    }
+
+    var priorityMetadata: PersistedBLEDeviceMetadata {
+        PersistedBLEDeviceMetadata(
+            id: id,
+            bluetoothIdentifier: bluetoothIdentifier,
+            nickname: nickname,
+            isFavorite: isFavorite
+        )
     }
 
     var statusColor: String {
@@ -52,7 +71,19 @@ final class DeviceListViewModel: ObservableObject {
 
         do {
             let fetched: [DeviceDTO] = try await apiClient.request(APIEndpoint.Devices.list)
-            devices = fetched
+            let sorted = fetched.sorted {
+                if $0.isFavorite != $1.isFavorite {
+                    return $0.isFavorite && !$1.isFavorite
+                }
+
+                if $0.isConnected != $1.isConnected {
+                    return $0.isConnected && !$1.isConnected
+                }
+
+                return $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
+            }
+            devices = sorted
+            BLEManager.shared.replacePersistedMetadata(sorted.map(\.priorityMetadata))
         } catch {
             self.error = error.localizedDescription
         }

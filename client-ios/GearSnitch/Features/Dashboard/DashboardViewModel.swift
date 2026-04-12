@@ -6,17 +6,29 @@ import Combine
 struct DashboardDevice: Identifiable, Decodable {
     let id: String
     let name: String
+    let nickname: String?
     let type: String
+    let bluetoothIdentifier: String
     let status: String
+    let isFavorite: Bool
     let lastSeenAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
-        case name, type, status, lastSeenAt
+        case name, nickname, type, bluetoothIdentifier, status, isFavorite, lastSeenAt
     }
 
     var isConnected: Bool {
         status == "connected" || status == "monitoring"
+    }
+
+    var priorityMetadata: PersistedBLEDeviceMetadata {
+        PersistedBLEDeviceMetadata(
+            id: id,
+            bluetoothIdentifier: bluetoothIdentifier,
+            nickname: nickname,
+            isFavorite: isFavorite
+        )
     }
 }
 
@@ -82,6 +94,7 @@ final class DashboardViewModel: ObservableObject {
 
             let (devs, alerts, gyms) = try await (fetchedDevices, fetchedAlerts, fetchedGyms)
             devices = devs
+            BLEManager.shared.replacePersistedMetadata(devs.map(\.priorityMetadata))
             activeAlerts = alerts.filter { $0.severity == "critical" || $0.severity == "high" }
             defaultGym = gyms.first(where: { $0.isDefault }) ?? gyms.first
         } catch {

@@ -5,6 +5,9 @@ export interface INotificationLog extends Document {
   userId: Types.ObjectId;
   tokenId: Types.ObjectId;
   notificationType: string;
+  title?: string | null;
+  body?: string | null;
+  metadata?: Record<string, unknown> | null;
   sentAt: Date;
   deliveredAt: Date | null;
   openedAt: Date | null;
@@ -21,6 +24,9 @@ const NotificationLogSchema = new Schema<INotificationLog>(
       required: true,
     },
     notificationType: { type: String, required: true },
+    title: { type: String, default: null },
+    body: { type: String, default: null },
+    metadata: { type: Schema.Types.Mixed, default: null },
     sentAt: { type: Date, required: true },
     deliveredAt: { type: Date, default: null },
     openedAt: { type: Date, default: null },

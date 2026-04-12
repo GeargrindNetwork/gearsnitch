@@ -79,6 +79,10 @@ extension APIEndpoint {
         static func updateMe(_ body: UpdateUserBody) -> APIEndpoint {
             APIEndpoint(path: "/api/v1/users/me", method: .PATCH, body: body)
         }
+
+        static var export: APIEndpoint {
+            APIEndpoint(path: "/api/v1/users/me/export", method: .POST)
+        }
     }
 }
 
@@ -92,6 +96,14 @@ extension APIEndpoint {
 
         static func create(_ body: CreateDeviceBody) -> APIEndpoint {
             APIEndpoint(path: "/api/v1/devices", method: .POST, body: body)
+        }
+
+        static func detail(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/devices/\(id)")
+        }
+
+        static func update(id: String, body: UpdateDeviceBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/devices/\(id)", method: .PATCH, body: body)
         }
 
         static func statusUpdate(id: String, status: String) -> APIEndpoint {
@@ -238,8 +250,58 @@ extension APIEndpoint {
             APIEndpoint(path: "/api/v1/workouts")
         }
 
+        static func detail(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/workouts/\(id)")
+        }
+
         static func create(_ body: CreateWorkoutBody) -> APIEndpoint {
             APIEndpoint(path: "/api/v1/workouts", method: .POST, body: body)
+        }
+
+        static func update(id: String, body: UpdateWorkoutBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/workouts/\(id)", method: .PATCH, body: body)
+        }
+
+        static func delete(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/workouts/\(id)", method: .DELETE)
+        }
+
+        static func complete(id: String, endedAt: Date? = nil) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/workouts/\(id)/complete",
+                method: .POST,
+                body: CompleteWorkoutBody(endedAt: endedAt)
+            )
+        }
+
+        static var metricsOverview: APIEndpoint {
+            APIEndpoint(path: "/api/v1/workouts/metrics/overview")
+        }
+    }
+}
+
+// MARK: - Runs Endpoints
+
+extension APIEndpoint {
+    enum Runs {
+        static var list: APIEndpoint {
+            APIEndpoint(path: "/api/v1/runs")
+        }
+
+        static func detail(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/runs/\(id)")
+        }
+
+        static func start(_ body: CreateRunBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/runs", method: .POST, body: body)
+        }
+
+        static func complete(id: String, body: CompleteRunBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/runs/\(id)/complete", method: .POST, body: body)
+        }
+
+        static var active: APIEndpoint {
+            APIEndpoint(path: "/api/v1/runs/active")
         }
     }
 }
@@ -307,6 +369,13 @@ struct CreateDeviceBody: Encodable {
 
 struct DeviceStatusUpdateBody: Encodable {
     let status: String
+}
+
+struct UpdateDeviceBody: Encodable {
+    let name: String?
+    let nickname: String?
+    let type: String?
+    let isFavorite: Bool?
 }
 
 struct CreateGymBody: Encodable {
@@ -380,13 +449,38 @@ struct LogWaterBody: Encodable {
     let amountMl: Double
 }
 
+struct CreateWorkoutSetBody: Encodable {
+    let reps: Int
+    let weightKg: Double
+}
+
+struct CreateWorkoutExerciseBody: Encodable {
+    let name: String
+    let sets: [CreateWorkoutSetBody]
+}
+
 struct CreateWorkoutBody: Encodable {
-    let type: String
-    let startDate: Date
-    let endDate: Date
-    let caloriesBurned: Double?
-    let heartRateAvg: Double?
+    let name: String
+    let gymId: String?
+    let startedAt: Date
+    let endedAt: Date?
     let notes: String?
+    let source: String
+    let exercises: [CreateWorkoutExerciseBody]
+}
+
+struct UpdateWorkoutBody: Encodable {
+    let name: String?
+    let gymId: String??
+    let startedAt: Date?
+    let endedAt: Date??
+    let notes: String??
+    let source: String?
+    let exercises: [CreateWorkoutExerciseBody]?
+}
+
+struct CompleteWorkoutBody: Encodable {
+    let endedAt: Date?
 }
 
 struct AddToCartBody: Encodable {

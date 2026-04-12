@@ -21,10 +21,13 @@ final class BLEDevice: Identifiable, ObservableObject {
     let id: UUID
     let name: String
     let identifier: UUID
+    var persistedId: String?
 
     @Published var status: BLEDeviceStatus
     @Published var rssi: Int
     @Published var lastSeenAt: Date?
+    @Published var preferredName: String?
+    @Published var isFavorite: Bool
 
     /// The underlying CoreBluetooth peripheral. Nil if the device was loaded
     /// from persistence and not yet rediscovered.
@@ -37,6 +40,9 @@ final class BLEDevice: Identifiable, ObservableObject {
         status: BLEDeviceStatus = .discovered,
         rssi: Int = 0,
         lastSeenAt: Date? = nil,
+        persistedId: String? = nil,
+        preferredName: String? = nil,
+        isFavorite: Bool = false,
         peripheral: CBPeripheral? = nil
     ) {
         self.id = id
@@ -45,6 +51,9 @@ final class BLEDevice: Identifiable, ObservableObject {
         self.status = status
         self.rssi = rssi
         self.lastSeenAt = lastSeenAt
+        self.persistedId = persistedId
+        self.preferredName = preferredName
+        self.isFavorite = isFavorite
         self.peripheral = peripheral
     }
 
@@ -58,6 +67,14 @@ final class BLEDevice: Identifiable, ObservableObject {
             lastSeenAt: Date(),
             peripheral: peripheral
         )
+    }
+
+    var displayName: String {
+        if let preferredName, !preferredName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return preferredName
+        }
+
+        return name
     }
 }
 

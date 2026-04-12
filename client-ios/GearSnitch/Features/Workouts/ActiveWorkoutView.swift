@@ -27,7 +27,7 @@ struct ActiveWorkoutView: View {
         .sheet(isPresented: $viewModel.showAddExercise) {
             addExerciseSheet
         }
-        .onChange(of: viewModel.didComplete) { completed in
+        .onChange(of: viewModel.didComplete) { _, completed in
             if completed { dismiss() }
         }
     }

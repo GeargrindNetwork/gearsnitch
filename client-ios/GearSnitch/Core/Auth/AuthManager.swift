@@ -168,7 +168,7 @@ final class AuthManager: ObservableObject {
 
     /// Exposed for direct token refresh when needed (e.g. before socket connect).
     func refreshToken() async throws -> String {
-        guard let rt = tokenStore.refreshToken else {
+        guard tokenStore.refreshToken != nil else {
             throw NetworkError.tokenRefreshFailed
         }
 
@@ -187,7 +187,7 @@ final class AuthManager: ObservableObject {
         logger.info("Sign-in complete for user \(user.id) via \(method)")
 
         AnalyticsClient.shared.identify(userId: user.id, traits: [
-            "email": user.email ?? "",
+            "email": user.email,
             "displayName": user.displayName ?? "",
             "subscriptionTier": user.roles.first ?? "free",
         ])

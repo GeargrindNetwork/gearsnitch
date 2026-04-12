@@ -1,0 +1,72 @@
+{
+  "version": 3,
+  "track_id": "device_priority_alarm_20260411",
+  "name": "Device Priority Alarm And Favorites",
+  "type": "feature",
+  "status": "complete",
+  "priority": "P3",
+  "created_at": "2026-04-12T04:14:26Z",
+  "updated_at": "2026-04-12T05:14:07Z",
+  "superpower_enhanced": true,
+  "dependencies": [
+    "realtime_worker_hardening_20260411"
+  ],
+  "summary": "Persist favorite devices and improve BLE alarm/disconnect UX.",
+  "loop_state": {
+    "current_step": "COMPLETE",
+    "step_status": "PASSED",
+    "fix_cycle_count": 0,
+    "max_fix_cycles": 3,
+    "checkpoints": {
+      "PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T04:14:26Z",
+        "completed_at": "2026-04-12T04:14:26Z",
+        "agent": "loop-planner",
+        "plan_version": 1
+      },
+      "EVALUATE_PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T05:14:07Z",
+        "completed_at": "2026-04-12T05:14:07Z",
+        "agent": "loop-plan-evaluator"
+      },
+      "EXECUTE": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T05:14:07Z",
+        "completed_at": "2026-04-12T05:14:07Z",
+        "agent": "loop-executor",
+        "tasks_completed": 4,
+        "tasks_total": 4,
+        "last_task": "Task 3.1"
+      },
+      "EVALUATE_EXECUTION": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T05:14:07Z",
+        "completed_at": "2026-04-12T05:14:07Z",
+        "agent": "loop-execution-evaluator",
+        "verdict": "PASS",
+        "checks": {
+          "api_lint": true,
+          "api_test": true,
+          "api_type_check": true,
+          "ios_build": true
+        },
+        "notes": [
+          "The device contract now persists nickname and favorite metadata through the API and the iOS networking layer.",
+          "BLE reconnect timeout handling now presents an explicit end-session versus lost-gear decision instead of automatically escalating to panic mode.",
+          "Targeted API lint/test/type-check and the GearSnitch iOS simulator build all passed for this slice."
+        ]
+      },
+      "FIX": { "status": "NOT_STARTED" },
+      "ENRICH": { "status": "NOT_STARTED" }
+    }
+  },
+  "lead_consultations": [],
+  "discovered_work": [
+    "Added persisted nickname and favorite device metadata to the API contract, iOS DTOs, and BLE metadata sync path so favorites sort first across device-facing surfaces.",
+    "Added api/tests/device-priority-alarm.test.cjs as a focused regression sweep covering the device priority contract, favorite/nickname UI wiring, and the disconnect decision path.",
+    "Replaced the forced reconnect-timeout panic escalation with an explicit end-session vs lost-gear prompt and recalibrated BLE thresholds and alert cadence to reduce false positives."
+  ],
+  "blockers": []
+}

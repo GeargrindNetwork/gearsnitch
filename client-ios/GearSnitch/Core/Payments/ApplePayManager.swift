@@ -34,11 +34,7 @@ final class ApplePayManager: NSObject, ObservableObject {
     /// Continuation for bridging the delegate callback to async/await.
     private var paymentContinuation: CheckedContinuation<String, Error>?
 
-    /// Stores the payment token from the delegate callback for backend submission.
-    private var pendingPaymentToken: PKPaymentToken?
-
-    /// Completion handler from the delegate, called after backend confirmation.
-    private var authorizationCompletion: ((PKPaymentAuthorizationResult) -> Void)?
+    private var pendingPaymentIntentId: String?
 
     // MARK: - Availability
 
@@ -54,18 +50,27 @@ final class ApplePayManager: NSObject, ObservableObject {
     /// Initiates an Apple Pay payment flow.
     ///
     /// - Parameters:
+    ///   - cartId: The current store cart being checked out.
+    ///   - shippingAddress: The shipping address collected in the checkout form.
     ///   - items: Cart items to display on the payment sheet.
     ///   - subtotal: Cart subtotal before tax and shipping.
     ///   - tax: Tax amount.
     ///   - shipping: Shipping cost.
     /// - Returns: The order ID from the backend on success.
     func startPayment(
+        cartId: String,
+        shippingAddress: ShippingAddress,
         items: [CartItemDTO],
         subtotal: Double,
         tax: Double,
         shipping: Double
     ) async throws -> String {
         paymentStatus = .processing
+        let intent = try await paymentService.createPaymentIntent(
+            cartId: cartId,
+            shippingAddress: shippingAddress
+        )
+        pendingPaymentIntentId = intent.paymentIntentId
 
         let request = buildPaymentRequest(
             items: items,
@@ -88,6 +93,7 @@ final class ApplePayManager: NSObject, ObservableObject {
                         if !presented {
                             self.logger.error("Failed to present Apple Pay sheet")
                             self.paymentStatus = .failed("Failed to present Apple Pay")
+                            self.pendingPaymentIntentId = nil
                             self.paymentContinuation?.resume(
                                 throwing: ApplePayError.presentationFailed
                             )
@@ -102,6 +108,7 @@ final class ApplePayManager: NSObject, ObservableObject {
         } catch {
             let message = error.localizedDescription
             paymentStatus = .failed(message)
+            pendingPaymentIntentId = nil
             logger.error("Apple Pay failed: \(message)")
             throw error
         }
@@ -166,13 +173,22 @@ extension ApplePayManager: PKPaymentAuthorizationControllerDelegate {
     ) {
         Task { @MainActor in
             self.logger.info("Payment authorized, sending token to backend")
-            self.pendingPaymentToken = payment.token
-            self.authorizationCompletion = completion
+            guard let paymentIntentId = self.pendingPaymentIntentId else {
+                let pkError = PKPaymentRequest.PaymentError.paymentNotAllowed(
+                    description: "Payment session expired. Please try again."
+                )
+                completion(PKPaymentAuthorizationResult(status: .failure, errors: [pkError]))
+                self.paymentContinuation?.resume(
+                    throwing: ApplePayError.backendConfirmationFailed("Missing payment intent")
+                )
+                self.paymentContinuation = nil
+                return
+            }
 
             do {
                 // Send the Apple Pay token to the backend for processing
                 let confirmation = try await self.paymentService.confirmApplePayPayment(
-                    paymentIntentId: "", // Backend derives this from the token
+                    paymentIntentId: paymentIntentId,
                     applePayToken: payment.token.paymentData
                 )
 
@@ -193,8 +209,7 @@ extension ApplePayManager: PKPaymentAuthorizationControllerDelegate {
                 self.paymentContinuation = nil
             }
 
-            self.pendingPaymentToken = nil
-            self.authorizationCompletion = nil
+            self.pendingPaymentIntentId = nil
         }
     }
 
@@ -202,16 +217,15 @@ extension ApplePayManager: PKPaymentAuthorizationControllerDelegate {
         _ controller: PKPaymentAuthorizationController
     ) {
         Task { @MainActor [weak self] in
-            controller.dismiss {
-                Task { @MainActor [weak self] in
-                    guard let self else { return }
-                    if self.paymentContinuation != nil {
-                        self.logger.info("User cancelled Apple Pay")
-                        self.paymentStatus = .idle
-                        self.paymentContinuation?.resume(throwing: ApplePayError.cancelled)
-                        self.paymentContinuation = nil
-                    }
-                }
+            await controller.dismiss()
+
+            guard let self else { return }
+            if self.paymentContinuation != nil {
+                self.logger.info("User cancelled Apple Pay")
+                self.paymentStatus = .idle
+                self.pendingPaymentIntentId = nil
+                self.paymentContinuation?.resume(throwing: ApplePayError.cancelled)
+                self.paymentContinuation = nil
             }
         }
     }

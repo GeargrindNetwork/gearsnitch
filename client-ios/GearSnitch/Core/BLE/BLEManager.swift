@@ -5,6 +5,20 @@ import UIKit
 
 // MARK: - BLE Manager
 
+struct PersistedBLEDeviceMetadata {
+    let id: String
+    let bluetoothIdentifier: String
+    let nickname: String?
+    let isFavorite: Bool
+}
+
+struct DisconnectDecisionPrompt: Identifiable {
+    let id: String
+    let deviceIdentifier: UUID
+    let deviceName: String
+    let lastSeenAt: Date?
+}
+
 /// Central BLE manager handling scanning, connection, reconnection, and
 /// state restoration for GearSnitch device peripherals.
 @MainActor
@@ -20,10 +34,7 @@ final class BLEManager: NSObject, ObservableObject {
 
     /// Service UUIDs the app monitors. Register these in Info.plist under
     /// `UIBackgroundModes` -> `bluetooth-central` for background BLE.
-    static let registeredServiceUUIDs: [CBUUID] = [
-        // Add GearSnitch-specific service UUIDs here
-        // CBUUID(string: "YOUR-SERVICE-UUID")
-    ]
+    static let registeredServiceUUIDs: [CBUUID] = AppConfig.bleServiceUUIDs
 
     // MARK: - Published State
 
@@ -31,6 +42,7 @@ final class BLEManager: NSObject, ObservableObject {
     @Published private(set) var discoveredDevices: [BLEDevice] = []
     @Published private(set) var connectedDevices: [BLEDevice] = []
     @Published private(set) var isScanning = false
+    @Published private(set) var pendingDisconnectPrompt: DisconnectDecisionPrompt?
 
     // MARK: - Private Properties
 
@@ -40,6 +52,7 @@ final class BLEManager: NSObject, ObservableObject {
 
     /// Tracks reconnection timers per device identifier.
     private var reconnectionTimers: [UUID: ReconnectionState] = [:]
+    private var persistedMetadataByIdentifier: [String: PersistedBLEDeviceMetadata] = [:]
 
     // MARK: - Init
 
@@ -129,9 +142,52 @@ final class BLEManager: NSObject, ObservableObject {
 
     /// Disconnect from all connected devices.
     func disconnectAll() {
+        pendingDisconnectPrompt = nil
         for device in connectedDevices {
             disconnect(from: device)
         }
+    }
+
+    func replacePersistedMetadata(_ metadata: [PersistedBLEDeviceMetadata]) {
+        persistedMetadataByIdentifier = Dictionary(
+            uniqueKeysWithValues: metadata.map {
+                (Self.normalizedIdentifier($0.bluetoothIdentifier), $0)
+            }
+        )
+        syncKnownDeviceMetadata()
+    }
+
+    func upsertPersistedMetadata(_ metadata: PersistedBLEDeviceMetadata) {
+        persistedMetadataByIdentifier[Self.normalizedIdentifier(metadata.bluetoothIdentifier)] = metadata
+        syncKnownDeviceMetadata()
+    }
+
+    func dismissPendingDisconnectPrompt() {
+        pendingDisconnectPrompt = nil
+    }
+
+    func resolvePendingDisconnectAsEndedSession() {
+        guard let prompt = pendingDisconnectPrompt else { return }
+        pendingDisconnectPrompt = nil
+
+        if let device = knownDevice(identifier: prompt.deviceIdentifier) {
+            cancelReconnection(for: device.identifier)
+            device.status = .disconnected
+            sortKnownDevices()
+        }
+    }
+
+    func resolvePendingDisconnectAsLostGear() {
+        guard let prompt = pendingDisconnectPrompt else { return }
+        pendingDisconnectPrompt = nil
+
+        guard let device = knownDevice(identifier: prompt.deviceIdentifier) else { return }
+
+        cancelReconnection(for: device.identifier)
+        device.status = .lost
+        sortKnownDevices()
+        BLESignalMonitor.shared.reportDeviceLost(device)
+        PanicAlarmManager.shared.triggerPanic(device: device)
     }
 
     // MARK: - Reconnection
@@ -146,12 +202,13 @@ final class BLEManager: NSObject, ObservableObject {
         logger.info("Starting reconnection for \(device.name) (timeout: \(Self.reconnectionTimeout)s)")
 
         // Schedule a repeating timer to attempt reconnection
+        let deviceIdentifier = device.identifier
         state.timer = Timer.scheduledTimer(
             withTimeInterval: Self.reconnectionTimerInterval,
             repeats: true
         ) { [weak self] timer in
             Task { @MainActor [weak self] in
-                self?.handleReconnectionTick(device: device, timer: timer)
+                self?.handleReconnectionTick(deviceIdentifier: deviceIdentifier, timer: timer)
             }
         }
 
@@ -161,8 +218,12 @@ final class BLEManager: NSObject, ObservableObject {
         }
     }
 
-    private func handleReconnectionTick(device: BLEDevice, timer: Timer) {
-        guard let state = reconnectionTimers[device.identifier] else {
+    private func handleReconnectionTick(deviceIdentifier: UUID, timer: Timer) {
+        guard
+            let state = reconnectionTimers[deviceIdentifier],
+            let device = connectedDevices.first(where: { $0.identifier == deviceIdentifier })
+                ?? discoveredDevices.first(where: { $0.identifier == deviceIdentifier })
+        else {
             timer.invalidate()
             return
         }
@@ -172,14 +233,21 @@ final class BLEManager: NSObject, ObservableObject {
         if elapsed >= Self.reconnectionTimeout {
             // Timeout reached
             timer.invalidate()
-            reconnectionTimers.removeValue(forKey: device.identifier)
-            device.status = .lost
+            reconnectionTimers.removeValue(forKey: deviceIdentifier)
+            device.status = .disconnected
 
-            logger.warning("Reconnection timeout for \(device.name) — triggering panic")
-
-            // Trigger full panic alarm instead of just a haptic
-            BLESignalMonitor.shared.reportDeviceLost(device)
-            PanicAlarmManager.shared.triggerPanic(device: device)
+            logger.warning("Reconnection timeout for \(device.displayName) — awaiting user decision")
+            pendingDisconnectPrompt = DisconnectDecisionPrompt(
+                id: device.identifier.uuidString,
+                deviceIdentifier: device.identifier,
+                deviceName: device.displayName,
+                lastSeenAt: device.lastSeenAt
+            )
+            triggerDisconnectHaptic()
+            Task { [weak self] in
+                await self?.postDisconnectAlert(for: device)
+            }
+            sortKnownDevices()
         }
     }
 
@@ -191,8 +259,8 @@ final class BLEManager: NSObject, ObservableObject {
 
     private func postDisconnectAlert(for device: BLEDevice) async {
         let body = DeviceDisconnectedBody(
-            deviceId: device.id.uuidString,
-            deviceName: device.name,
+            deviceId: device.persistedId ?? device.identifier.uuidString,
+            deviceName: device.displayName,
             lastSeenAt: device.lastSeenAt ?? Date(),
             latitude: nil,
             longitude: nil
@@ -273,6 +341,7 @@ extension BLEManager: CBCentralManagerDelegate {
             )
             if device != nil {
                 self.discoveredDevices = self.scanner.discoveredDevices
+                self.syncKnownDeviceMetadata()
             }
         }
     }
@@ -296,6 +365,8 @@ extension BLEManager: CBCentralManagerDelegate {
                     self.connectedDevices.append(device)
                 }
                 self.discoveredDevices.removeAll { $0.identifier == device.identifier }
+                self.applyPersistedMetadataIfAvailable(to: device)
+                self.sortKnownDevices()
 
                 // Start signal monitoring when first device connects
                 if self.connectedDevices.count == 1 {
@@ -316,6 +387,7 @@ extension BLEManager: CBCentralManagerDelegate {
 
             if let device = self.findDevice(for: peripheral) {
                 device.status = .disconnected
+                self.sortKnownDevices()
             }
         }
     }
@@ -342,6 +414,7 @@ extension BLEManager: CBCentralManagerDelegate {
                     self.startReconnection(for: device)
                 } else {
                     device.status = .disconnected
+                    self.sortKnownDevices()
                 }
             }
         }
@@ -361,6 +434,7 @@ extension BLEManager: CBCentralManagerDelegate {
                 for peripheral in peripherals {
                     let device = BLEDevice(peripheral: peripheral, rssi: 0)
                     device.status = peripheral.state == .connected ? .connected : .reconnecting
+                    self.applyPersistedMetadataIfAvailable(to: device)
 
                     if peripheral.state == .connected {
                         self.connectedDevices.append(device)
@@ -368,6 +442,8 @@ extension BLEManager: CBCentralManagerDelegate {
                         self.startReconnection(for: device)
                     }
                 }
+
+                self.sortKnownDevices()
             }
         }
     }
@@ -404,8 +480,68 @@ extension BLEManager: CBPeripheralDelegate {
                 device.rssi = rssiValue
                 device.lastSeenAt = Date()
                 BLESignalMonitor.shared.reportRSSI(rssiValue, for: device)
+                self.sortKnownDevices()
             }
         }
+    }
+}
+
+private extension BLEManager {
+    static func normalizedIdentifier(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    func applyPersistedMetadataIfAvailable(to device: BLEDevice) {
+        let key = Self.normalizedIdentifier(device.identifier.uuidString)
+        guard let metadata = persistedMetadataByIdentifier[key] else {
+            device.persistedId = nil
+            device.preferredName = nil
+            device.isFavorite = false
+            return
+        }
+
+        device.persistedId = metadata.id
+        device.preferredName = metadata.nickname
+        device.isFavorite = metadata.isFavorite
+    }
+
+    func syncKnownDeviceMetadata() {
+        for device in connectedDevices {
+            applyPersistedMetadataIfAvailable(to: device)
+        }
+
+        for device in discoveredDevices {
+            applyPersistedMetadataIfAvailable(to: device)
+        }
+
+        sortKnownDevices()
+    }
+
+    func sortKnownDevices() {
+        connectedDevices.sort(by: deviceSort)
+        discoveredDevices.sort(by: deviceSort)
+    }
+
+    func deviceSort(_ lhs: BLEDevice, _ rhs: BLEDevice) -> Bool {
+        if lhs.isFavorite != rhs.isFavorite {
+            return lhs.isFavorite && !rhs.isFavorite
+        }
+
+        if lhs.rssi != rhs.rssi {
+            return lhs.rssi > rhs.rssi
+        }
+
+        if lhs.lastSeenAt != rhs.lastSeenAt {
+            return (lhs.lastSeenAt ?? .distantPast) > (rhs.lastSeenAt ?? .distantPast)
+        }
+
+        return lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
+    }
+
+    func knownDevice(identifier: UUID) -> BLEDevice? {
+        connectedDevices.first(where: { $0.identifier == identifier })
+        ?? discoveredDevices.first(where: { $0.identifier == identifier })
+        ?? scanner.device(for: identifier)
     }
 }
 

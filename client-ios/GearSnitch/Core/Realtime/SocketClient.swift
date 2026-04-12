@@ -114,7 +114,7 @@ actor SocketClient {
             return
         }
 
-        guard let wsURL = buildWebSocketURL(token: token) else {
+        guard let wsURL = Self.buildWebSocketURL(token: token) else {
             logger.error("Invalid WebSocket URL")
             await scheduleReconnect()
             return
@@ -136,13 +136,26 @@ actor SocketClient {
         startReceiving()
     }
 
-    private func buildWebSocketURL(token: String) -> URL? {
-        let baseURL = AppConfig.apiBaseURL
-        let wsScheme = baseURL.hasPrefix("https") ? "wss" : "ws"
-        let host = baseURL
-            .replacingOccurrences(of: "https://", with: "")
-            .replacingOccurrences(of: "http://", with: "")
-        return URL(string: "\(wsScheme)://\(host)/ws?token=\(token)")
+    static func buildWebSocketURL(baseURL: String = AppConfig.socketURL, token: String) -> URL? {
+        guard var components = URLComponents(string: baseURL) else {
+            return nil
+        }
+
+        let pathSegments = components.path
+            .split(separator: "/")
+            .map(String.init)
+        let normalizedPathSegments = pathSegments.last == "ws" ? pathSegments : pathSegments + ["ws"]
+
+        components.path = normalizedPathSegments.isEmpty
+            ? "/ws"
+            : "/" + normalizedPathSegments.joined(separator: "/")
+
+        var queryItems = components.queryItems ?? []
+        queryItems.removeAll { $0.name == "token" }
+        queryItems.append(URLQueryItem(name: "token", value: token))
+        components.queryItems = queryItems
+
+        return components.url
     }
 
     // MARK: - Private: Receive Loop

@@ -62,11 +62,12 @@ export default function HeatmapCalendar({ data, year, month }: HeatmapCalendarPr
 
           const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const count = countMap.get(dateStr) ?? 0;
+          const activityLabel = count === 1 ? 'activity signal' : 'activity signals';
 
           return (
             <div
               key={dateStr}
-              title={`${dateStr}: ${count} session${count !== 1 ? 's' : ''}`}
+              title={`${dateStr}: ${count} ${activityLabel}`}
               className={cn(
                 'aspect-square rounded-sm transition-colors',
                 intensityClass(count),

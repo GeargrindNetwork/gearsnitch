@@ -1,0 +1,81 @@
+{
+  "version": 3,
+  "track_id": "web_auth_dashboard_20260411",
+  "name": "Web Auth And Dashboard",
+  "type": "feature",
+  "status": "complete",
+  "priority": "P1",
+  "created_at": "2026-04-11T00:00:00Z",
+  "updated_at": "2026-04-12T03:19:19Z",
+  "superpower_enhanced": true,
+  "dependencies": [
+    "backend_core_services_20260411"
+  ],
+  "summary": "Add browser sign-in, session bootstrap, and live account/dashboard behavior for the web app.",
+  "loop_state": {
+    "current_step": "COMPLETE",
+    "step_status": "PASSED",
+    "fix_cycle_count": 0,
+    "max_fix_cycles": 3,
+    "checkpoints": {
+      "PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T03:04:09Z",
+        "completed_at": "2026-04-12T03:04:09Z",
+        "agent": "loop-planner",
+        "plan_version": 1
+      },
+      "EVALUATE_PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T03:04:09Z",
+        "completed_at": "2026-04-12T03:04:09Z",
+        "agent": "loop-plan-evaluator",
+        "verdict": "PASS",
+        "checks": {
+          "scope_alignment": true,
+          "overlap_detection": true,
+          "dependencies": true,
+          "task_quality": true,
+          "dag_validation": true,
+          "board_review": true
+        }
+      },
+      "EXECUTE": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T03:04:09Z",
+        "completed_at": "2026-04-12T03:19:19Z",
+        "agent": "loop-executor",
+        "tasks_completed": 6,
+        "tasks_total": 6,
+        "last_task": "Task 3.1"
+      },
+      "EVALUATE_EXECUTION": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T03:19:19Z",
+        "completed_at": "2026-04-12T03:19:19Z",
+        "agent": "loop-execution-evaluator",
+        "verdict": "PASS",
+        "checks": {
+          "web_build": true,
+          "auth_runtime": true,
+          "route_guard": true,
+          "calendar_normalization": true,
+          "browser_sign_in_surface": true
+        },
+        "notes": [
+          "Build verification passed for the web workspace.",
+          "Interactive browser OAuth verification was not completed in-session because local browser automation was unavailable and provider configuration remains environment-dependent.",
+          "Web lint failures remain, but they are pre-existing shared UI/config issues outside the auth/dashboard slice."
+        ]
+      },
+      "FIX": { "status": "NOT_STARTED" },
+      "ENRICH": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T03:19:19Z",
+        "completed_at": "2026-04-12T03:19:19Z",
+        "agent": "retrospective-agent"
+      }
+    }
+  },
+  "blockers": []
+}

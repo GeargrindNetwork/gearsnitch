@@ -21,6 +21,7 @@ export interface IShippingAddress {
 export interface IStoreOrder extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
+  sourceCartId?: Types.ObjectId;
   orderNumber: string;
   paymentIntentId?: string;
   status: 'pending' | 'paid' | 'fulfilled' | 'cancelled' | 'refunded';
@@ -67,6 +68,7 @@ const ShippingAddressSchema = new Schema<IShippingAddress>(
 const StoreOrderSchema = new Schema<IStoreOrder>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    sourceCartId: { type: Schema.Types.ObjectId, ref: 'StoreCart' },
     orderNumber: { type: String, required: true },
     paymentIntentId: { type: String },
     status: {
@@ -90,6 +92,7 @@ StoreOrderSchema.index({ orderNumber: 1 }, { unique: true });
 StoreOrderSchema.index({ userId: 1, createdAt: -1 });
 StoreOrderSchema.index({ status: 1 });
 StoreOrderSchema.index({ paymentIntentId: 1 }, { sparse: true });
+StoreOrderSchema.index({ userId: 1, sourceCartId: 1, status: 1 }, { sparse: true });
 
 export const StoreOrder = mongoose.model<IStoreOrder>(
   'StoreOrder',

@@ -39,7 +39,7 @@ struct DeviceStatusBadge: View {
                     }
                 }
             }
-            .onChange(of: status) { newStatus in
+            .onChange(of: status) { _, newStatus in
                 if newStatus == .reconnecting {
                     isPulsing = false
                     withAnimation(

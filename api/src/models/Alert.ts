@@ -3,9 +3,10 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 export interface IAlert extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
-  deviceId: Types.ObjectId;
+  deviceId: string | null;
   type:
     | 'disconnect_warning'
+    | 'device_disconnected'
     | 'panic_alarm'
     | 'reconnect_found'
     | 'gym_entry_activate'
@@ -13,6 +14,7 @@ export interface IAlert extends Document {
   severity: 'low' | 'medium' | 'high' | 'critical';
   status: 'open' | 'acknowledged' | 'resolved';
   triggeredAt: Date;
+  acknowledgedAt: Date | null;
   resolvedAt: Date | null;
   metadata?: Record<string, unknown>;
   createdAt: Date;
@@ -22,11 +24,12 @@ export interface IAlert extends Document {
 const AlertSchema = new Schema<IAlert>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    deviceId: { type: Schema.Types.ObjectId, ref: 'Device', required: true },
+    deviceId: { type: String, default: null },
     type: {
       type: String,
       enum: [
         'disconnect_warning',
+        'device_disconnected',
         'panic_alarm',
         'reconnect_found',
         'gym_entry_activate',
@@ -45,6 +48,7 @@ const AlertSchema = new Schema<IAlert>(
       default: 'open',
     },
     triggeredAt: { type: Date, required: true },
+    acknowledgedAt: { type: Date, default: null },
     resolvedAt: { type: Date, default: null },
     metadata: { type: Schema.Types.Mixed },
   },

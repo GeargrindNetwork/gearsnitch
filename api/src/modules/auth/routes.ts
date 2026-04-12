@@ -1,9 +1,12 @@
 import { Router, type Request, type Response } from 'express';
+import { Types } from 'mongoose';
 import { z } from 'zod';
 import { StatusCodes } from 'http-status-codes';
 import { successResponse, errorResponse } from '../../utils/response.js';
 import { validateBody } from '../../middleware/validate.js';
 import { isAuthenticated, type JwtPayload } from '../../middleware/auth.js';
+import { getRedisClient } from '../../loaders/redis.js';
+import { Session } from '../../models/Session.js';
 import { AuthService, AuthServiceError, type DeviceInfo } from '../../services/AuthService.js';
 
 const router = Router();
@@ -51,6 +54,28 @@ function handleServiceError(res: Response, err: unknown): void {
     StatusCodes.INTERNAL_SERVER_ERROR,
     'An unexpected error occurred',
   );
+}
+
+function serializeSession(
+  session: {
+    _id: Types.ObjectId;
+    deviceName: string;
+    platform: 'ios' | 'watchos' | 'web';
+    ipAddress: string;
+    createdAt: Date;
+  },
+  currentJti: string,
+  sessionJti: string,
+) {
+  return {
+    _id: session._id.toString(),
+    deviceName: session.deviceName,
+    platform: session.platform,
+    ipAddress: session.ipAddress,
+    lastActiveAt: session.createdAt,
+    createdAt: session.createdAt,
+    isCurrent: sessionJti === currentJti,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -207,15 +232,114 @@ router.get('/me', isAuthenticated, async (req: Request, res: Response) => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /auth/sessions
+// ---------------------------------------------------------------------------
+
+router.get('/sessions', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const user = req.user as JwtPayload;
+
+    const sessions = await Session.find({
+      userId: user.sub,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    successResponse(
+      res,
+      sessions.map((session) => serializeSession(session, user.jti, session.jti)),
+    );
+  } catch (err) {
+    handleServiceError(res, err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /auth/sessions/:id
+// ---------------------------------------------------------------------------
+
+router.delete('/sessions/:id', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const user = req.user as JwtPayload;
+    const sessionId = req.params.id as string;
+
+    if (!Types.ObjectId.isValid(sessionId)) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid session id');
+      return;
+    }
+
+    const session = await Session.findOne({
+      _id: sessionId,
+      userId: user.sub,
+      revokedAt: null,
+    });
+
+    if (!session) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'Session not found');
+      return;
+    }
+
+    await AuthService.logout(user.sub, session.jti);
+    successResponse(res, {});
+  } catch (err) {
+    handleServiceError(res, err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /auth/sessions/revoke-others
+// ---------------------------------------------------------------------------
+
+router.post('/sessions/revoke-others', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const user = req.user as JwtPayload;
+    const redis = getRedisClient();
+
+    const sessions = await Session.find({
+      userId: user.sub,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+      jti: { $ne: user.jti },
+    }).lean();
+
+    const redisKeys = sessions.flatMap((session) => [
+      `session:${user.sub}:${session.jti}`,
+      `refresh:${user.sub}:${session.jti}`,
+    ]);
+
+    if (redisKeys.length > 0) {
+      await redis.del(...redisKeys);
+    }
+
+    await Session.updateMany(
+      {
+        userId: user.sub,
+        revokedAt: null,
+        expiresAt: { $gt: new Date() },
+        jti: { $ne: user.jti },
+      },
+      { revokedAt: new Date() },
+    );
+
+    successResponse(res, {});
+  } catch (err) {
+    handleServiceError(res, err);
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Sanitize user for API response
 // ---------------------------------------------------------------------------
 
-function sanitizeUser(user: { _id?: unknown; email?: string; displayName?: string; photoUrl?: string; roles?: string[]; status?: string; defaultGymId?: unknown; onboardingCompletedAt?: Date | null; permissionsState?: unknown; preferences?: unknown }) {
+function sanitizeUser(user: { _id?: unknown; email?: string; displayName?: string; photoUrl?: string; referralCode?: string | null; roles?: string[]; status?: string; defaultGymId?: unknown; onboardingCompletedAt?: Date | null; permissionsState?: unknown; preferences?: unknown }) {
   return {
     _id: String(user._id),
     email: user.email,
     displayName: user.displayName,
     avatarURL: user.photoUrl,
+    referralCode: user.referralCode ?? null,
     role: user.roles?.[0] ?? 'user',
     status: user.status,
     defaultGymId: user.defaultGymId ? String(user.defaultGymId) : null,

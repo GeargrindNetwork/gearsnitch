@@ -4,6 +4,7 @@ export interface IDevice extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   name: string;
+  nickname?: string | null;
   type: 'earbuds' | 'tracker' | 'belt' | 'bag' | 'other';
   identifier: string;
   hardwareModel?: string;
@@ -13,9 +14,11 @@ export interface IDevice extends Document {
     | 'active'
     | 'inactive'
     | 'connected'
+    | 'monitoring'
     | 'disconnected'
     | 'lost'
     | 'reconnected';
+  isFavorite: boolean;
   monitoringEnabled: boolean;
   lastSeenAt: Date | null;
   lastSeenLocation?: {
@@ -31,6 +34,7 @@ const DeviceSchema = new Schema<IDevice>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
+    nickname: { type: String, default: null },
     type: {
       type: String,
       enum: ['earbuds', 'tracker', 'belt', 'bag', 'other'],
@@ -46,12 +50,14 @@ const DeviceSchema = new Schema<IDevice>(
         'active',
         'inactive',
         'connected',
+        'monitoring',
         'disconnected',
         'lost',
         'reconnected',
       ],
       default: 'registered',
     },
+    isFavorite: { type: Boolean, default: false },
     monitoringEnabled: { type: Boolean, default: true },
     lastSeenAt: { type: Date, default: null },
     lastSeenLocation: {
@@ -66,6 +72,7 @@ const DeviceSchema = new Schema<IDevice>(
 DeviceSchema.index({ userId: 1 });
 DeviceSchema.index({ status: 1 });
 DeviceSchema.index({ userId: 1, identifier: 1 });
+DeviceSchema.index({ userId: 1, isFavorite: -1, updatedAt: -1 });
 DeviceSchema.index({ lastSeenLocation: '2dsphere' });
 
 export const Device = mongoose.model<IDevice>('Device', DeviceSchema);

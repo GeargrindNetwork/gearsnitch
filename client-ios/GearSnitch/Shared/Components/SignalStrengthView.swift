@@ -97,7 +97,7 @@ struct AnimatedSignalStrengthView: View {
                 }
             }
         }
-        .onChange(of: signalLevel) { newLevel in
+        .onChange(of: signalLevel) { _, newLevel in
             if newLevel == .weak || newLevel == .critical {
                 isPulsing = false
                 withAnimation(

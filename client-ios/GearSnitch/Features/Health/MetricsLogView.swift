@@ -85,7 +85,7 @@ struct MetricsLogView: View {
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("Log Metrics")
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: didSave) { saved in
+        .onChange(of: didSave) { _, saved in
             if saved { dismiss() }
         }
     }

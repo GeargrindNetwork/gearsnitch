@@ -40,6 +40,33 @@ struct GymSessionEvent: Identifiable, Codable {
     let type: String
     let timestamp: Date
     let metadata: [String: String]?
+
+    private enum CodingKeys: String, CodingKey {
+        case type
+        case timestamp
+        case metadata
+    }
+
+    init(id: String, type: String, timestamp: Date, metadata: [String: String]?) {
+        self.id = id
+        self.type = type
+        self.timestamp = timestamp
+        self.metadata = metadata
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        let timestamp = try container.decode(Date.self, forKey: .timestamp)
+        let metadata = try container.decodeIfPresent([String: String].self, forKey: .metadata)
+
+        self.init(
+            id: "\(type)-\(Int(timestamp.timeIntervalSince1970))",
+            type: type,
+            timestamp: timestamp,
+            metadata: metadata
+        )
+    }
 }
 
 // MARK: - Gym Session Manager
@@ -96,18 +123,12 @@ final class GymSessionManager: ObservableObject {
         let body = StartSessionBody(gymId: gymId, gymName: gymName)
 
         do {
-            let response: GymSessionResponse = try await APIClient.shared.request(
+            let response: BackendGymSessionPayload = try await APIClient.shared.request(
                 APIEndpoint.GymSessions.start(body)
             )
-
-            let session = GymSession(
-                id: response.id,
-                gymId: gymId,
-                gymName: gymName,
-                startedAt: response.startedAt,
-                endedAt: nil,
-                duration: nil,
-                events: []
+            let session = response.asGymSession(
+                fallbackGymId: gymId,
+                fallbackGymName: gymName
             )
 
             activeSession = session
@@ -146,13 +167,13 @@ final class GymSessionManager: ObservableObject {
         error = nil
 
         do {
-            let response: GymSessionEndResponse = try await APIClient.shared.request(
+            let response: BackendGymSessionPayload = try await APIClient.shared.request(
                 APIEndpoint.GymSessions.end(sessionId: session.id)
             )
-
-            var ended = session
-            ended.endedAt = response.endedAt
-            ended.duration = response.duration
+            let ended = response.asGymSession(
+                fallbackGymId: session.gymId,
+                fallbackGymName: session.gymName
+            )
 
             activeSession = nil
             isSessionActive = false
@@ -161,15 +182,16 @@ final class GymSessionManager: ObservableObject {
 
             // Stop BLE scanning
             BLEManager.shared.stopScanning()
+            BLEManager.shared.disconnectAll()
 
-            logger.info("Gym session ended: \(session.id), duration: \(response.duration)s")
+            logger.info("Gym session ended: \(session.id), duration: \(ended.duration ?? 0)s")
 
             NotificationCenter.default.post(
                 name: Self.sessionEndedNotification,
                 object: nil,
                 userInfo: [
                     "session": session.id,
-                    "duration": response.duration,
+                    "duration": ended.duration ?? 0,
                 ]
             )
         } catch {
@@ -290,19 +312,38 @@ struct StartSessionBody: Encodable {
     let gymName: String
 }
 
-struct GymSessionResponse: Decodable {
+private struct EmptySessionEndBody: Encodable {}
+
+private struct BackendGymSessionPayload: Decodable {
     let id: String
+    let gymId: String?
+    let gymName: String?
     let startedAt: Date
+    let endedAt: Date?
+    let durationMinutes: Double?
+    let events: [GymSessionEvent]
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
+        case gymId
+        case gymName
         case startedAt
+        case endedAt
+        case durationMinutes
+        case events
     }
-}
 
-struct GymSessionEndResponse: Decodable {
-    let endedAt: Date
-    let duration: TimeInterval
+    func asGymSession(fallbackGymId: String, fallbackGymName: String) -> GymSession {
+        GymSession(
+            id: id,
+            gymId: gymId ?? fallbackGymId,
+            gymName: gymName ?? fallbackGymName,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            duration: durationMinutes.map { $0 * 60 },
+            events: events
+        )
+    }
 }
 
 // MARK: - API Endpoints
@@ -311,7 +352,7 @@ extension APIEndpoint {
     enum GymSessions {
         static func start(_ body: StartSessionBody) -> APIEndpoint {
             APIEndpoint(
-                path: "/api/v1/gym-sessions/start",
+                path: "/api/v1/sessions",
                 method: .POST,
                 body: body
             )
@@ -319,13 +360,14 @@ extension APIEndpoint {
 
         static func end(sessionId: String) -> APIEndpoint {
             APIEndpoint(
-                path: "/api/v1/gym-sessions/\(sessionId)/end",
-                method: .POST
+                path: "/api/v1/sessions/\(sessionId)/end",
+                method: .PATCH,
+                body: EmptySessionEndBody()
             )
         }
 
         static func active() -> APIEndpoint {
-            APIEndpoint(path: "/api/v1/gym-sessions/active")
+            APIEndpoint(path: "/api/v1/sessions/active")
         }
     }
 }

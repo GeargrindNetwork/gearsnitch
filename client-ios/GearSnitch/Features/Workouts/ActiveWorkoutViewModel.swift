@@ -1,5 +1,7 @@
 import Foundation
 
+private let workoutKgPerPound = 0.45359237
+
 // MARK: - Exercise Models
 
 struct WorkoutExercise: Identifiable {
@@ -67,13 +69,27 @@ final class ActiveWorkoutViewModel: ObservableObject {
         isSaving = true
         error = nil
 
+        let workoutName = exercises.first?.name.isEmpty == false
+            ? "\(exercises[0].name) Session"
+            : "Strength Workout"
         let body = CreateWorkoutBody(
-            type: "strength",
-            startDate: start,
-            endDate: Date(),
-            caloriesBurned: nil,
-            heartRateAvg: nil,
-            notes: nil
+            name: workoutName,
+            gymId: nil,
+            startedAt: start,
+            endedAt: Date(),
+            notes: nil,
+            source: "manual",
+            exercises: exercises.map { exercise in
+                CreateWorkoutExerciseBody(
+                    name: exercise.name,
+                    sets: exercise.sets.map { workoutSet in
+                        CreateWorkoutSetBody(
+                            reps: workoutSet.reps,
+                            weightKg: workoutSet.weight * workoutKgPerPound
+                        )
+                    }
+                )
+            }
         )
 
         do {
