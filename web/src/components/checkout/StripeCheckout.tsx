@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { loadStripe, type PaymentRequest, type Stripe } from '@stripe/stripe-js';
 import {
   CardElement,
@@ -83,7 +83,7 @@ function CheckoutForm({
     && shippingAddress.state.length > 0
     && shippingAddress.postalCode.length > 0;
 
-  async function createPaymentIntent() {
+  const createPaymentIntent = useCallback(async () => {
     const res = await api.post<{
       clientSecret: string;
       paymentIntentId: string;
@@ -99,9 +99,9 @@ function CheckoutForm({
     }
 
     return res.data;
-  }
+  }, [cartId, shippingAddress]);
 
-  async function finalizePayment(paymentIntentId: string) {
+  const finalizePayment = useCallback(async (paymentIntentId: string) => {
     const res = await api.post<{
       orderId: string;
       orderNumber: string;
@@ -117,7 +117,7 @@ function CheckoutForm({
     }
 
     return res.data.orderId;
-  }
+  }, []);
 
   useEffect(() => {
     if (!stripe) {
@@ -193,7 +193,7 @@ function CheckoutForm({
         setIsProcessing(false);
       }
     });
-  }, [amount, cartId, currency, isShippingValid, label, onError, onSuccess, shippingAddress, stripe]);
+  }, [amount, createPaymentIntent, currency, finalizePayment, isShippingValid, label, onError, onSuccess, stripe]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();

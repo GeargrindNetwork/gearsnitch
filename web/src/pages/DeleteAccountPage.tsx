@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,20 +14,23 @@ export default function DeleteAccountPage() {
   const [email, setEmail] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isAuthenticated && user?.email) {
-      setEmail(user.email);
-    }
-  }, [isAuthenticated, user?.email]);
+  const fallbackEmail = isAuthenticated ? user?.email?.trim() ?? '' : '';
+  const enteredEmail = email.trim().length > 0 ? email.trim() : fallbackEmail;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!confirmed || !isAuthenticated) return;
 
-    if (user?.email && email.trim().toLowerCase() !== user.email.toLowerCase()) {
+    if (!enteredEmail) {
+      setError('Enter the email on your signed-in GearSnitch account to continue.');
+      return;
+    }
+
+    if (user?.email && enteredEmail.toLowerCase() !== user.email.toLowerCase()) {
       setError('Enter the email on your signed-in GearSnitch account to continue.');
       return;
     }
@@ -47,6 +50,7 @@ export default function DeleteAccountPage() {
       return;
     }
 
+    setSubmittedEmail(enteredEmail);
     setSubmitted(true);
     setIsSubmitting(false);
 
@@ -162,7 +166,7 @@ export default function DeleteAccountPage() {
                   reactivate. After 30 days, all data will be permanently deleted.
                 </p>
                 <p className="mt-2 text-xs text-zinc-600">
-                  A confirmation email has been sent to {email}.
+                  A confirmation email has been sent to {submittedEmail}.
                 </p>
               </div>
             ) : (
@@ -186,7 +190,7 @@ export default function DeleteAccountPage() {
                     id="email"
                     type="email"
                     required
-                    value={email}
+                    value={enteredEmail}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     className="border-white/10 bg-zinc-800/50 text-white placeholder:text-zinc-600 focus:border-cyan-500/50 focus:ring-cyan-500/20"
@@ -212,7 +216,7 @@ export default function DeleteAccountPage() {
 
                 <Button
                   type="submit"
-                  disabled={!confirmed || !email || !isAuthenticated || isSubmitting}
+                  disabled={!confirmed || !enteredEmail || !isAuthenticated || isSubmitting}
                   className="w-full bg-red-600 font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
                   {isSubmitting ? 'Submitting...' : 'Delete My Account'}
