@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 
-const faqs = [
+const fallbackFaqs = [
   {
     question: 'How do I connect my BLE fitness gear?',
     answer:
@@ -27,12 +30,17 @@ const faqs = [
   {
     question: 'How do I manage my subscription?',
     answer:
-      'For App Store subscriptions, go to Settings > Apple ID > Subscriptions on your iPhone. For web subscriptions via Stripe, log into your account at gearsnitch.com/account and navigate to the Billing section.',
+      'GearSnitch subscriptions are currently managed through the App Store. Open Settings > Apple ID > Subscriptions on your iPhone, or use the Manage in App Store button from gearsnitch.com/account.',
   },
   {
     question: 'How do I cancel my subscription?',
     answer:
-      'App Store subscriptions can be cancelled through your iPhone Settings > Apple ID > Subscriptions. Web subscriptions can be cancelled from your account dashboard. You will retain access until the end of your current billing period.',
+      'Cancel through your iPhone Settings > Apple ID > Subscriptions. You will retain access until the end of your current billing period.',
+  },
+  {
+    question: 'How does the referral program work?',
+    answer:
+      'Share your unique referral code or QR code with friends. When they subscribe, you earn 90 days of free premium access per referral. There is no cap on referral rewards.',
   },
   {
     question: 'Are peptide store products safe for consumption?',
@@ -50,18 +58,67 @@ const faqs = [
       'No. HealthKit data stays on your device and in Apple Health. It is never sold, shared with advertisers, or sent to third parties. We only read/write workout data with your explicit permission.',
   },
   {
-    question: 'How does the referral program work?',
-    answer:
-      'Share your unique referral code or QR code with friends. When they subscribe, you earn 90 days of free premium access per referral. There is no cap on referral rewards.',
-  },
-  {
     question: 'What devices are compatible with GearSnitch?',
     answer:
       'GearSnitch requires iOS 16.0 or later. BLE monitoring works with any Bluetooth Low Energy device. HealthKit integration is available on iPhones with Apple Health.',
   },
 ];
 
+type SupportFaqItem = {
+  question: string;
+  answer: string;
+};
+
+type SupportTicket = {
+  _id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'open' | 'resolved' | 'closed';
+  source: 'web' | 'ios' | 'email';
+  createdAt: string;
+  updatedAt: string;
+};
+
+type SupportTicketSubmitResponse = {
+  ticketId: string;
+  status: SupportTicket['status'];
+  ticket?: SupportTicket;
+};
+
+const supportTicketsQueryKey = ['support-tickets'] as const;
+
+function formatTicketDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function ticketStatusClassName(status: SupportTicket['status']) {
+  switch (status) {
+    case 'resolved':
+      return 'border-emerald-700 text-emerald-400';
+    case 'closed':
+      return 'border-zinc-700 text-zinc-400';
+    case 'open':
+    default:
+      return 'border-cyan-700 text-cyan-300';
+  }
+}
+
 export default function SupportPage() {
+  const { isAuthenticated, user } = useAuth();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -69,28 +126,78 @@ export default function SupportPage() {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submittedTicketId, setSubmittedTicketId] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const faqQuery = useQuery({
+    queryKey: ['support-faq'],
+    queryFn: async () => {
+      const res = await api.get<SupportFaqItem[]>('/support/faq');
+      if (!res.success || !res.data) {
+        throw new Error(res.error?.message ?? 'Could not load support FAQ.');
+      }
+      return res.data;
+    },
+    initialData: fallbackFaqs,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const ticketsQuery = useQuery({
+    queryKey: supportTicketsQueryKey,
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      const res = await api.get<SupportTicket[]>('/support/tickets');
+      if (!res.success || !res.data) {
+        throw new Error(res.error?.message ?? 'Could not load your support tickets.');
+      }
+      return res.data;
+    },
+  });
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || user?.displayName || '',
+      email: prev.email || user?.email || '',
+    }));
+  }, [user?.displayName, user?.email]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
 
-    const res = await api.post<{ ticketId: string; status: string }>('/support/tickets', {
-      ...formData,
-      source: 'web',
-    });
+    try {
+      const res = await api.post<SupportTicketSubmitResponse>('/support/tickets', {
+        ...formData,
+        source: 'web',
+      });
 
-    if (!res.success) {
-      setError(res.error?.message ?? 'Could not send your message.');
+      if (!res.success || !res.data) {
+        throw new Error(res.error?.message ?? 'Could not send your message.');
+      }
+
+      if (res.data.ticket) {
+        queryClient.setQueryData<SupportTicket[]>(
+          supportTicketsQueryKey,
+          (current) => [res.data!.ticket!, ...(current ?? []).filter((ticket) => ticket._id !== res.data!.ticket!._id)],
+        );
+      }
+
+      setSubmittedTicketId(res.data.ticketId);
+      setSubmitted(true);
+      setFormData((prev) => ({
+        ...prev,
+        subject: '',
+        message: '',
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send your message.');
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    setSubmitted(true);
-    setIsSubmitting(false);
   }
 
   function handleChange(
@@ -99,6 +206,9 @@ export default function SupportPage() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
+  const faqs = faqQuery.data ?? fallbackFaqs;
+  const recentTickets = ticketsQuery.data ?? [];
+
   return (
     <div className="min-h-screen bg-black text-zinc-300">
       <Header />
@@ -106,12 +216,11 @@ export default function SupportPage() {
       <main className="mx-auto max-w-4xl px-4 pb-20 pt-28 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold tracking-tight text-white">Support</h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Have a question? Check the FAQ below or send us a message.
+          Get quick answers, send us a message, and track your latest GearSnitch support requests.
         </p>
 
         <Separator className="my-8 bg-white/5" />
 
-        {/* FAQ Section */}
         <section>
           <h2 className="mb-6 text-xl font-semibold text-white">
             Frequently Asked Questions
@@ -119,7 +228,7 @@ export default function SupportPage() {
           <div className="space-y-3">
             {faqs.map((faq, index) => (
               <Card
-                key={index}
+                key={faq.question}
                 className="cursor-pointer border-0 bg-zinc-900/60 ring-white/5 transition-colors hover:bg-zinc-900/80"
                 onClick={() => setOpenFaq(openFaq === index ? null : index)}
               >
@@ -153,7 +262,77 @@ export default function SupportPage() {
 
         <Separator className="my-12 bg-white/5" />
 
-        {/* Contact Form */}
+        <section>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Recent Tickets</h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                {isAuthenticated
+                  ? 'Signed-in requests stay attached to your GearSnitch account.'
+                  : 'Sign in to view the ticket history attached to your account.'}
+              </p>
+            </div>
+            {!isAuthenticated && (
+              <Badge className="border-zinc-700 text-zinc-400">Guest</Badge>
+            )}
+          </div>
+
+          {isAuthenticated ? (
+            <Card className="border-0 bg-zinc-900/60 ring-white/5">
+              <CardContent className="space-y-4 py-6">
+                {ticketsQuery.isLoading && (
+                  <p className="text-sm text-zinc-500">Loading your tickets...</p>
+                )}
+                {!ticketsQuery.isLoading && ticketsQuery.error && (
+                  <p className="text-sm text-red-400">
+                    {ticketsQuery.error instanceof Error
+                      ? ticketsQuery.error.message
+                      : 'Could not load your ticket history.'}
+                  </p>
+                )}
+                {!ticketsQuery.isLoading && !ticketsQuery.error && recentTickets.length === 0 && (
+                  <p className="text-sm text-zinc-400">
+                    No support tickets yet. When you contact us from the website or iPhone app, they will appear here.
+                  </p>
+                )}
+                {recentTickets.map((ticket) => (
+                  <div
+                    key={ticket._id}
+                    className="rounded-2xl border border-white/5 bg-black/20 p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-white">{ticket.subject}</p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-zinc-500">
+                          Ticket {ticket._id.slice(-8).toUpperCase()}
+                        </p>
+                      </div>
+                      <Badge className={ticketStatusClassName(ticket.status)}>
+                        {ticket.status}
+                      </Badge>
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                      {ticket.message}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                      <span>Created {formatTicketDate(ticket.createdAt)}</span>
+                      <span>Source: {ticket.source}</span>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-0 bg-zinc-900/60 ring-white/5">
+              <CardContent className="py-6 text-sm text-zinc-400">
+                The support form works without an account, but only signed-in users can review prior tickets in the web dashboard.
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
+        <Separator className="my-12 bg-white/5" />
+
         <section>
           <h2 className="mb-2 text-xl font-semibold text-white">Contact Us</h2>
           <p className="mb-6 text-sm text-zinc-500">
@@ -189,14 +368,16 @@ export default function SupportPage() {
                     Message sent successfully
                   </p>
                   <p className="text-sm text-zinc-400">
-                    We'll get back to you within 24-48 hours.
+                    We&apos;ll get back to you within 24-48 hours.
+                    {submittedTicketId ? ` Reference: ${submittedTicketId.slice(-8).toUpperCase()}.` : ''}
                   </p>
                   <Button
                     variant="ghost"
                     className="mt-2 text-cyan-400 hover:text-cyan-300"
                     onClick={() => {
                       setSubmitted(false);
-                      setFormData({ name: '', email: '', subject: '', message: '' });
+                      setSubmittedTicketId(null);
+                      setError(null);
                     }}
                   >
                     Send another message

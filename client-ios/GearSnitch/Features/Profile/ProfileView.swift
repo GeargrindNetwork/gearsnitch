@@ -106,7 +106,17 @@ struct ProfileView: View {
                 }
                 .frame(width: 80, height: 80)
                 .onTapGesture {
+                    guard !viewModel.isUpdatingAvatar else { return }
                     viewModel.showPhotoPicker = true
+                }
+
+                if viewModel.isUpdatingAvatar {
+                    Circle()
+                        .fill(Color.black.opacity(0.55))
+                        .frame(width: 80, height: 80)
+
+                    ProgressView()
+                        .tint(.white)
                 }
             }
 
@@ -143,6 +153,33 @@ struct ProfileView: View {
                     .padding(.vertical, 6)
                     .background(Color.gsEmerald.opacity(0.12))
                     .cornerRadius(8)
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    viewModel.showPhotoPicker = true
+                } label: {
+                    Text(viewModel.isUpdatingAvatar ? "Updating..." : "Change Photo")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(Color.gsSurfaceRaised)
+                        .cornerRadius(8)
+                }
+                .disabled(viewModel.isUpdatingAvatar)
+
+                if viewModel.profileImage != nil || viewModel.profile?.avatarURL?.isEmpty == false {
+                    Button(role: .destructive) {
+                        Task { await viewModel.removeAvatar() }
+                    } label: {
+                        Text("Remove Photo")
+                            .font(.caption.weight(.medium))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                    }
+                    .disabled(viewModel.isUpdatingAvatar)
+                }
             }
         }
         .frame(maxWidth: .infinity)

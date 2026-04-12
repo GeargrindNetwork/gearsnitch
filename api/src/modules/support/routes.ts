@@ -2,7 +2,11 @@ import { Router, type Request } from 'express';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
-import { isAuthenticated, type JwtPayload } from '../../middleware/auth.js';
+import {
+  attachUserIfPresent,
+  isAuthenticated,
+  type JwtPayload,
+} from '../../middleware/auth.js';
 import { SupportTicket } from '../../models/SupportTicket.js';
 import { User } from '../../models/User.js';
 import { errorResponse, successResponse } from '../../utils/response.js';
@@ -13,7 +17,27 @@ const faqEntries = [
   {
     question: 'How do I connect my BLE fitness gear?',
     answer:
-      'Open GearSnitch, go to the Gear tab, and tap "Scan for Devices." Make sure Bluetooth is enabled on your phone. The app will automatically discover nearby BLE-enabled fitness equipment.',
+      'Open GearSnitch, go to the Gear tab, and tap "Scan for Devices." Make sure Bluetooth is enabled on your phone. The app will automatically discover nearby BLE-enabled fitness equipment. Tap a device to pair it.',
+  },
+  {
+    question: 'How does gym detection work?',
+    answer:
+      'GearSnitch uses geo-fencing to detect when you arrive at a partnered gym. When you enter the geo-fenced zone, the app automatically activates session tracking and BLE monitoring. You must grant location permissions for this feature to work.',
+  },
+  {
+    question: 'What happens when my gear disconnects?',
+    answer:
+      'When a tracked BLE device disconnects unexpectedly, GearSnitch triggers a panic alert with sound and haptic feedback. If you have emergency contacts configured, they will receive a push notification with your last known location.',
+  },
+  {
+    question: 'How do I manage my subscription?',
+    answer:
+      'GearSnitch subscriptions are currently managed through the App Store. Open Settings > Apple ID > Subscriptions on your iPhone, or use the Manage in App Store button from gearsnitch.com/account.',
+  },
+  {
+    question: 'How do I cancel my subscription?',
+    answer:
+      'Cancel through your iPhone Settings > Apple ID > Subscriptions. You will retain access until the end of your current billing period.',
   },
   {
     question: 'How does the referral program work?',
@@ -21,9 +45,24 @@ const faqEntries = [
       'Share your unique referral code or QR code with friends. When they subscribe, you earn 90 days of free premium access per qualifying referral.',
   },
   {
+    question: 'Are peptide store products safe for consumption?',
+    answer:
+      'Products in the peptide store are sold for research purposes only and are not evaluated by the FDA. They are not intended to diagnose, treat, cure, or prevent any disease. You must be 21 or older to purchase. Consult a healthcare professional before use.',
+  },
+  {
     question: 'How do I delete my account?',
     answer:
       'Visit gearsnitch.com/delete-account or go to Account Settings in the app. A 30-day grace period starts immediately after you request deletion.',
+  },
+  {
+    question: 'Is my health data shared with anyone?',
+    answer:
+      'No. HealthKit data stays on your device and in Apple Health. It is never sold, shared with advertisers, or sent to third parties. We only read and write workout data with your explicit permission.',
+  },
+  {
+    question: 'What devices are compatible with GearSnitch?',
+    answer:
+      'GearSnitch requires iOS 16.0 or later. BLE monitoring works with any Bluetooth Low Energy device. HealthKit integration is available on iPhones with Apple Health.',
   },
 ];
 
@@ -69,7 +108,7 @@ function serializeTicket(ticket: {
 }
 
 // POST /support/tickets
-router.post('/tickets', async (req, res) => {
+router.post('/tickets', attachUserIfPresent, async (req, res) => {
   try {
     const parsed = createTicketSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -82,9 +121,15 @@ router.post('/tickets', async (req, res) => {
       return;
     }
 
+    const userId =
+      req.user && Types.ObjectId.isValid(req.user.sub)
+        ? new Types.ObjectId(req.user.sub)
+        : null;
+
     const created = await SupportTicket.create({
       ...parsed.data,
       source: parsed.data.source ?? 'web',
+      userId,
     });
 
     successResponse(
@@ -92,6 +137,7 @@ router.post('/tickets', async (req, res) => {
       {
         ticketId: created._id.toString(),
         status: created.status,
+        ticket: serializeTicket(created),
       },
       StatusCodes.CREATED,
     );

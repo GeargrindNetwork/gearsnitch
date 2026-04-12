@@ -17,12 +17,30 @@ const router = Router();
 const CM_PER_INCH = 2.54;
 const KG_PER_POUND = 0.45359237;
 const ACCOUNT_DELETION_GRACE_DAYS = 30;
+const MAX_AVATAR_URL_LENGTH = 2_000_000;
+
+const avatarValueSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(MAX_AVATAR_URL_LENGTH)
+  .refine(
+    (value) =>
+      value.startsWith('http://')
+      || value.startsWith('https://')
+      || /^data:image\/(?:jpeg|png|webp);base64,/.test(value),
+    'Avatar must be an http(s) URL or a supported image data URL',
+  );
 
 const updateMeSchema = z.object({
   displayName: z.string().trim().min(1).max(120).optional(),
   avatarURL: z.string().trim().min(1).max(2048).optional(),
   preferences: z.record(z.string()).optional(),
   onboardingCompletedAt: z.string().datetime().optional(),
+});
+
+const updateAvatarSchema = z.object({
+  avatarURL: avatarValueSchema.nullable(),
 });
 
 const updateProfileSchema = z.object({
@@ -132,6 +150,43 @@ router.patch(
         res,
         StatusCodes.INTERNAL_SERVER_ERROR,
         'Failed to update current user',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  },
+);
+
+// PATCH /users/me/avatar
+router.patch(
+  '/me/avatar',
+  isAuthenticated,
+  validateBody(updateAvatarSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = (req.user as JwtPayload).sub;
+      const body = req.body as z.infer<typeof updateAvatarSchema>;
+      const user = await User.findById(userId);
+
+      if (!user) {
+        errorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+        return;
+      }
+
+      user.photoUrl = body.avatarURL ?? undefined;
+      await user.save();
+
+      const profile = await buildProfileResponse(userId);
+      if (!profile) {
+        errorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+        return;
+      }
+
+      successResponse(res, profile);
+    } catch (err) {
+      errorResponse(
+        res,
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Failed to update profile photo',
         err instanceof Error ? err.message : String(err),
       );
     }
@@ -273,7 +328,10 @@ function formatSubscriptionPlan(productId: string | null | undefined): string | 
     return null;
   }
 
-  if (productId === 'com.geargrind.gearsnitch.annual') {
+  if (
+    productId === 'com.geargrind.gearsnitch.annual'
+    || productId === 'com.gearsnitch.app.annual'
+  ) {
     return 'GearSnitch Annual';
   }
 

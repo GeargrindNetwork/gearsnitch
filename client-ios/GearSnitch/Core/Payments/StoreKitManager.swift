@@ -195,14 +195,10 @@ class StoreKitManager: ObservableObject {
         // Send transaction ID and original JSON for backend validation
         let receiptData = String(data: transaction.jsonRepresentation, encoding: .utf8) ?? ""
 
-        let endpoint = APIEndpoint(
-            path: "/api/v1/subscriptions/validate-apple",
-            method: .POST,
-            body: ValidateAppleJWSBody(jwsRepresentation: receiptData)
-        )
-
         do {
-            let _: SubscriptionValidationResponse = try await APIClient.shared.request(endpoint)
+            let _: SubscriptionValidationResponse = try await APIClient.shared.request(
+                APIEndpoint.Subscriptions.validateAppleJWS(jwsRepresentation: receiptData)
+            )
             logger.info("Backend validated subscription for transaction \(transaction.id)")
         } catch {
             logger.error("Backend validation failed: \(error.localizedDescription)")

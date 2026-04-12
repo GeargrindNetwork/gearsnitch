@@ -5,8 +5,10 @@ import os
 
 struct RemoteConfigResponse: Decodable {
     let featureFlags: RemoteFeatureFlags?
-    let appVersion: AppVersionConfig?
+    let release: ReleaseConfig?
+    let compatibility: CompatibilityConfig?
     let maintenance: MaintenanceConfig?
+    let server: ServerConfig?
 }
 
 struct RemoteFeatureFlags: Decodable {
@@ -17,15 +19,36 @@ struct RemoteFeatureFlags: Decodable {
     let emergencyContactsEnabled: Bool?
 }
 
-struct AppVersionConfig: Decodable {
+struct ReleaseConfig: Decodable {
     let minimumVersion: String?
     let currentVersion: String?
     let forceUpdate: Bool?
+    let releaseNotes: [String]?
+    let publishedAt: String?
+}
+
+struct CompatibilityConfig: Decodable {
+    let status: String?
+    let reason: String?
+    let clientVersion: String?
+    let minimumSupportedVersion: String?
+    let currentVersion: String?
+    let forceUpgrade: Bool?
+    let platform: String?
+    let build: String?
 }
 
 struct MaintenanceConfig: Decodable {
     let isActive: Bool?
     let message: String?
+}
+
+struct ServerConfig: Decodable {
+    let version: String?
+    let buildId: String?
+    let gitSha: String?
+    let builtAt: String?
+    let environment: String?
 }
 
 // MARK: - Remote Config Client
@@ -120,5 +143,7 @@ private struct CodableConfigWrapper: Codable {
 
 extension RemoteConfigResponse: Encodable {}
 extension RemoteFeatureFlags: Encodable {}
-extension AppVersionConfig: Encodable {}
+extension ReleaseConfig: Encodable {}
+extension CompatibilityConfig: Encodable {}
 extension MaintenanceConfig: Encodable {}
+extension ServerConfig: Encodable {}

@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { errorResponse } from '../utils/response.js';
 import { getRedisClient } from '../loaders/redis.js';
 import config from '../config/index.js';
+import { enforceSupportedClientRelease } from './clientRelease.js';
 
 export interface JwtPayload {
   sub: string;
@@ -31,6 +32,27 @@ function extractToken(req: Request): string | null {
   return null;
 }
 
+async function authenticateToken(token: string): Promise<JwtPayload> {
+  const signingKey = config.isProduction ? config.jwtPublicKey : config.jwtPrivateKey;
+  if (!signingKey) {
+    throw new Error('JWT signing key not configured');
+  }
+
+  const algorithm = config.isProduction ? 'RS256' : 'HS256';
+  const decoded = jwt.verify(token, signingKey, {
+    algorithms: [algorithm],
+  }) as JwtPayload;
+
+  const redis = getRedisClient();
+  const sessionKey = `session:${decoded.sub}:${decoded.jti}`;
+  const sessionExists = await redis.exists(sessionKey);
+  if (!sessionExists) {
+    throw new Error('Session expired or revoked');
+  }
+
+  return decoded;
+}
+
 export async function isAuthenticated(
   req: Request,
   res: Response,
@@ -43,28 +65,9 @@ export async function isAuthenticated(
   }
 
   try {
-    const signingKey = config.isProduction ? config.jwtPublicKey : config.jwtPrivateKey;
-    if (!signingKey) {
-      errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'JWT signing key not configured');
-      return;
-    }
-
-    const algorithm = config.isProduction ? 'RS256' : 'HS256';
-    const decoded = jwt.verify(token, signingKey, {
-      algorithms: [algorithm],
-    }) as JwtPayload;
-
-    // Check Redis whitelist — token must be present in active sessions
-    const redis = getRedisClient();
-    const sessionKey = `session:${decoded.sub}:${decoded.jti}`;
-    const sessionExists = await redis.exists(sessionKey);
-    if (!sessionExists) {
-      errorResponse(res, StatusCodes.UNAUTHORIZED, 'Session expired or revoked');
-      return;
-    }
-
+    const decoded = await authenticateToken(token);
     req.user = decoded;
-    next();
+    enforceSupportedClientRelease(req, res, next);
   } catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
       errorResponse(res, StatusCodes.UNAUTHORIZED, 'Token expired');
@@ -76,6 +79,26 @@ export async function isAuthenticated(
     }
     errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Authentication error');
   }
+}
+
+export async function attachUserIfPresent(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const token = extractToken(req);
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    req.user = await authenticateToken(token);
+  } catch {
+    req.user = undefined;
+  }
+
+  next();
 }
 
 export function hasRole(roles: string[]) {

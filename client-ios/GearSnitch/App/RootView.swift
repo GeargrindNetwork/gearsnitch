@@ -4,6 +4,7 @@ struct RootView: View {
     @EnvironmentObject private var authManager: AuthManager
     @EnvironmentObject private var coordinator: AppCoordinator
     @ObservedObject private var gateManager = PermissionGateManager.shared
+    @ObservedObject private var releaseGateManager = ReleaseGateManager.shared
 
     @State private var showFixPermissions = false
     @State private var onboardingComplete = false
@@ -14,35 +15,53 @@ struct RootView: View {
             .animation(.easeInOut(duration: 0.35), value: showFixPermissions)
             .task {
                 await gateManager.checkAll()
+                await releaseGateManager.refreshIfNeeded()
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 // Re-check permissions when app returns from Settings
                 Task {
                     await gateManager.checkAll()
+                    await releaseGateManager.forceRefresh()
                 }
             }
     }
 
     @ViewBuilder
     private var content: some View {
+        switch releaseGateManager.status {
+        case .checking:
+            splashView
+        case .blocked(let blockedState):
+            UpdateRequiredView(state: blockedState)
+        case .supported:
+            authenticatedContent
+        }
+    }
+
+    @ViewBuilder
+    private var authenticatedContent: some View {
         switch authManager.authState {
         case .loading:
             splashView
 
         case .unauthenticated:
             NavigationStack {
-                OnboardingView(onComplete: {
-                    onboardingComplete = true
-                })
+                OnboardingView(
+                    onComplete: {
+                        onboardingComplete = true
+                    }
+                )
             }
 
         case .authenticated(let user):
             if !user.hasCompletedOnboarding && !onboardingComplete {
                 // User is authenticated but hasn't completed onboarding
                 NavigationStack {
-                    OnboardingView(onComplete: {
-                        onboardingComplete = true
-                    })
+                    OnboardingView(
+                        onComplete: {
+                            onboardingComplete = true
+                        }
+                    )
                 }
             } else if showFixPermissions {
                 // Required permission was revoked -- show fix flow
@@ -204,10 +223,28 @@ struct RootView: View {
             Color.gsBackground.ignoresSafeArea()
 
             VStack(spacing: 20) {
-                Image("Logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
+                ZStack {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [Color.gsCyan.opacity(0.3), Color.clear],
+                                center: .center,
+                                startRadius: 12,
+                                endRadius: 54
+                            )
+                        )
+                        .frame(width: 108, height: 108)
+
+                    Image(systemName: "shield.checkered")
+                        .font(.system(size: 44))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.gsCyan, .gsEmerald],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
 
                 Text("GearSnitch")
                     .font(.system(size: 28, weight: .bold, design: .rounded))

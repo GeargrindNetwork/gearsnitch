@@ -44,8 +44,13 @@ struct RequestBuilder {
 
         // Standard headers
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("GearSnitch-iOS/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue(
+            "GearSnitch-iOS/\(AppConfig.appVersion) (\(AppConfig.buildNumber))",
+            forHTTPHeaderField: "User-Agent"
+        )
         request.setValue("ios", forHTTPHeaderField: "X-Client-Platform")
+        request.setValue(AppConfig.appVersion, forHTTPHeaderField: "X-Client-Version")
+        request.setValue(AppConfig.buildNumber, forHTTPHeaderField: "X-Client-Build")
 
         // Auth header
         if let token = accessToken {

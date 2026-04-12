@@ -1,0 +1,30 @@
+const fs = require('node:fs');
+const path = require('node:path');
+
+const apiRoot = path.join(__dirname, '..');
+
+function read(relativePath) {
+  return fs.readFileSync(path.join(apiRoot, relativePath), 'utf8');
+}
+
+describe('apple sign-in contract regression sweep', () => {
+  const authService = read('src/services/AuthService.ts');
+  const config = read('src/config/index.ts');
+
+  test('apple sign-in exchanges the authorization code before creating a session', () => {
+    expect(authService).toContain(
+      'const exchanged = await AuthService.exchangeAppleAuthorizationCode(',
+    );
+    expect(authService).toContain('if (decoded.sub !== exchanged.sub)');
+    expect(authService).toContain('const email = decoded.email ?? exchanged.email;');
+    expect(authService).not.toContain('void authorizationCode;');
+  });
+
+  test('apple oauth configuration includes the private key needed to mint the client secret', () => {
+    expect(config).toContain("applePrivateKey: process.env.APPLE_PRIVATE_KEY ?? ''");
+    expect(authService).toContain("import { SignJWT, importPKCS8 } from 'jose';");
+    expect(authService).toContain("grant_type: 'authorization_code'");
+    expect(authService).toContain("setAudience('https://appleid.apple.com')");
+    expect(authService).toContain("setExpirationTime('5m')");
+  });
+});

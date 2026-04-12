@@ -4,6 +4,7 @@ import jwksRsa from 'jwks-rsa';
 import { createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { StatusCodes } from 'http-status-codes';
+import { SignJWT, importPKCS8 } from 'jose';
 import { User, type IUser } from '../models/User.js';
 import { Session } from '../models/Session.js';
 import { getRedisClient } from '../loaders/redis.js';
@@ -37,6 +38,16 @@ export interface AuthResult {
   accessToken: string;
   refreshToken: string;
   user: IUser;
+}
+
+interface AppleTokenExchangeResponse {
+  access_token?: string;
+  expires_in?: number;
+  id_token?: string;
+  refresh_token?: string;
+  token_type?: string;
+  error?: string;
+  error_description?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +178,7 @@ export class AuthService {
   }
 
   // -----------------------------------------------------------------------
-  // Sign In with Apple (stub verification, real user flow)
+  // Sign In with Apple
   // -----------------------------------------------------------------------
 
   static async signInWithApple(
@@ -176,11 +187,20 @@ export class AuthService {
     fullName: string | undefined,
     deviceInfo: DeviceInfo,
   ): Promise<AuthResult> {
-    void authorizationCode;
     const decoded = await AuthService.verifyAppleToken(identityToken);
+    const exchanged = await AuthService.exchangeAppleAuthorizationCode(
+      authorizationCode,
+    );
+
+    if (decoded.sub !== exchanged.sub) {
+      throw new AuthServiceError(
+        'Apple authorization code did not match the identity token',
+        StatusCodes.UNAUTHORIZED,
+      );
+    }
 
     const appleId = decoded.sub;
-    const email = decoded.email;
+    const email = decoded.email ?? exchanged.email;
     const normalizedFullName = fullName?.trim() || undefined;
 
     let user = await User.findOne({ appleId });
@@ -467,6 +487,106 @@ export class AuthService {
         StatusCodes.UNAUTHORIZED,
       );
     }
+  }
+
+  private static async exchangeAppleAuthorizationCode(
+    authorizationCode: string,
+  ): Promise<{ sub: string; email?: string }> {
+    try {
+      const appleClientId = requireConfiguredValue(
+        config.appleClientId,
+        'Apple OAuth client ID is not configured',
+      );
+      const appleTeamId = requireConfiguredValue(
+        config.appleTeamId,
+        'Apple OAuth team ID is not configured',
+      );
+      const appleKeyId = requireConfiguredValue(
+        config.appleKeyId,
+        'Apple OAuth key ID is not configured',
+      );
+      const applePrivateKey = AuthService.normalizePemKey(
+        requireConfiguredValue(
+          config.applePrivateKey,
+          'Apple OAuth private key is not configured',
+        ),
+      );
+
+      const clientSecret = await AuthService.createAppleClientSecret({
+        appleClientId,
+        appleTeamId,
+        appleKeyId,
+        applePrivateKey,
+      });
+
+      const response = await fetch('https://appleid.apple.com/auth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code: authorizationCode,
+          client_id: appleClientId,
+          client_secret: clientSecret,
+        }),
+      });
+
+      const payload = await response.json() as AppleTokenExchangeResponse;
+      if (!response.ok || !payload.id_token) {
+        logger.error('Apple authorization code exchange failed', {
+          status: response.status,
+          error: payload.error ?? payload.error_description ?? 'unknown',
+        });
+        throw new AuthServiceError(
+          payload.error_description
+            ?? payload.error
+            ?? 'Apple authorization code exchange failed',
+          StatusCodes.UNAUTHORIZED,
+        );
+      }
+
+      return AuthService.verifyAppleToken(payload.id_token);
+    } catch (err) {
+      if (err instanceof AuthServiceError) {
+        throw err;
+      }
+
+      logger.error('Apple authorization code exchange failed', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw new AuthServiceError(
+        'Apple authorization code exchange failed',
+        StatusCodes.UNAUTHORIZED,
+      );
+    }
+  }
+
+  private static async createAppleClientSecret({
+    appleClientId,
+    appleTeamId,
+    appleKeyId,
+    applePrivateKey,
+  }: {
+    appleClientId: string;
+    appleTeamId: string;
+    appleKeyId: string;
+    applePrivateKey: string;
+  }): Promise<string> {
+    const signingKey = await importPKCS8(applePrivateKey, 'ES256');
+
+    return new SignJWT({})
+      .setProtectedHeader({ alg: 'ES256', kid: appleKeyId })
+      .setIssuer(appleTeamId)
+      .setSubject(appleClientId)
+      .setAudience('https://appleid.apple.com')
+      .setIssuedAt()
+      .setExpirationTime('5m')
+      .sign(signingKey);
+  }
+
+  private static normalizePemKey(value: string): string {
+    return value.replace(/\\n/g, '\n');
   }
 
   private static async issueTokenPair(

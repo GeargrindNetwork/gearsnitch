@@ -5,9 +5,8 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $coordinator.selectedTab) {
-            // Dashboard
             NavigationStack(path: coordinator.path(for: .dashboard)) {
-                DashboardPlaceholderView()
+                DashboardView()
                     .navigationDestination(for: AppDestination.self) { destination in
                         destinationView(for: destination)
                     }
@@ -17,7 +16,6 @@ struct MainTabView: View {
             }
             .tag(Tab.dashboard)
 
-            // Workouts
             NavigationStack(path: coordinator.path(for: .workouts)) {
                 WorkoutListView()
                     .navigationDestination(for: AppDestination.self) { destination in
@@ -29,9 +27,8 @@ struct MainTabView: View {
             }
             .tag(Tab.workouts)
 
-            // Health
             NavigationStack(path: coordinator.path(for: .health)) {
-                HealthPlaceholderView()
+                HealthDashboardView()
                     .navigationDestination(for: AppDestination.self) { destination in
                         destinationView(for: destination)
                     }
@@ -41,9 +38,8 @@ struct MainTabView: View {
             }
             .tag(Tab.health)
 
-            // Store
             NavigationStack(path: coordinator.path(for: .store)) {
-                StorePlaceholderView()
+                StoreHomeView()
                     .navigationDestination(for: AppDestination.self) { destination in
                         destinationView(for: destination)
                     }
@@ -53,9 +49,8 @@ struct MainTabView: View {
             }
             .tag(Tab.store)
 
-            // Profile
             NavigationStack(path: coordinator.path(for: .profile)) {
-                ProfilePlaceholderView()
+                ProfileView()
                     .navigationDestination(for: AppDestination.self) { destination in
                         destinationView(for: destination)
                     }
@@ -71,119 +66,199 @@ struct MainTabView: View {
         }
     }
 
-    // MARK: - Destination Router
-
     @ViewBuilder
     private func destinationView(for destination: AppDestination) -> some View {
         switch destination {
-        case .referral(let code):
-            Text("Referral: \(code)")
-                .foregroundColor(.gsText)
-        case .product(let slug):
-            Text("Product: \(slug)")
-                .foregroundColor(.gsText)
+        case .referral:
+            ReferralView()
+        case .product(let reference):
+            ProductDestinationView(productReference: reference)
         case .alert(let id):
-            Text("Alert: \(id)")
-                .foregroundColor(.gsText)
+            AlertDestinationView(alertId: id)
         case .subscription:
-            Text("Subscription")
-                .foregroundColor(.gsText)
+            SubscriptionView()
         case .deviceDetail(let id):
-            Text("Device: \(id)")
-                .foregroundColor(.gsText)
+            DeviceDetailView(deviceId: id)
         case .gymDetail(let id):
-            Text("Gym: \(id)")
-                .foregroundColor(.gsText)
+            GymDetailDestinationView(gymId: id)
         case .settings:
-            Text("Settings")
-                .foregroundColor(.gsText)
+            SettingsView()
         }
     }
-
-    // MARK: - Sheet Router
 
     @ViewBuilder
     private func sheetView(for sheet: AppSheet) -> some View {
         switch sheet {
         case .addDevice:
-            Text("Add Device")
-                .foregroundColor(.gsText)
-                .presentationDetents([.large])
+            NavigationStack {
+                DevicePairingView()
+            }
+            .presentationDetents([.large])
         case .addGym:
-            Text("Add Gym")
-                .foregroundColor(.gsText)
-                .presentationDetents([.large])
+            NavigationStack {
+                AddGymView()
+            }
+            .presentationDetents([.large])
         case .referralShare:
-            Text("Share Referral")
-                .foregroundColor(.gsText)
-                .presentationDetents([.medium])
+            NavigationStack {
+                ReferralView()
+            }
+            .presentationDetents([.medium, .large])
         case .editProfile:
-            Text("Edit Profile")
-                .foregroundColor(.gsText)
-                .presentationDetents([.large])
+            NavigationStack {
+                ProfileView()
+            }
+            .presentationDetents([.large])
         }
     }
 }
 
-// MARK: - Placeholder Views (replaced by Feature modules)
+private struct ProductDestinationView: View {
+    let productReference: String
 
-private struct DashboardPlaceholderView: View {
+    @State private var product: ProductDTO?
+    @State private var isLoading = true
+    @State private var error: String?
+
     var body: some View {
-        EmptyStateView(
-            icon: "house.fill",
-            title: "Dashboard",
-            description: "Your gear monitoring dashboard will appear here."
-        )
-        .navigationTitle("Dashboard")
+        Group {
+            if isLoading && product == nil {
+                LoadingView(message: "Loading product...")
+            } else if let product {
+                ProductDetailView(product: product)
+            } else if let error {
+                ErrorView(message: error) {
+                    Task { await loadProduct() }
+                }
+            }
+        }
+        .task {
+            if product == nil && error == nil {
+                await loadProduct()
+            }
+        }
+    }
+
+    private func loadProduct() async {
+        isLoading = true
+        error = nil
+
+        do {
+            product = try await APIClient.shared.request(
+                APIEndpoint(path: "/api/v1/store/products/\(productReference)")
+            )
+        } catch {
+            self.error = error.localizedDescription
+        }
+
+        isLoading = false
     }
 }
 
-private struct WorkoutsPlaceholderView: View {
+private struct GymDetailDestinationView: View {
+    let gymId: String
+
+    @State private var gym: GymDTO?
+    @State private var isLoading = true
+    @State private var error: String?
+
     var body: some View {
-        EmptyStateView(
-            icon: "figure.run",
-            title: "Workouts",
-            description: "Your workout history and tracking will appear here."
-        )
-        .navigationTitle("Workouts")
+        Group {
+            if isLoading && gym == nil {
+                LoadingView(message: "Loading gym...")
+            } else if let gym {
+                GymDetailView(gym: gym)
+            } else if let error {
+                ErrorView(message: error) {
+                    Task { await loadGym() }
+                }
+            }
+        }
+        .task {
+            if gym == nil && error == nil {
+                await loadGym()
+            }
+        }
+    }
+
+    private func loadGym() async {
+        isLoading = true
+        error = nil
+
+        do {
+            gym = try await APIClient.shared.request(
+                APIEndpoint(path: "/api/v1/gyms/\(gymId)")
+            )
+        } catch {
+            self.error = error.localizedDescription
+        }
+
+        isLoading = false
     }
 }
 
-private struct HealthPlaceholderView: View {
-    var body: some View {
-        EmptyStateView(
-            icon: "heart.text.clipboard",
-            title: "Health",
-            description: "Your health metrics and trends will appear here."
-        )
-        .navigationTitle("Health")
-    }
-}
+private struct AlertDestinationView: View {
+    let alertId: String
 
-private struct StorePlaceholderView: View {
-    var body: some View {
-        EmptyStateView(
-            icon: "bag.fill",
-            title: "Store",
-            description: "Browse gear and accessories here."
-        )
-        .navigationTitle("Store")
-    }
-}
+    @State private var alert: AlertDTO?
+    @State private var isLoading = true
+    @State private var error: String?
 
-private struct ProfilePlaceholderView: View {
     var body: some View {
-        EmptyStateView(
-            icon: "person.crop.circle.fill",
-            title: "Profile",
-            description: "Your profile and settings will appear here."
-        )
-        .navigationTitle("Profile")
+        Group {
+            if isLoading && alert == nil {
+                LoadingView(message: "Loading alert...")
+            } else if let alert {
+                AlertDetailView(alert: alert, onAcknowledge: acknowledgeAlert)
+            } else if let error {
+                ErrorView(message: error) {
+                    Task { await loadAlert() }
+                }
+            }
+        }
+        .task {
+            if alert == nil && error == nil {
+                await loadAlert()
+            }
+        }
+    }
+
+    private func loadAlert() async {
+        isLoading = true
+        error = nil
+
+        do {
+            let alerts: [AlertDTO] = try await APIClient.shared.request(APIEndpoint.Alerts.list)
+            guard let match = alerts.first(where: { $0.id == alertId }) else {
+                error = "Alert not found."
+                isLoading = false
+                return
+            }
+            alert = match
+        } catch {
+            self.error = error.localizedDescription
+        }
+
+        isLoading = false
+    }
+
+    private func acknowledgeAlert() {
+        Task {
+            do {
+                let _: EmptyData = try await APIClient.shared.request(
+                    APIEndpoint.Alerts.acknowledge(id: alertId)
+                )
+                await loadAlert()
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
     }
 }
 
 #Preview {
     MainTabView()
         .environmentObject(AppCoordinator())
+        .environmentObject(AuthManager.shared)
         .preferredColorScheme(.dark)
 }
