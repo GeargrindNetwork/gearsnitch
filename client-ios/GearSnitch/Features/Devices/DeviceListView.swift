@@ -78,13 +78,28 @@ struct DeviceListView: View {
                 .cornerRadius(10)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(device.name)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(.gsText)
+                HStack(spacing: 6) {
+                    Text(device.displayName)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.gsText)
 
-                Text(device.type.capitalized)
-                    .font(.caption)
-                    .foregroundColor(.gsTextSecondary)
+                    if device.isFavorite {
+                        Image(systemName: "star.fill")
+                            .font(.caption2)
+                            .foregroundColor(.gsWarning)
+                    }
+                }
+
+                if let nickname = device.nickname,
+                   !nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text("\(device.type.capitalized) · \(device.name)")
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                } else {
+                    Text(device.type.capitalized)
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                }
             }
 
             Spacer()

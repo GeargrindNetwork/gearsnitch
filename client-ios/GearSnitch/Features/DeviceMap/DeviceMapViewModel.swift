@@ -75,7 +75,7 @@ final class DeviceMapViewModel: ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 30_000_000_000) // 30 seconds
                 guard !Task.isCancelled else { break }
-                await self?.loadDevices()
+                self?.loadDevices()
             }
         }
     }

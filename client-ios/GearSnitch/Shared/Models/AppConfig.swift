@@ -1,4 +1,5 @@
 import Foundation
+import CoreBluetooth
 
 // MARK: - App Configuration
 
@@ -7,13 +8,14 @@ enum AppConfig {
 
     // MARK: API
 
-    /// Base URL for the REST API.
+    /// Base origin for the REST API. Route definitions include the `/api/v1`
+    /// prefix, so this should stay host-only.
     static let apiBaseURL: String = {
         if let override = Bundle.main.infoDictionary?["GS_API_BASE_URL"] as? String,
            !override.isEmpty {
             return override
         }
-        return "https://api.gearsnitch.com/api/v1"
+        return "https://api.gearsnitch.com"
     }()
 
     /// WebSocket URL for real-time events.
@@ -38,17 +40,17 @@ enum AppConfig {
     /// App Store listing URL.
     static let appStoreURL = "https://apps.apple.com/app/gearsnitch/id0000000000"
 
-    /// Privacy policy URL.
-    static let privacyPolicyURL = "https://gearsnitch.com/privacy"
+    /// Website-hosted privacy policy URL.
+    static let privacyPolicyURL = "https://\(universalLinkDomain)/privacy"
 
-    /// Terms of service URL.
-    static let termsURL = "https://gearsnitch.com/terms"
+    /// Website-hosted terms of service URL.
+    static let termsURL = "https://\(universalLinkDomain)/terms"
 
     /// Support page URL.
-    static let supportURL = "https://gearsnitch.com/support"
+    static let supportURL = "https://\(universalLinkDomain)/support"
 
     /// Account deletion page URL.
-    static let deleteAccountURL = "https://gearsnitch.com/delete-account"
+    static let deleteAccountURL = "https://\(universalLinkDomain)/delete-account"
 
     /// Support email.
     static let supportEmail = "support@gearsnitch.com"
@@ -60,6 +62,15 @@ enum AppConfig {
 
     /// Interval in seconds for BLE reconnection attempts.
     static let bleReconnectInterval: TimeInterval = 5
+
+    /// Optional BLE service UUID allowlist loaded from Info.plist.
+    static let bleServiceUUIDs: [CBUUID] = {
+        let values = Bundle.main.infoDictionary?["GS_BLE_SERVICE_UUIDS"] as? [String] ?? []
+        return values
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .map(CBUUID.init(string:))
+    }()
 
     // MARK: Keychain
 

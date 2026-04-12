@@ -3,6 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var authManager: AuthManager
     @State private var showSignOutConfirm = false
+    @State private var isExporting = false
+    @State private var exportError: String?
 
     var body: some View {
         List {
@@ -26,6 +28,28 @@ struct SettingsView: View {
                 infoRow(label: "Build", value: AppConfig.buildNumber)
             } header: {
                 Text("App Info")
+                    .foregroundColor(.gsTextSecondary)
+            }
+            .listRowBackground(Color.gsSurface)
+
+            // Data
+            Section {
+                Button {
+                    Task { await exportAccountData() }
+                } label: {
+                    HStack {
+                        Label("Export My Data", systemImage: "arrow.down.doc")
+                            .foregroundColor(.gsText)
+                        Spacer()
+                        if isExporting {
+                            ProgressView()
+                                .tint(.gsEmerald)
+                        }
+                    }
+                }
+                .disabled(isExporting)
+            } header: {
+                Text("Data")
                     .foregroundColor(.gsTextSecondary)
             }
             .listRowBackground(Color.gsSurface)
@@ -81,6 +105,14 @@ struct SettingsView: View {
         } message: {
             Text("Are you sure you want to sign out?")
         }
+        .alert("Export Failed", isPresented: Binding(
+            get: { exportError != nil },
+            set: { if !$0 { exportError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(exportError ?? "Something went wrong while exporting your data.")
+        }
     }
 
     private func infoRow(label: String, value: String) -> some View {
@@ -90,6 +122,17 @@ struct SettingsView: View {
             Spacer()
             Text(value)
                 .foregroundColor(.gsTextSecondary)
+        }
+    }
+
+    private func exportAccountData() async {
+        isExporting = true
+        defer { isExporting = false }
+
+        do {
+            try await AccountDataExporter.exportMyData()
+        } catch {
+            exportError = error.localizedDescription
         }
     }
 }

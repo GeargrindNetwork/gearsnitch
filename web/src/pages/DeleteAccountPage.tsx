@@ -6,17 +6,55 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 
 export default function DeleteAccountPage() {
+  const { user, isAuthenticated, signOut } = useAuth();
   const [email, setEmail] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  const fallbackEmail = isAuthenticated ? user?.email?.trim() ?? '' : '';
+  const enteredEmail = email.trim().length > 0 ? email.trim() : fallbackEmail;
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!confirmed) return;
-    // In production this would POST to the API
+    if (!confirmed || !isAuthenticated) return;
+
+    if (!enteredEmail) {
+      setError('Enter the email on your signed-in GearSnitch account to continue.');
+      return;
+    }
+
+    if (user?.email && enteredEmail.toLowerCase() !== user.email.toLowerCase()) {
+      setError('Enter the email on your signed-in GearSnitch account to continue.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    const res = await api.delete<{
+      deletionRequestedAt: string;
+      deletionScheduledFor: string;
+      gracePeriodDays: number;
+    }>('/users/me');
+
+    if (!res.success) {
+      setError(res.error?.message ?? 'Could not request account deletion.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    setSubmittedEmail(enteredEmail);
     setSubmitted(true);
+    setIsSubmitting(false);
+
+    await signOut();
   }
 
   return (
@@ -128,11 +166,17 @@ export default function DeleteAccountPage() {
                   reactivate. After 30 days, all data will be permanently deleted.
                 </p>
                 <p className="mt-2 text-xs text-zinc-600">
-                  A confirmation email has been sent to {email}.
+                  A confirmation email has been sent to {submittedEmail}.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
+                {!isAuthenticated && (
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-200">
+                    Sign in to the GearSnitch account you want to delete, then confirm your email below.
+                  </div>
+                )}
+
                 <p className="text-sm text-zinc-400">
                   To confirm account deletion, enter the email address associated with your
                   GearSnitch account.
@@ -146,7 +190,7 @@ export default function DeleteAccountPage() {
                     id="email"
                     type="email"
                     required
-                    value={email}
+                    value={enteredEmail}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     className="border-white/10 bg-zinc-800/50 text-white placeholder:text-zinc-600 focus:border-cyan-500/50 focus:ring-cyan-500/20"
@@ -166,12 +210,16 @@ export default function DeleteAccountPage() {
                   </span>
                 </label>
 
+                {error && (
+                  <p className="text-sm text-red-400">{error}</p>
+                )}
+
                 <Button
                   type="submit"
-                  disabled={!confirmed || !email}
+                  disabled={!confirmed || !enteredEmail || !isAuthenticated || isSubmitting}
                   className="w-full bg-red-600 font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                 >
-                  Delete My Account
+                  {isSubmitting ? 'Submitting...' : 'Delete My Account'}
                 </Button>
               </form>
             )}

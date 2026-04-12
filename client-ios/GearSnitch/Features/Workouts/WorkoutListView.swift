@@ -17,7 +17,14 @@ struct WorkoutListView: View {
         .navigationTitle("Workouts")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                NavigationLink {
+                    RunHistoryView()
+                } label: {
+                    Image(systemName: "figure.run.circle.fill")
+                        .foregroundColor(.gsEmerald)
+                }
+
                 NavigationLink {
                     ActiveWorkoutView()
                 } label: {
@@ -33,6 +40,36 @@ struct WorkoutListView: View {
 
     private var workoutList: some View {
         List {
+            Section {
+                NavigationLink {
+                    RunHistoryView()
+                } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: "figure.run.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(.gsEmerald)
+                            .frame(width: 40, height: 40)
+                            .background(Color.gsEmerald.opacity(0.12))
+                            .cornerRadius(10)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Outdoor runs")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.gsText)
+
+                            Text("Track live route capture, pace, and distance.")
+                                .font(.caption)
+                                .foregroundColor(.gsTextSecondary)
+                        }
+
+                        Spacer()
+                    }
+                    .padding(.vertical, 4)
+                }
+                .listRowBackground(Color.gsSurface)
+                .listRowSeparatorTint(Color.gsBorder)
+            }
+
             ForEach(viewModel.workouts) { workout in
                 NavigationLink {
                     WorkoutDetailView(workout: workout)
@@ -59,9 +96,13 @@ struct WorkoutListView: View {
                 .cornerRadius(10)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(workout.startDate.shortDateString())
+                Text(workout.name)
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(.gsText)
+
+                Text(workout.startedAt.shortDateString())
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
 
                 HStack(spacing: 12) {
                     Label(workout.durationString, systemImage: "clock")
@@ -110,6 +151,15 @@ struct WorkoutListView: View {
             }
             .buttonStyle(.bordered)
             .tint(.gsEmerald)
+
+            NavigationLink {
+                RunHistoryView()
+            } label: {
+                Label("Track a Run", systemImage: "figure.run.circle")
+                    .font(.subheadline.weight(.medium))
+            }
+            .buttonStyle(.bordered)
+            .tint(.gsCyan)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

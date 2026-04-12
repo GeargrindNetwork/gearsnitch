@@ -29,6 +29,10 @@ const ApplePaySchema = z.object({
   applePayToken: z.string().min(1),
 });
 
+const FinalizePaymentSchema = z.object({
+  paymentIntentId: z.string().min(1).startsWith('pi_'),
+});
+
 // --- Routes ---
 
 /**
@@ -109,6 +113,7 @@ router.post(
         orderNumber: order.orderNumber,
         status: order.status,
         total: order.total,
+        currency: order.currency,
       });
     } catch (err) {
       if (err instanceof PaymentError) {
@@ -119,6 +124,52 @@ router.post(
         res,
         StatusCodes.INTERNAL_SERVER_ERROR,
         'Failed to process Apple Pay payment',
+      );
+    }
+  },
+);
+
+/**
+ * POST /payments/finalize
+ * Finalize a Stripe card payment after client-side confirmation succeeds.
+ */
+router.post(
+  '/finalize',
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const parsed = FinalizePaymentSchema.safeParse(req.body);
+      if (!parsed.success) {
+        errorResponse(
+          res,
+          StatusCodes.BAD_REQUEST,
+          'Validation failed',
+          parsed.error.flatten().fieldErrors,
+        );
+        return;
+      }
+
+      const order = await paymentService.finalizeCardPayment(
+        parsed.data.paymentIntentId,
+        req.user!.sub,
+      );
+
+      successResponse(res, {
+        orderId: order._id.toString(),
+        orderNumber: order.orderNumber,
+        status: order.status,
+        total: order.total,
+        currency: order.currency,
+      });
+    } catch (err) {
+      if (err instanceof PaymentError) {
+        errorResponse(res, StatusCodes.BAD_REQUEST, err.message);
+        return;
+      }
+      errorResponse(
+        res,
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Failed to finalize payment',
       );
     }
   },

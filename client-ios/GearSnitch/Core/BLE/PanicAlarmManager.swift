@@ -43,13 +43,13 @@ final class PanicAlarmManager: NSObject, ObservableObject {
     /// Activate all alarm modalities for a lost device.
     func triggerPanic(device: BLEDevice) {
         guard !isPanicking else {
-            logger.warning("Panic already active, ignoring duplicate trigger for \(device.name)")
+            logger.warning("Panic already active, ignoring duplicate trigger for \(device.displayName)")
             return
         }
 
         isPanicking = true
         panicDevice = device
-        logger.error("PANIC triggered for device: \(device.name)")
+        logger.error("PANIC triggered for device: \(device.displayName)")
 
         // 1. Continuous heavy haptic vibration
         startContinuousHaptic()
@@ -66,7 +66,7 @@ final class PanicAlarmManager: NSObject, ObservableObject {
         }
 
         // 5. Attempt to send alarm to Apple Watch
-        sendWatchAlarm(deviceName: device.name)
+        sendWatchAlarm(deviceName: device.displayName)
     }
 
     /// Silence all alarm modalities.
@@ -132,8 +132,8 @@ final class PanicAlarmManager: NSObject, ObservableObject {
 
     private func postPanicAlert(for device: BLEDevice) async {
         let body = DeviceDisconnectedBody(
-            deviceId: device.id.uuidString,
-            deviceName: device.name,
+            deviceId: device.persistedId ?? device.identifier.uuidString,
+            deviceName: device.displayName,
             lastSeenAt: device.lastSeenAt ?? Date(),
             latitude: nil,
             longitude: nil
@@ -143,7 +143,7 @@ final class PanicAlarmManager: NSObject, ObservableObject {
             let _: EmptyData = try await APIClient.shared.request(
                 APIEndpoint.Alerts.deviceDisconnected(body)
             )
-            logger.info("Panic alert posted to backend for \(device.name)")
+            logger.info("Panic alert posted to backend for \(device.displayName)")
         } catch {
             logger.error("Failed to post panic alert: \(error.localizedDescription)")
         }

@@ -53,6 +53,8 @@ final class SessionManager: ObservableObject {
 
     /// Revoke a specific session by ID. If it is the current session, triggers logout.
     func revokeSession(id: String) async throws {
+        let revokedCurrentSession = sessions.contains { $0.id == id && $0.isCurrent }
+
         let _: EmptyData = try await apiClient.request(
             APIEndpoint.Sessions.revoke(id: id)
         )
@@ -61,7 +63,7 @@ final class SessionManager: ObservableObject {
         logger.info("Revoked session \(id)")
 
         // If the revoked session was the current one, force logout
-        if sessions.first(where: { $0.id == id && $0.isCurrent }) != nil {
+        if revokedCurrentSession {
             await AuthManager.shared.logout()
         }
     }

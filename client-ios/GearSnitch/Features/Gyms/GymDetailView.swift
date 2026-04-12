@@ -26,8 +26,11 @@ struct GymDetailView: View {
         ScrollView {
             VStack(spacing: 20) {
                 // Map
-                Map(coordinateRegion: .constant(region), annotationItems: [gym]) { g in
-                    MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: g.latitude, longitude: g.longitude)) {
+                Map(initialPosition: .region(region), interactionModes: []) {
+                    Annotation(
+                        gym.name,
+                        coordinate: CLLocationCoordinate2D(latitude: gym.latitude, longitude: gym.longitude)
+                    ) {
                         Circle()
                             .fill(Color.gsEmerald.opacity(0.2))
                             .frame(width: 80, height: 80)

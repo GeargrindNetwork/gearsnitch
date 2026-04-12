@@ -54,9 +54,23 @@ const ACCESS_TOKEN_TTL_SECONDS = 15 * 60; // 15 minutes
 
 let googleClient: OAuth2Client | null = null;
 
+function requireConfiguredValue(value: string, message: string): string {
+  if (!value) {
+    logger.error(message);
+    throw new AuthServiceError(message, StatusCodes.INTERNAL_SERVER_ERROR);
+  }
+
+  return value;
+}
+
 function getGoogleClient(): OAuth2Client {
   if (!googleClient) {
-    googleClient = new OAuth2Client(config.googleOAuthClientId);
+    googleClient = new OAuth2Client(
+      requireConfiguredValue(
+        config.googleOAuthClientId,
+        'Google OAuth client ID is not configured',
+      ),
+    );
   }
   return googleClient;
 }
@@ -134,6 +148,8 @@ export class AuthService {
       }
     }
 
+    await AuthService.reactivateIfNeeded(user);
+
     const tokenPair = await AuthService.issueTokenPair(
       user._id.toString(),
       user.roles,
@@ -160,14 +176,39 @@ export class AuthService {
     fullName: string | undefined,
     deviceInfo: DeviceInfo,
   ): Promise<AuthResult> {
+    void authorizationCode;
     const decoded = await AuthService.verifyAppleToken(identityToken);
 
     const appleId = decoded.sub;
     const email = decoded.email;
+    const normalizedFullName = fullName?.trim() || undefined;
 
     let user = await User.findOne({ appleId });
 
-    if (!user) {
+    if (user) {
+      let shouldSave = false;
+
+      if (!user.authProviders.includes('apple')) {
+        user.authProviders.push('apple');
+        shouldSave = true;
+      }
+
+      if (normalizedFullName && !user.displayName) {
+        user.displayName = normalizedFullName;
+        shouldSave = true;
+      }
+
+      if (shouldSave) {
+        await user.save();
+      }
+    } else {
+      if (!email) {
+        throw new AuthServiceError(
+          'Apple account email unavailable for first-time sign in',
+          StatusCodes.UNAUTHORIZED,
+        );
+      }
+
       const emailHash = AuthService.hashEmail(email);
       user = await User.findOne({ emailHash });
 
@@ -176,15 +217,15 @@ export class AuthService {
         if (!user.authProviders.includes('apple')) {
           user.authProviders.push('apple');
         }
-        if (fullName && !user.displayName) {
-          user.displayName = fullName;
+        if (normalizedFullName && !user.displayName) {
+          user.displayName = normalizedFullName;
         }
         await user.save();
       } else {
         user = await User.create({
           email,
           emailHash: emailHash,
-          displayName: fullName || email.split('@')[0],
+          displayName: normalizedFullName || email.split('@')[0],
           appleId,
           authProviders: ['apple'],
           roles: ['user'],
@@ -192,6 +233,8 @@ export class AuthService {
         });
       }
     }
+
+    await AuthService.reactivateIfNeeded(user);
 
     const tokenPair = await AuthService.issueTokenPair(
       user._id.toString(),
@@ -379,8 +422,13 @@ export class AuthService {
 
   private static async verifyAppleToken(
     identityToken: string,
-  ): Promise<{ sub: string; email: string }> {
+  ): Promise<{ sub: string; email?: string }> {
     try {
+      const appleClientId = requireConfiguredValue(
+        config.appleClientId,
+        'Apple OAuth client ID is not configured',
+      );
+
       // Decode the header to get the key ID (kid)
       const header = jwt.decode(identityToken, { complete: true })?.header;
       if (!header?.kid) {
@@ -396,7 +444,7 @@ export class AuthService {
       const payload = jwt.verify(identityToken, publicKey, {
         algorithms: ['RS256'],
         issuer: 'https://appleid.apple.com',
-        audience: config.appleClientId,
+        audience: appleClientId,
       }) as {
         sub?: string;
         email?: string;
@@ -405,8 +453,8 @@ export class AuthService {
         aud?: string;
       };
 
-      if (!payload.sub || !payload.email) {
-        throw new Error('Missing sub or email in Apple token payload');
+      if (!payload.sub) {
+        throw new Error('Missing sub in Apple token payload');
       }
 
       return { sub: payload.sub, email: payload.email };
@@ -476,6 +524,18 @@ export class AuthService {
     await redis.set(refreshKey, '1', 'EX', REFRESH_TOKEN_TTL_SECONDS);
 
     return { accessToken, refreshToken };
+  }
+
+  private static async reactivateIfNeeded(user: IUser): Promise<void> {
+    if (user.status !== 'deletion_requested') {
+      return;
+    }
+
+    user.status = 'active';
+    user.deletionRequestedAt = null;
+    user.deletionScheduledFor = null;
+    user.deletedAt = null;
+    await user.save();
   }
 
   private static async whitelistSession(

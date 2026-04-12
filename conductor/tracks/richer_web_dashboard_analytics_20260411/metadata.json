@@ -1,0 +1,74 @@
+{
+  "version": 3,
+  "track_id": "richer_web_dashboard_analytics_20260411",
+  "name": "Richer Web Dashboard Analytics",
+  "type": "feature",
+  "status": "complete",
+  "priority": "P3",
+  "created_at": "2026-04-12T04:14:26Z",
+  "updated_at": "2026-04-12T05:21:07Z",
+  "superpower_enhanced": true,
+  "dependencies": [
+    "gps_route_capture_20260411",
+    "realtime_worker_hardening_20260411"
+  ],
+  "summary": "Expand `/metrics` into the richer browser analytics dashboard once run and realtime data are live.",
+  "loop_state": {
+    "current_step": "COMPLETE",
+    "step_status": "PASSED",
+    "fix_cycle_count": 0,
+    "max_fix_cycles": 3,
+    "checkpoints": {
+      "PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T04:14:26Z",
+        "completed_at": "2026-04-12T04:14:26Z",
+        "agent": "loop-planner",
+        "plan_version": 1
+      },
+      "EVALUATE_PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T05:21:07Z",
+        "completed_at": "2026-04-12T05:21:07Z",
+        "agent": "loop-plan-evaluator"
+      },
+      "EXECUTE": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T05:21:07Z",
+        "completed_at": "2026-04-12T05:21:07Z",
+        "agent": "loop-executor",
+        "tasks_completed": 4,
+        "tasks_total": 4,
+        "last_task": "Task 3.1"
+      },
+      "EVALUATE_EXECUTION": {
+        "status": "PASSED",
+        "started_at": "2026-04-12T05:21:07Z",
+        "completed_at": "2026-04-12T05:21:07Z",
+        "agent": "loop-execution-evaluator",
+        "verdict": "PASS",
+        "checks": {
+          "api_test": true,
+          "api_lint": true,
+          "api_type_check": true,
+          "api_build": true,
+          "web_build": true
+        },
+        "notes": [
+          "The metrics overview API now ships run summary/trend data plus device status summaries to the web client through one stable contract.",
+          "The browser metrics page now includes richer run cards, device status cards, and explicit drill-down navigation into /runs while preserving empty-state handling.",
+          "web lint still fails only on the pre-existing react-refresh issues in web/src/components/ui/{badge,button,tabs}.tsx and the unused disable comments in web/src/pages/StorePage.tsx."
+        ]
+      },
+      "FIX": { "status": "NOT_STARTED" },
+      "ENRICH": { "status": "NOT_STARTED" }
+    }
+  },
+  "lead_consultations": [],
+  "discovered_work": [
+    "Expanded GET /workouts/metrics/overview to aggregate run distance trends, recent run gallery data, and device status summaries alongside the existing workout metrics payload.",
+    "Rebuilt web/src/pages/MetricsPage.tsx into a fuller authenticated dashboard with run trend cards, run gallery drill-downs, and live-ish device status cards while preserving explicit zero-data states.",
+    "npm run lint --workspace=web still fails on the pre-existing react-refresh/only-export-components issues in web/src/components/ui/{badge,button,tabs}.tsx plus unused disable comments in web/src/pages/StorePage.tsx; the richer dashboard slice did not add new web lint failures."
+  ],
+  "blockers": []
+}

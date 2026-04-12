@@ -3,9 +3,19 @@ import Foundation
 // MARK: - Cart DTO
 
 struct CartDTO: Decodable {
+    let id: String
     let items: [CartItemDTO]
     let subtotal: Double
+    let tax: Double
+    let shipping: Double
+    let total: Double
     let currency: String
+    let itemCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id = "_id"
+        case items, subtotal, tax, shipping, total, currency, itemCount
+    }
 }
 
 struct CartItemDTO: Identifiable, Decodable {
@@ -53,6 +63,11 @@ final class CartViewModel: ObservableObject {
     var subtotal: String {
         guard let cart else { return "$0.00" }
         return String(format: "$%.2f", cart.subtotal)
+    }
+
+    var total: String {
+        guard let cart else { return "$0.00" }
+        return String(format: "$%.2f", cart.total)
     }
 
     var isEmpty: Bool {

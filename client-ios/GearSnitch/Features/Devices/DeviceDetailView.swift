@@ -5,6 +5,8 @@ struct DeviceDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var shareEmail = ""
     @State private var showShareSheet = false
+    @State private var showRenameSheet = false
+    @State private var draftNickname = ""
 
     init(deviceId: String) {
         _viewModel = StateObject(wrappedValue: DeviceDetailViewModel(deviceId: deviceId))
@@ -23,7 +25,7 @@ struct DeviceDetailView: View {
             }
         }
         .background(Color.gsBackground.ignoresSafeArea())
-        .navigationTitle(viewModel.device?.name ?? "Device")
+        .navigationTitle(viewModel.device?.displayName ?? "Device")
         .navigationBarTitleDisplayMode(.inline)
         .alert("Delete Device", isPresented: $viewModel.showDeleteConfirm) {
             Button("Delete", role: .destructive) {
@@ -36,7 +38,10 @@ struct DeviceDetailView: View {
         .sheet(isPresented: $showShareSheet) {
             shareSheet
         }
-        .onChange(of: viewModel.didDelete) { deleted in
+        .sheet(isPresented: $showRenameSheet) {
+            renameSheet
+        }
+        .onChange(of: viewModel.didDelete) { _, deleted in
             if deleted { dismiss() }
         }
         .task {
@@ -54,6 +59,9 @@ struct DeviceDetailView: View {
 
                 // Info rows
                 infoSection(device)
+
+                // Favorite and nickname controls
+                prioritySection(device)
 
                 // Monitoring toggle
                 monitoringSection(device)
@@ -74,6 +82,27 @@ struct DeviceDetailView: View {
                     device.isConnected ? Color.gsEmerald : Color.gsTextSecondary
                 )
 
+            VStack(spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(device.displayName)
+                        .font(.headline)
+                        .foregroundColor(.gsText)
+
+                    if device.isFavorite {
+                        Image(systemName: "star.fill")
+                            .font(.caption)
+                            .foregroundColor(.gsWarning)
+                    }
+                }
+
+                if let nickname = device.nickname,
+                   !nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(device.name)
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                }
+            }
+
             Text(device.status.capitalized)
                 .font(.headline)
                 .foregroundColor(device.isConnected ? .gsSuccess : .gsTextSecondary)
@@ -90,7 +119,12 @@ struct DeviceDetailView: View {
 
     private func infoSection(_ device: DeviceDetailDTO) -> some View {
         VStack(spacing: 0) {
-            infoRow(label: "Name", value: device.name)
+            infoRow(label: "Name", value: device.displayName)
+            if let nickname = device.nickname,
+               !nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Divider().background(Color.gsBorder)
+                infoRow(label: "Hardware Name", value: device.name)
+            }
             Divider().background(Color.gsBorder)
             infoRow(label: "Type", value: device.type.capitalized)
             Divider().background(Color.gsBorder)
@@ -103,6 +137,61 @@ struct DeviceDetailView: View {
             }
         }
         .cardStyle(padding: 0)
+    }
+
+    private func prioritySection(_ device: DeviceDetailDTO) -> some View {
+        VStack(spacing: 14) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Favorite Device")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.gsText)
+                    Text("Favorites stay at the top and are checked first while monitoring.")
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                }
+
+                Spacer()
+
+                Toggle("", isOn: Binding(
+                    get: { device.isFavorite },
+                    set: { newValue in
+                        Task {
+                            await viewModel.updatePriority(
+                                nickname: device.nickname ?? "",
+                                isFavorite: newValue
+                            )
+                        }
+                    }
+                ))
+                .tint(.gsEmerald)
+                .labelsHidden()
+            }
+
+            Button {
+                draftNickname = device.nickname ?? ""
+                showRenameSheet = true
+            } label: {
+                HStack {
+                    Label(
+                        device.nickname == nil ? "Add Nickname" : "Edit Nickname",
+                        systemImage: "pencil.circle"
+                    )
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.gsEmerald)
+
+                    Spacer()
+
+                    Text(device.nickname ?? "Use a friendlier label")
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.plain)
+        }
+        .cardStyle()
+        .disabled(viewModel.isUpdating)
     }
 
     private func infoRow(label: String, value: String) -> some View {
@@ -222,6 +311,48 @@ struct DeviceDetailView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { showShareSheet = false }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private var renameSheet: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                Text("Set a nickname that is easier to recognize during a gym session. Leave it blank to fall back to the hardware name.")
+                    .font(.subheadline)
+                    .foregroundColor(.gsTextSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 20)
+
+                TextField("Nickname", text: $draftNickname)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal)
+
+                Button("Save") {
+                    let nickname = draftNickname
+                    let isFavorite = viewModel.device?.isFavorite ?? false
+                    Task {
+                        await viewModel.updatePriority(
+                            nickname: nickname,
+                            isFavorite: isFavorite
+                        )
+                        showRenameSheet = false
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.gsEmerald)
+
+                Spacer()
+            }
+            .padding()
+            .background(Color.gsSurface.ignoresSafeArea())
+            .navigationTitle("Nickname")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showRenameSheet = false }
                 }
             }
         }

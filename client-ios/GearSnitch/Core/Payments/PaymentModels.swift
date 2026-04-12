@@ -86,6 +86,25 @@ struct PaymentMethod: Decodable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
+        case plainID = "id"
         case type, last4, brand, expiryMonth, expiryYear, isDefault
+        case expMonth, expYear
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id =
+            try container.decodeIfPresent(String.self, forKey: .plainID) ??
+            container.decode(String.self, forKey: .id)
+        type = try container.decode(String.self, forKey: .type)
+        last4 = try container.decodeIfPresent(String.self, forKey: .last4)
+        brand = try container.decodeIfPresent(String.self, forKey: .brand)
+        expiryMonth =
+            try container.decodeIfPresent(Int.self, forKey: .expiryMonth) ??
+            container.decodeIfPresent(Int.self, forKey: .expMonth)
+        expiryYear =
+            try container.decodeIfPresent(Int.self, forKey: .expiryYear) ??
+            container.decodeIfPresent(Int.self, forKey: .expYear)
+        isDefault = try container.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
     }
 }

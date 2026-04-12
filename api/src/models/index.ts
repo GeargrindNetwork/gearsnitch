@@ -31,6 +31,9 @@ export type { INotificationToken } from './NotificationToken';
 export { NotificationLog } from './NotificationLog';
 export type { INotificationLog } from './NotificationLog';
 
+export { SupportTicket } from './SupportTicket';
+export type { ISupportTicket } from './SupportTicket';
+
 export { HealthMetric } from './HealthMetric';
 export type { IHealthMetric } from './HealthMetric';
 
@@ -45,6 +48,9 @@ export type { IWaterLog } from './WaterLog';
 
 export { Workout } from './Workout';
 export type { IWorkout, IWorkoutExercise, IWorkoutSet } from './Workout';
+
+export { Run } from './Run';
+export type { IRun, IRunPoint } from './Run';
 
 export { StoreProduct } from './StoreProduct';
 export type { IStoreProduct, IStoreProductCompliance } from './StoreProduct';

@@ -2,24 +2,27 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.gearsnitch.app.refresh</string>
+		<string>com.gearsnitch.app.sync</string>
+	</array>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>GearSnitch</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundleDisplayName</key>
-	<string>GearSnitch</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -31,10 +34,20 @@
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>GS_GOOGLE_CLIENT_ID</key>
+	<string></string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>GearSnitch uses the camera to scan referral QR codes.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>GearSnitch syncs your health data for fitness tracking.</string>
 	<key>NSHealthUpdateUsageDescription</key>
@@ -43,6 +56,8 @@
 	<string>Always-on location lets GearSnitch auto-activate monitoring at your gym.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>GearSnitch detects when you arrive at your gym.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>GearSnitch accesses your photos to set a profile picture.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -58,14 +73,17 @@
 		<string>audio</string>
 		<string>fetch</string>
 		<string>processing</string>
+		<string>bluetooth-peripheral</string>
+		<string>external-accessory</string>
+		<string>nearby-interaction</string>
 	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.gearsnitch.app.refresh</string>
-		<string>com.gearsnitch.app.sync</string>
-	</array>
-	<key>CFBundleIconName</key>
-	<string>AppIcon</string>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>gsBackground</string>
+		<key>UIImageName</key>
+		<string>Logo</string>
+	</dict>
 	<key>UIStatusBarHidden</key>
 	<true/>
 	<key>UIStatusBarStyle</key>
@@ -84,18 +102,5 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>NSCameraUsageDescription</key>
-	<string>GearSnitch uses the camera to scan referral QR codes.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>GearSnitch accesses your photos to set a profile picture.</string>
-	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIColorName</key>
-		<string>gsBackground</string>
-		<key>UIImageName</key>
-		<string>Logo</string>
-	</dict>
 </dict>
 </plist>

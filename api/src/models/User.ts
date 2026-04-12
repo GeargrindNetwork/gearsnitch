@@ -6,6 +6,7 @@ export interface IUser extends Document {
   emailHash: string;
   displayName: string;
   photoUrl?: string;
+  referralCode?: string | null;
   googleId?: string;
   appleId?: string;
   authProviders: string[];
@@ -29,7 +30,11 @@ export interface IUser extends Document {
     pushEnabled: boolean;
     panicAlertsEnabled: boolean;
     disconnectAlertsEnabled: boolean;
+    custom?: Record<string, string>;
   };
+  deletionRequestedAt: Date | null;
+  deletionScheduledFor: Date | null;
+  deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +45,7 @@ const UserSchema = new Schema<IUser>(
     emailHash: { type: String, required: true },
     displayName: { type: String, required: true },
     photoUrl: { type: String },
+    referralCode: { type: String, default: null, sparse: true },
     googleId: { type: String, sparse: true },
     appleId: { type: String, sparse: true },
     authProviders: { type: [String], default: [] },
@@ -71,12 +77,17 @@ const UserSchema = new Schema<IUser>(
       pushEnabled: { type: Boolean, default: false },
       panicAlertsEnabled: { type: Boolean, default: false },
       disconnectAlertsEnabled: { type: Boolean, default: false },
+      custom: { type: Schema.Types.Mixed, default: {} },
     },
+    deletionRequestedAt: { type: Date, default: null },
+    deletionScheduledFor: { type: Date, default: null },
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
 UserSchema.index({ emailHash: 1 }, { unique: true });
+UserSchema.index({ referralCode: 1 }, { unique: true, sparse: true });
 UserSchema.index({ googleId: 1 }, { unique: true, sparse: true });
 UserSchema.index({ appleId: 1 }, { unique: true, sparse: true });
 UserSchema.index({ roles: 1 });

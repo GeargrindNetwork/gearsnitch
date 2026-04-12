@@ -19,7 +19,7 @@ struct MainTabView: View {
 
             // Workouts
             NavigationStack(path: coordinator.path(for: .workouts)) {
-                WorkoutsPlaceholderView()
+                WorkoutListView()
                     .navigationDestination(for: AppDestination.self) { destination in
                         destinationView(for: destination)
                     }

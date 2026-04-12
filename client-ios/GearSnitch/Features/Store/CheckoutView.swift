@@ -5,8 +5,12 @@ struct CheckoutView: View {
     @Environment(\.dismiss) private var dismiss
 
     /// Cart data passed from CartView.
+    let cartId: String
     let cartItems: [CartItemDTO]
     let subtotal: Double
+    let tax: Double
+    let shipping: Double
+    let total: Double
 
     @StateObject private var applePayManager = ApplePayManager()
 
@@ -17,17 +21,25 @@ struct CheckoutView: View {
     @State private var state = ""
     @State private var zip = ""
     @State private var complianceAccepted = false
-    @State private var isPlacingOrder = false
     @State private var error: String?
+    @State private var checkoutNotice: String?
     @State private var orderPlaced = false
     @State private var confirmedOrderId: String?
 
-    private let tax: Double = 0
-    private let shipping: Double = 0
-
-    init(cartItems: [CartItemDTO] = [], subtotal: Double = 0) {
+    init(
+        cartId: String = "",
+        cartItems: [CartItemDTO] = [],
+        subtotal: Double = 0,
+        tax: Double = 0,
+        shipping: Double = 0,
+        total: Double = 0
+    ) {
+        self.cartId = cartId
         self.cartItems = cartItems
         self.subtotal = subtotal
+        self.tax = tax
+        self.shipping = shipping
+        self.total = total
     }
 
     var body: some View {
@@ -97,6 +109,35 @@ struct CheckoutView: View {
             }
             .listRowBackground(Color.gsSurface)
 
+            Section {
+                summaryRow("Subtotal", value: subtotal)
+                summaryRow("Tax", value: tax)
+                summaryRow("Shipping", value: shipping)
+                summaryRow("Total", value: total)
+            } header: {
+                Text("Order Summary")
+                    .foregroundColor(.gsTextSecondary)
+            }
+            .listRowBackground(Color.gsSurface)
+
+            if let checkoutNotice {
+                Section {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.gsWarning)
+                            .padding(.top, 2)
+
+                        Text(checkoutNotice)
+                            .font(.caption)
+                            .foregroundColor(.gsText)
+                    }
+                } header: {
+                    Text("Card Checkout Status")
+                        .foregroundColor(.gsTextSecondary)
+                }
+                .listRowBackground(Color.gsSurface)
+            }
+
             // MARK: - Error
 
             if let error {
@@ -135,13 +176,9 @@ struct CheckoutView: View {
                 } label: {
                     HStack {
                         Spacer()
-                        if isPlacingOrder {
-                            ProgressView().tint(.black)
-                        } else {
-                            Image(systemName: "bag.fill")
-                            Text("Place Order")
-                                .font(.headline)
-                        }
+                        Image(systemName: "exclamationmark.bubble.fill")
+                        Text("Card Checkout Coming Soon")
+                            .font(.headline)
                         Spacer()
                     }
                     .foregroundColor(.black)
@@ -170,20 +207,36 @@ struct CheckoutView: View {
 
     private var isValid: Bool {
         !fullName.isEmpty && !addressLine1.isEmpty && !city.isEmpty &&
-        !state.isEmpty && !zip.isEmpty && complianceAccepted
+        !state.isEmpty && !zip.isEmpty && complianceAccepted && !cartId.isEmpty
     }
 
     private var isProcessing: Bool {
-        isPlacingOrder || applePayManager.paymentStatus == .processing
+        applePayManager.paymentStatus == .processing
     }
 
     // MARK: - Apple Pay
 
     private func handleApplePay() async {
         error = nil
+        checkoutNotice = nil
+        guard isValid else {
+            error = "Complete your shipping details and compliance acknowledgement before paying."
+            return
+        }
+
+        let shippingAddress = ShippingAddress(
+            fullName: fullName,
+            line1: addressLine1,
+            line2: addressLine2.isEmpty ? nil : addressLine2,
+            city: city,
+            state: state,
+            postalCode: zip
+        )
 
         do {
             let orderId = try await applePayManager.startPayment(
+                cartId: cartId,
+                shippingAddress: shippingAddress,
                 items: cartItems,
                 subtotal: subtotal,
                 tax: tax,
@@ -201,17 +254,21 @@ struct CheckoutView: View {
     // MARK: - Standard Checkout
 
     private func placeOrder() async {
-        isPlacingOrder = true
         error = nil
+        checkoutNotice = """
+        Card checkout is still being finalized in GearSnitch. Use Apple Pay on a supported device for now, or return to your cart and try again once manual checkout is live.
+        """
+    }
 
-        do {
-            let _: EmptyData = try await APIClient.shared.request(APIEndpoint.Store.checkout)
-            orderPlaced = true
-        } catch {
-            self.error = error.localizedDescription
+    @ViewBuilder
+    private func summaryRow(_ label: String, value: Double) -> some View {
+        HStack {
+            Text(label)
+                .foregroundColor(.gsTextSecondary)
+            Spacer()
+            Text(String(format: "$%.2f", value))
+                .foregroundColor(label == "Total" ? .gsEmerald : .gsText)
         }
-
-        isPlacingOrder = false
     }
 }
 
@@ -235,8 +292,12 @@ extension ApplePayError: Equatable {
 #Preview {
     NavigationStack {
         CheckoutView(
+            cartId: "",
             cartItems: [],
-            subtotal: 0
+            subtotal: 0,
+            tax: 0,
+            shipping: 0,
+            total: 0
         )
     }
     .preferredColorScheme(.dark)

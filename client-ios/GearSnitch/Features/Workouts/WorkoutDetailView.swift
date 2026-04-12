@@ -11,9 +11,11 @@ struct WorkoutDetailView: View {
                     HStack(spacing: 24) {
                         statItem(value: workout.durationString, label: "Duration", icon: "clock")
                         statItem(value: "\(workout.exerciseCount)", label: "Exercises", icon: "dumbbell")
-                        if let cals = workout.caloriesBurned {
-                            statItem(value: "\(Int(cals))", label: "Calories", icon: "flame")
-                        }
+                        statItem(
+                            value: workout.source?.replacingOccurrences(of: "_", with: " ").capitalized ?? "Manual",
+                            label: "Source",
+                            icon: "waveform.path.ecg"
+                        )
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -21,30 +23,28 @@ struct WorkoutDetailView: View {
 
                 // Details
                 VStack(spacing: 0) {
-                    detailRow(label: "Date", value: workout.startDate.shortDateString())
+                    detailRow(label: "Name", value: workout.name)
                     Divider().background(Color.gsBorder)
-                    detailRow(label: "Start", value: workout.startDate.timeOnlyString())
+                    detailRow(label: "Date", value: workout.startedAt.shortDateString())
                     Divider().background(Color.gsBorder)
-                    detailRow(label: "End", value: workout.endDate.timeOnlyString())
+                    detailRow(label: "Start", value: workout.startedAt.timeOnlyString())
+                    Divider().background(Color.gsBorder)
+                    detailRow(label: "End", value: workout.endedAt?.timeOnlyString() ?? "In Progress")
                     if let gymName = workout.gymName {
                         Divider().background(Color.gsBorder)
                         detailRow(label: "Gym", value: gymName)
-                    }
-                    if let hr = workout.heartRateAvg {
-                        Divider().background(Color.gsBorder)
-                        detailRow(label: "Avg Heart Rate", value: "\(Int(hr)) bpm")
                     }
                 }
                 .cardStyle(padding: 0)
 
                 // Exercises
-                if let exercises = workout.exercises, !exercises.isEmpty {
+                if !workout.exercises.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Exercises")
                             .font(.headline)
                             .foregroundColor(.gsText)
 
-                        ForEach(exercises) { exercise in
+                        ForEach(workout.exercises) { exercise in
                             exerciseCard(exercise)
                         }
                     }
@@ -106,8 +106,8 @@ struct WorkoutDetailView: View {
                         .font(.caption)
                         .foregroundColor(.gsText)
 
-                    if let weight = set.weight, weight > 0 {
-                        Text("@ \(Int(weight)) lbs")
+                    if set.weightKg > 0 {
+                        Text("@ \(Int(set.weightLbs.rounded())) lbs")
                             .font(.caption)
                             .foregroundColor(.gsEmerald)
                     }
@@ -137,11 +137,19 @@ struct WorkoutDetailView: View {
 #Preview {
     NavigationStack {
         WorkoutDetailView(workout: WorkoutDTO(
-            id: "1", type: "strength",
-            startDate: Date().addingTimeInterval(-3600),
-            endDate: Date(),
-            caloriesBurned: 320, heartRateAvg: 142, notes: "Great session",
-            exercises: [], gymName: "Iron Temple", createdAt: Date()
+            id: "1",
+            name: "Strength Workout",
+            startedAt: Date().addingTimeInterval(-3600),
+            endedAt: Date(),
+            durationMinutes: 60,
+            durationSeconds: 3600,
+            exerciseCount: 2,
+            notes: "Great session",
+            exercises: [],
+            gymName: "Iron Temple",
+            source: "manual",
+            createdAt: Date(),
+            updatedAt: Date()
         ))
     }
     .preferredColorScheme(.dark)

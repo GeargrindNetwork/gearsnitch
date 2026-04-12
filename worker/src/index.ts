@@ -1,7 +1,16 @@
 import mongoose from 'mongoose';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
+import type { Job } from 'bullmq';
+import { processAlertFanout } from './jobs/alertFanout';
+import { processDataExport } from './jobs/dataExport';
+import { processPushNotification } from './jobs/pushNotification';
+import { processReferralQualification } from './jobs/referralQualification';
+import { processReferralReward } from './jobs/referralReward';
+import { processStoreOrder } from './jobs/storeOrder';
+import { processSubscriptionValidation } from './jobs/subscriptionValidation';
 import { logger } from './utils/logger';
+import { shutdownJobRuntime } from './utils/jobRuntime';
 
 const MONGODB_URI = process.env.MONGODB_URI || '';
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -27,16 +36,9 @@ const QUEUES = [
 
 type QueueName = (typeof QUEUES)[number];
 
-// Import job processors
-import { processReferralQualification } from './jobs/referralQualification';
-import { processReferralReward } from './jobs/referralReward';
-import { processPushNotification } from './jobs/pushNotification';
-import { processSubscriptionValidation } from './jobs/subscriptionValidation';
-import { processAlertFanout } from './jobs/alertFanout';
-import { processStoreOrder } from './jobs/storeOrder';
-import { processDataExport } from './jobs/dataExport';
+type QueueProcessor = (job: Job) => Promise<void>
 
-const processors: Partial<Record<QueueName, (job: unknown) => Promise<void>>> = {
+const processors: Partial<Record<QueueName, QueueProcessor>> = {
   'referral-qualification': processReferralQualification,
   'referral-reward': processReferralReward,
   'push-notifications': processPushNotification,
@@ -88,6 +90,7 @@ async function start() {
 async function shutdown() {
   logger.info('Worker shutting down...');
   await Promise.all(workers.map((w) => w.close()));
+  await shutdownJobRuntime();
   await mongoose.disconnect();
   await redisConnection.quit();
   logger.info('Worker shut down cleanly');

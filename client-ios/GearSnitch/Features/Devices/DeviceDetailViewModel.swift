@@ -5,9 +5,11 @@ import Foundation
 struct DeviceDetailDTO: Identifiable, Decodable {
     let id: String
     let name: String
+    let nickname: String?
     let type: String
     let bluetoothIdentifier: String
     let status: String
+    let isFavorite: Bool
     let firmwareVersion: String?
     let signalStrength: Int?
     let lastSeenAt: Date?
@@ -17,13 +19,30 @@ struct DeviceDetailDTO: Identifiable, Decodable {
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
-        case name, type, bluetoothIdentifier, status
+        case name, nickname, type, bluetoothIdentifier, status
         case firmwareVersion, signalStrength, lastSeenAt
-        case isMonitoring, sharedWith, createdAt
+        case isFavorite, isMonitoring, sharedWith, createdAt
     }
 
     var isConnected: Bool {
         status == "connected" || status == "monitoring"
+    }
+
+    var displayName: String {
+        if let nickname, !nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return nickname
+        }
+
+        return name
+    }
+
+    var priorityMetadata: PersistedBLEDeviceMetadata {
+        PersistedBLEDeviceMetadata(
+            id: id,
+            bluetoothIdentifier: bluetoothIdentifier,
+            nickname: nickname,
+            isFavorite: isFavorite
+        )
     }
 }
 
@@ -51,9 +70,10 @@ final class DeviceDetailViewModel: ObservableObject {
         error = nil
 
         do {
-            let endpoint = APIEndpoint(path: "/api/v1/devices/\(deviceId)")
+            let endpoint = APIEndpoint.Devices.detail(id: deviceId)
             let fetched: DeviceDetailDTO = try await apiClient.request(endpoint)
             device = fetched
+            BLEManager.shared.upsertPersistedMetadata(fetched.priorityMetadata)
         } catch {
             self.error = error.localizedDescription
         }
@@ -87,6 +107,29 @@ final class DeviceDetailViewModel: ObservableObject {
             didDelete = true
         } catch {
             self.error = error.localizedDescription
+        }
+
+        isUpdating = false
+    }
+
+    func updatePriority(nickname: String, isFavorite: Bool) async {
+        guard let current = device else { return }
+        isUpdating = true
+
+        do {
+            let body = UpdateDeviceBody(
+                name: nil,
+                nickname: nickname,
+                type: nil,
+                isFavorite: isFavorite
+            )
+            let endpoint = APIEndpoint.Devices.update(id: deviceId, body: body)
+            let updated: DeviceDetailDTO = try await apiClient.request(endpoint)
+            device = updated
+            BLEManager.shared.upsertPersistedMetadata(updated.priorityMetadata)
+        } catch {
+            self.error = error.localizedDescription
+            device = current
         }
 
         isUpdating = false

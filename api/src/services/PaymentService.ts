@@ -84,6 +84,17 @@ export class PaymentService {
       { idempotencyKey },
     );
 
+    await this.upsertPendingOrderFromCart({
+      userId,
+      cart,
+      paymentIntentId: paymentIntent.id,
+      shippingAddress,
+      subtotalCents,
+      taxCents,
+      shippingCents: FLAT_SHIPPING,
+      totalCents,
+    });
+
     return {
       clientSecret: paymentIntent.client_secret!,
       paymentIntentId: paymentIntent.id,
@@ -126,36 +137,15 @@ export class PaymentService {
       );
     }
 
-    const cartId = confirmedIntent.metadata.cartId;
-    if (!cartId) {
-      throw new PaymentError(
-        'Missing cartId in payment intent metadata',
-        'INVALID_METADATA',
-      );
-    }
+    return this.finalizeConfirmedIntent(confirmedIntent, userId);
+  }
 
-    // Create the order from the cart
-    const { OrderService } = await import('./OrderService.js');
-    const orderService = new OrderService();
-    const order = await orderService.createFromCart(
-      userId,
-      cartId,
-      paymentIntentId,
-      {
-        line1: confirmedIntent.shipping?.address?.line1 ?? '',
-        line2: confirmedIntent.shipping?.address?.line2 ?? undefined,
-        city: confirmedIntent.shipping?.address?.city ?? '',
-        state: confirmedIntent.shipping?.address?.state ?? '',
-        postalCode: confirmedIntent.shipping?.address?.postal_code ?? '',
-        country: confirmedIntent.shipping?.address?.country ?? '',
-      },
-    );
-
-    // Mark order as paid since payment succeeded
-    order.status = 'paid';
-    await order.save();
-
-    return order;
+  async finalizeCardPayment(
+    paymentIntentId: string,
+    userId: string,
+  ): Promise<IStoreOrder> {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    return this.finalizeConfirmedIntent(paymentIntent, userId);
   }
 
   /**
@@ -165,10 +155,7 @@ export class PaymentService {
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        await StoreOrder.findOneAndUpdate(
-          { paymentIntentId: paymentIntent.id },
-          { status: 'paid' },
-        );
+        await this.finalizeConfirmedIntent(paymentIntent);
         break;
       }
 
@@ -253,6 +240,183 @@ export class PaymentService {
       signature,
       config.stripeWebhookSecret,
     );
+  }
+
+  private async finalizeConfirmedIntent(
+    paymentIntent: Stripe.PaymentIntent,
+    userIdOverride?: string,
+  ): Promise<IStoreOrder> {
+    if (
+      paymentIntent.status !== 'succeeded' &&
+      paymentIntent.status !== 'requires_capture'
+    ) {
+      throw new PaymentError(
+        `Payment is not finalized (status: ${paymentIntent.status})`,
+        'PAYMENT_NOT_FINALIZED',
+      );
+    }
+
+    const userId = userIdOverride ?? paymentIntent.metadata.userId;
+    const cartId = paymentIntent.metadata.cartId;
+
+    if (!userId || !cartId) {
+      throw new PaymentError(
+        'Missing cartId or userId in payment intent metadata',
+        'INVALID_METADATA',
+      );
+    }
+
+    if (userIdOverride && paymentIntent.metadata.userId && paymentIntent.metadata.userId !== userIdOverride) {
+      throw new PaymentError(
+        'Payment intent does not belong to the authenticated user',
+        'PAYMENT_OWNER_MISMATCH',
+      );
+    }
+
+    let order = (await StoreOrder.findOne({
+      paymentIntentId: paymentIntent.id,
+    })) as IStoreOrder | null;
+
+    if (!order) {
+      const cart = await StoreCart.findOne({
+        _id: new Types.ObjectId(cartId),
+        userId: new Types.ObjectId(userId),
+      });
+
+      if (!cart || cart.items.length === 0) {
+        throw new PaymentError(
+          'Order snapshot could not be reconstructed from cart',
+          'ORDER_SNAPSHOT_MISSING',
+        );
+      }
+
+      const subtotalCents = Math.round(cart.subtotal * 100);
+      const taxCents = Math.round(subtotalCents * TAX_RATE);
+      const totalCents = subtotalCents + taxCents + FLAT_SHIPPING;
+
+      order = await this.upsertPendingOrderFromCart({
+        userId,
+        cart,
+        paymentIntentId: paymentIntent.id,
+        shippingAddress: {
+          line1: paymentIntent.shipping?.address?.line1 ?? '',
+          line2: paymentIntent.shipping?.address?.line2 ?? undefined,
+          city: paymentIntent.shipping?.address?.city ?? '',
+          state: paymentIntent.shipping?.address?.state ?? '',
+          postalCode: paymentIntent.shipping?.address?.postal_code ?? '',
+          country: paymentIntent.shipping?.address?.country ?? 'US',
+        },
+        subtotalCents,
+        taxCents,
+        shippingCents: FLAT_SHIPPING,
+        totalCents,
+      });
+    }
+
+    if (!order) {
+      throw new PaymentError(
+        'Order could not be finalized from the confirmed payment',
+        'ORDER_FINALIZATION_FAILED',
+      );
+    }
+
+    if (order.status !== 'paid') {
+      order.status = 'paid';
+      await order.save();
+    }
+
+    await StoreCart.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(cartId),
+        userId: new Types.ObjectId(userId),
+      },
+      { items: [], subtotal: 0 },
+    );
+
+    return order;
+  }
+
+  private async upsertPendingOrderFromCart(params: {
+    userId: string;
+    cart: InstanceType<typeof StoreCart>;
+    paymentIntentId: string;
+    shippingAddress: {
+      line1: string;
+      line2?: string;
+      city: string;
+      state: string;
+      postalCode: string;
+      country: string;
+    };
+    subtotalCents: number;
+    taxCents: number;
+    shippingCents: number;
+    totalCents: number;
+  }): Promise<IStoreOrder> {
+    const {
+      userId,
+      cart,
+      paymentIntentId,
+      shippingAddress,
+      subtotalCents,
+      taxCents,
+      shippingCents,
+      totalCents,
+    } = params;
+
+    const query = {
+      userId: new Types.ObjectId(userId),
+      sourceCartId: cart._id,
+      status: 'pending' as const,
+    };
+
+    const payload = {
+      sourceCartId: cart._id,
+      paymentIntentId,
+      items: cart.items.map((item) => ({
+        productId: item.productId,
+        sku: item.sku,
+        name: item.name,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        lineTotal: item.lineTotal,
+      })),
+      subtotal: subtotalCents / 100,
+      tax: taxCents / 100,
+      shipping: shippingCents / 100,
+      total: totalCents / 100,
+      currency: cart.currency,
+      shippingAddress,
+    };
+
+    const existing = (await StoreOrder.findOne(query).sort({
+      createdAt: -1,
+    })) as IStoreOrder | null;
+    if (existing) {
+      existing.paymentIntentId = paymentIntentId;
+      existing.items = payload.items;
+      existing.subtotal = payload.subtotal;
+      existing.tax = payload.tax;
+      existing.shipping = payload.shipping;
+      existing.total = payload.total;
+      existing.currency = payload.currency;
+      existing.shippingAddress = payload.shippingAddress;
+      await existing.save();
+      return existing as IStoreOrder;
+    }
+
+    return (await StoreOrder.create({
+      userId: new Types.ObjectId(userId),
+      orderNumber: await this.generateOrderNumber(),
+      status: 'pending',
+      ...payload,
+    })) as IStoreOrder;
+  }
+
+  private async generateOrderNumber(): Promise<string> {
+    const count = await StoreOrder.countDocuments();
+    const seq = (count + 1).toString().padStart(6, '0');
+    return `GS-${seq}`;
   }
 }
 

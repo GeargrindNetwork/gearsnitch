@@ -16,14 +16,37 @@ enum SignalLevel: Int, Comparable, CaseIterable {
         lhs.rawValue < rhs.rawValue
     }
 
-    /// Classify an RSSI value into a signal level.
-    static func from(rssi: Int) -> SignalLevel {
+    private static func baseLevel(for rssi: Int) -> SignalLevel {
         switch rssi {
-        case -60 ... 0:      return .strong
-        case -75 ..< -60:    return .moderate
-        case -85 ..< -75:    return .weak
-        case -95 ..< -85:    return .critical
+        case -67 ... 0:      return .strong
+        case -76 ..< -67:    return .moderate
+        case -84 ..< -76:    return .weak
+        case -92 ..< -84:    return .critical
         default:             return .lost
+        }
+    }
+
+    /// Classify an RSSI value into a signal level.
+    /// Recovery requires a slightly stronger signal than degradation so the UI
+    /// and alerts do not flap when the device is near a boundary.
+    static func from(rssi: Int, previous: SignalLevel? = nil) -> SignalLevel {
+        let candidate = baseLevel(for: rssi)
+
+        guard let previous, candidate.rawValue < previous.rawValue else {
+            return candidate
+        }
+
+        switch candidate {
+        case .strong:
+            return rssi >= -63 ? .strong : previous
+        case .moderate:
+            return rssi >= -72 ? .moderate : previous
+        case .weak:
+            return rssi >= -80 ? .weak : previous
+        case .critical:
+            return rssi >= -88 ? .critical : previous
+        case .lost:
+            return candidate
         }
     }
 
@@ -83,9 +106,9 @@ enum SignalLevel: Int, Comparable, CaseIterable {
     var alertInterval: TimeInterval? {
         switch self {
         case .strong:   return nil
-        case .moderate: return 5.0
-        case .weak:     return 3.0
-        case .critical: return 1.0
+        case .moderate: return nil
+        case .weak:     return 6.0
+        case .critical: return 2.5
         case .lost:     return nil  // panic takes over
         }
     }
@@ -176,8 +199,8 @@ final class BLESignalMonitor: ObservableObject {
         let average = rssiHistory.reduce(0, +) / rssiHistory.count
         smoothedRSSI = average
 
-        let newLevel = SignalLevel.from(rssi: average)
         let previousLevel = signalLevel
+        let newLevel = SignalLevel.from(rssi: average, previous: previousLevel)
 
         if newLevel != previousLevel {
             signalLevel = newLevel

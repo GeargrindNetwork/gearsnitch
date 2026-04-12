@@ -361,8 +361,7 @@ final class ProfileViewModel: ObservableObject {
 
     func requestDataExport() async {
         do {
-            let endpoint = APIEndpoint(path: "/api/v1/users/me/export", method: .POST)
-            let _: EmptyData = try await apiClient.request(endpoint)
+            try await AccountDataExporter.exportMyData()
         } catch {
             self.error = error.localizedDescription
         }
@@ -391,6 +390,101 @@ struct UpdateProfileBody: Encodable {
     let dateOfBirth: String
     let heightInches: Double
     let weightLbs: Double
+}
+
+// MARK: - Account Data Export
+
+enum AccountDataExportError: LocalizedError {
+    case invalidPayload
+    case presentationUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidPayload:
+            return "The export payload was invalid."
+        case .presentationUnavailable:
+            return "Could not present the share sheet."
+        }
+    }
+}
+
+enum AccountDataExporter {
+    static func exportMyData() async throws {
+        let rawResponse = try await APIClient.shared.requestRaw(APIEndpoint.Users.export)
+        let prettyPrintedData = try makePrettyPrintedExportData(from: rawResponse)
+        let fileURL = try writeExportFile(data: prettyPrintedData)
+        try await presentShareSheet(fileURL: fileURL)
+    }
+
+    private static func makePrettyPrintedExportData(from rawResponse: Data) throws -> Data {
+        let jsonObject = try JSONSerialization.jsonObject(with: rawResponse, options: [])
+
+        guard
+            let root = jsonObject as? [String: Any],
+            let exportPayload = root["data"]
+        else {
+            throw AccountDataExportError.invalidPayload
+        }
+
+        return try JSONSerialization.data(
+            withJSONObject: exportPayload,
+            options: [.prettyPrinted, .sortedKeys]
+        )
+    }
+
+    private static func writeExportFile(data: Data) throws -> URL {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let timestamp = formatter.string(from: Date())
+            .replacingOccurrences(of: ":", with: "-")
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GearSnitch-Data-Export-\(timestamp)")
+            .appendingPathExtension("json")
+
+        try data.write(to: fileURL, options: .atomic)
+        return fileURL
+    }
+
+    @MainActor
+    private static func presentShareSheet(fileURL: URL) throws {
+        guard
+            let windowScene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }),
+            let rootViewController = windowScene.windows.first(where: \.isKeyWindow)?.rootViewController
+        else {
+            throw AccountDataExportError.presentationUnavailable
+        }
+
+        let activityVC = UIActivityViewController(
+            activityItems: [fileURL],
+            applicationActivities: nil
+        )
+
+        if let popover = activityVC.popoverPresentationController {
+            popover.sourceView = rootViewController.view
+            popover.sourceRect = CGRect(
+                x: rootViewController.view.bounds.midX,
+                y: rootViewController.view.bounds.midY,
+                width: 1,
+                height: 1
+            )
+            popover.permittedArrowDirections = []
+        }
+
+        topViewController(from: rootViewController).present(activityVC, animated: true)
+    }
+
+    @MainActor
+    private static func topViewController(from root: UIViewController) -> UIViewController {
+        var current = root
+
+        while let presented = current.presentedViewController {
+            current = presented
+        }
+
+        return current
+    }
 }
 
 // MARK: - API Endpoint Extension

@@ -52,10 +52,26 @@ struct CartView: View {
                         .foregroundColor(.gsText)
                 }
 
+                if let cart = viewModel.cart {
+                    HStack {
+                        Text("Total")
+                            .font(.subheadline)
+                            .foregroundColor(.gsTextSecondary)
+                        Spacer()
+                        Text(String(format: "$%.2f", cart.total))
+                            .font(.headline.weight(.semibold))
+                            .foregroundColor(.gsEmerald)
+                    }
+                }
+
                 NavigationLink {
                     CheckoutView(
+                        cartId: viewModel.cart?.id ?? "",
                         cartItems: viewModel.items,
-                        subtotal: viewModel.cart?.subtotal ?? 0
+                        subtotal: viewModel.cart?.subtotal ?? 0,
+                        tax: viewModel.cart?.tax ?? 0,
+                        shipping: viewModel.cart?.shipping ?? 0,
+                        total: viewModel.cart?.total ?? 0
                     )
                 } label: {
                     Text("Checkout")

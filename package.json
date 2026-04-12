@@ -16,6 +16,7 @@
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "test": "turbo run test",
+    "launch:check": "node scripts/check-launch-config.mjs",
     "dev:api": "npm run dev --workspace=api",
     "dev:web": "npm run dev --workspace=web",
     "dev:worker": "npm run dev --workspace=worker",

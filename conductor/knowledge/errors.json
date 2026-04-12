@@ -1,0 +1,25 @@
+{
+  "errors": [
+    {
+      "id": "api-eslint-flat-config-missing",
+      "date": "2026-04-12",
+      "track": "backend_core_services_20260411",
+      "symptom": "npm run lint --workspace=api failed immediately because ESLint 9 could not find an api-local eslint.config.* file.",
+      "resolution": "Add api/eslint.config.js so the workspace lint command can execute and act as a package-local validation gate."
+    },
+    {
+      "id": "swift-custom-decoder-removed-memberwise-init",
+      "date": "2026-04-12",
+      "track": "ios_completion_20260411",
+      "symptom": "The iOS simulator build failed after `DayActivity` gained a custom decoder because previews and `DayDetailView` still instantiated `DayActivity(...)` directly.",
+      "resolution": "Add an explicit memberwise initializer alongside `init(from:)` whenever a Swift model still needs direct construction outside decoding."
+    },
+    {
+      "id": "xcode-shared-scheme-missing-for-cli-build",
+      "date": "2026-04-12",
+      "track": "run_tracking_metrics_20260411",
+      "symptom": "`xcodebuild -scheme GearSnitch` reported that the project had no such scheme even though the app target compiled successfully.",
+      "resolution": "When the repo does not include a checked-in shared `.xcscheme`, validate with a target-based simulator build and treat the missing scheme as project configuration debt rather than an application compile failure."
+    }
+  ]
+}

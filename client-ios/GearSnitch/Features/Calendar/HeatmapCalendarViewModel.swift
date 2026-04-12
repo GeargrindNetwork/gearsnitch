@@ -20,6 +20,53 @@ struct DayActivity: Decodable {
         let totalCalories: Double
     }
 
+    private enum CodingKeys: String, CodingKey {
+        case gymVisits
+        case mealsLogged
+        case purchasesMade
+        case waterIntakeMl
+        case workoutsCompleted
+        case gymMinutes
+        case totalCalories
+    }
+
+    init(
+        gymVisits: GymVisitSummary,
+        mealsLogged: MealSummary,
+        purchasesMade: Int,
+        waterIntakeMl: Double,
+        workoutsCompleted: Int
+    ) {
+        self.gymVisits = gymVisits
+        self.mealsLogged = mealsLogged
+        self.purchasesMade = purchasesMade
+        self.waterIntakeMl = waterIntakeMl
+        self.workoutsCompleted = workoutsCompleted
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        if let gymVisits = try container.decodeIfPresent(GymVisitSummary.self, forKey: .gymVisits),
+           let mealsLogged = try container.decodeIfPresent(MealSummary.self, forKey: .mealsLogged) {
+            self.gymVisits = gymVisits
+            self.mealsLogged = mealsLogged
+        } else {
+            self.gymVisits = GymVisitSummary(
+                count: try container.decodeIfPresent(Int.self, forKey: .gymVisits) ?? 0,
+                totalMinutes: try container.decodeIfPresent(Int.self, forKey: .gymMinutes) ?? 0
+            )
+            self.mealsLogged = MealSummary(
+                count: try container.decodeIfPresent(Int.self, forKey: .mealsLogged) ?? 0,
+                totalCalories: try container.decodeIfPresent(Double.self, forKey: .totalCalories) ?? 0
+            )
+        }
+
+        self.purchasesMade = try container.decodeIfPresent(Int.self, forKey: .purchasesMade) ?? 0
+        self.waterIntakeMl = try container.decodeIfPresent(Double.self, forKey: .waterIntakeMl) ?? 0
+        self.workoutsCompleted = try container.decodeIfPresent(Int.self, forKey: .workoutsCompleted) ?? 0
+    }
+
     /// Total "score" used to compute heat intensity.
     var activityScore: Int {
         var score = 0
@@ -37,6 +84,18 @@ struct DayActivity: Decodable {
 
 struct CalendarMonthResponse: Decodable {
     let activities: [String: DayActivity]
+
+    private enum CodingKeys: String, CodingKey {
+        case activities
+        case days
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.activities =
+            try container.decodeIfPresent([String: DayActivity].self, forKey: .activities)
+            ?? container.decode([String: DayActivity].self, forKey: .days)
+    }
 }
 
 // MARK: - Heatmap Calendar ViewModel

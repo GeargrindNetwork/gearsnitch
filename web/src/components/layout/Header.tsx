@@ -2,14 +2,22 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useAuth } from '@/lib/auth';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const navLinks = [
     { label: 'Features', href: '/#features' },
     { label: 'How It Works', href: '/#how-it-works' },
     { label: 'Store', href: '/store' },
+    ...(isAuthenticated
+      ? [
+          { label: 'Runs', href: '/runs', route: true },
+          { label: 'Metrics', href: '/metrics', route: true },
+        ]
+      : []),
   ];
 
   return (
@@ -30,21 +38,31 @@ export default function Header() {
         {/* Desktop Nav */}
         <nav className="hidden items-center gap-8 md:flex">
           {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-            >
-              {link.label}
-            </a>
+            link.route ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+              >
+                {link.label}
+              </a>
+            )
           ))}
         </nav>
 
         {/* Desktop CTA */}
         <div className="hidden items-center gap-3 md:flex">
-          <Link to="/account">
+          <Link to={isAuthenticated ? '/account' : '/sign-in'}>
             <Button variant="ghost" className="text-zinc-400 hover:text-white">
-              Sign In
+              {isAuthenticated ? 'My Account' : 'Sign In'}
             </Button>
           </Link>
           <a href="#download">
@@ -64,19 +82,30 @@ export default function Header() {
           <SheetContent side="right" className="w-72 border-white/5 bg-zinc-950">
             <nav className="mt-8 flex flex-col gap-4">
               {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg px-4 py-3 text-base font-medium text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
-                >
-                  {link.label}
-                </a>
+                link.route ? (
+                  <Link
+                    key={link.label}
+                    to={link.href}
+                    onClick={() => setOpen(false)}
+                    className="rounded-lg px-4 py-3 text-base font-medium text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    className="rounded-lg px-4 py-3 text-base font-medium text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    {link.label}
+                  </a>
+                )
               ))}
               <div className="mt-4 border-t border-white/5 pt-4">
-                <Link to="/account" onClick={() => setOpen(false)}>
+                <Link to={isAuthenticated ? '/account' : '/sign-in'} onClick={() => setOpen(false)}>
                   <Button variant="ghost" className="w-full justify-start text-zinc-400">
-                    Sign In
+                    {isAuthenticated ? 'My Account' : 'Sign In'}
                   </Button>
                 </Link>
                 <a href="#download" onClick={() => setOpen(false)}>
