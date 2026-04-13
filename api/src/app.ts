@@ -6,13 +6,14 @@ import compression from 'compression';
 import hpp from 'hpp';
 import config from './config/index.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
-import { globalRateLimiter } from './middleware/rateLimiter.js';
+import { createGlobalRateLimiter } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 import routes from './routes/index.js';
 
 export function createApp(): express.Application {
   const app = express();
+  const globalRateLimiter = createGlobalRateLimiter();
 
   // 1. Request ID — attach correlation ID to every request
   app.use(requestIdMiddleware);

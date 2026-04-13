@@ -10,6 +10,7 @@ Welcome to the GearSnitch documentation hub.
 | **[Architecture](./architecture.md)** | Comprehensive system architecture, package breakdowns, data flows, and technology stacks |
 | **[HANDOFF.md](./HANDOFF.md)** | Live infrastructure URLs, credentials, launch checklist, and project state |
 | **[Device Pairing Architecture](./device-pairing-architecture.md)** | Deep-dive into BLE discovery, account persistence, and pinning semantics |
+| **[Apple Sign In Manual](./apple-sign-in-manual.md)** | End-to-end runbook for Apple login across iOS, web, backend, Apple Developer, and GCP secrets |
 
 ## 🚀 Quick Links
 
