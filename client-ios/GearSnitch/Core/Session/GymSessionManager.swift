@@ -93,9 +93,6 @@ final class GymSessionManager: ObservableObject {
 
     // MARK: - App Group
 
-    private static let appGroupId = "group.com.gearsnitch.app"
-    private static let sessionKey = "activeGymSession"
-
     // MARK: - Private
 
     private let logger = Logger(subsystem: "com.gearsnitch", category: "GymSessionManager")
@@ -119,6 +116,7 @@ final class GymSessionManager: ObservableObject {
 
         isStarting = true
         error = nil
+        WidgetSyncStore.shared.storeLastGym(id: gymId, name: gymName)
 
         let body = StartSessionBody(gymId: gymId, gymName: gymName)
 
@@ -133,8 +131,9 @@ final class GymSessionManager: ObservableObject {
 
             activeSession = session
             isSessionActive = true
-            persistSessionToAppGroup(session)
+            WidgetSyncStore.shared.storeSession(session)
             startElapsedTimer()
+            LiveActivityManager.shared.startLiveActivity(gymName: session.gymName, startedAt: session.startedAt)
 
             BLEManager.shared.armDisconnectProtection(gymId: gymId)
 
@@ -179,13 +178,16 @@ final class GymSessionManager: ObservableObject {
 
             activeSession = nil
             isSessionActive = false
-            clearSessionFromAppGroup()
+            WidgetSyncStore.shared.clearSession()
             stopElapsedTimer()
 
             // Stop BLE scanning
             BLEManager.shared.disarmDisconnectProtection(reason: "session ended")
             BLEManager.shared.stopScanning()
             BLEManager.shared.disconnectAll()
+            await LiveActivityManager.shared.endLiveActivity(
+                finalDurationSeconds: Int(ended.duration ?? session.elapsedTime)
+            )
 
             logger.info("Gym session ended: \(session.id), duration: \(ended.duration ?? 0)s")
 
@@ -207,6 +209,35 @@ final class GymSessionManager: ObservableObject {
         }
 
         isEnding = false
+    }
+
+    func processPendingWidgetActionIfNeeded() async {
+        guard let action = WidgetSyncStore.shared.consumePendingSessionAction() else {
+            return
+        }
+
+        switch action.kind {
+        case .startSession:
+            guard !isSessionActive else {
+                logger.info("Ignoring pending widget start action because a session is already active")
+                return
+            }
+
+            guard !action.gymId.isEmpty else {
+                logger.warning("Ignoring pending widget start action with no saved gym identifier")
+                return
+            }
+
+            await startSession(gymId: action.gymId, gymName: action.gymName)
+
+        case .endSession:
+            guard isSessionActive else {
+                logger.info("Ignoring pending widget end action because no session is active")
+                return
+            }
+
+            await endSession()
+        }
     }
 
     // MARK: - Elapsed Timer
@@ -294,27 +325,8 @@ final class GymSessionManager: ObservableObject {
         }
     }
 
-    // MARK: - App Group Persistence
-
-    private var sharedDefaults: UserDefaults? {
-        UserDefaults(suiteName: Self.appGroupId)
-    }
-
-    private func persistSessionToAppGroup(_ session: GymSession) {
-        guard let defaults = sharedDefaults else { return }
-        if let data = try? JSONEncoder().encode(session) {
-            defaults.set(data, forKey: Self.sessionKey)
-        }
-    }
-
-    private func clearSessionFromAppGroup() {
-        sharedDefaults?.removeObject(forKey: Self.sessionKey)
-    }
-
     private func restoreSessionFromAppGroup() {
-        guard let defaults = sharedDefaults,
-              let data = defaults.data(forKey: Self.sessionKey),
-              let session = try? JSONDecoder().decode(GymSession.self, from: data),
+        guard let session = WidgetSyncStore.shared.restoredSession(),
               session.isActive else {
             return
         }

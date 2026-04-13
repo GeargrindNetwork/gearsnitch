@@ -16,9 +16,10 @@ describe('mobile health and calories contract regressions', () => {
     expect(caloriesRoutes).toContain("router.get('/daily'");
     expect(caloriesRoutes).toContain("router.post('/meals'");
     expect(caloriesRoutes).toContain("router.post('/water'");
-    expect(caloriesRoutes).toContain('NutritionGoal.findOne({ userId })');
-    expect(caloriesRoutes).toContain('Meal.find({ userId, date })');
-    expect(caloriesRoutes).toContain('WaterLog.find({ userId, date })');
+    expect(caloriesRoutes).toContain('NutritionGoal.findOne({ userId: userObjectId }).lean()');
+    expect(caloriesRoutes).toContain('Meal.find({ userId: userObjectId, date })');
+    expect(caloriesRoutes).toContain('WaterLog.find({ userId: userObjectId, date })');
+    expect(caloriesRoutes).toContain("User.findById(userObjectId).select('preferences').lean()");
     expect(caloriesRoutes).not.toContain('not yet implemented');
   });
 
@@ -27,7 +28,7 @@ describe('mobile health and calories contract regressions', () => {
     expect(apiRoutes).toContain("router.use('/health', healthRoutes);");
     expect(healthRoutes).toContain("router.post('/sync'");
     expect(healthRoutes).toContain("router.post('/apple/sync'");
-    expect(healthRoutes).toContain('HealthMetric.insertMany(');
+    expect(healthRoutes).toContain('HealthMetric.bulkWrite(');
     expect(healthRoutes).toContain("router.get('/metrics'");
     expect(healthRoutes).not.toContain('not yet implemented');
   });

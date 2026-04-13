@@ -24,6 +24,10 @@ struct RootView: View {
                 await gateManager.checkAll()
                 await releaseGateManager.refreshIfNeeded()
             }
+            .task(id: authManager.isAuthenticated) {
+                guard authManager.isAuthenticated else { return }
+                await GymSessionManager.shared.processPendingWidgetActionIfNeeded()
+            }
             .onChange(of: authManager.authState) { _, _ in
                 onboardingViewModel.syncAuthenticationState(isAuthenticated: authManager.isAuthenticated)
             }
@@ -33,6 +37,9 @@ struct RootView: View {
                     await gateManager.checkAll()
                     await releaseGateManager.forceRefresh()
                     checkRequiredPermissions()
+                    if authManager.isAuthenticated {
+                        await GymSessionManager.shared.processPendingWidgetActionIfNeeded()
+                    }
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .debugResetOnboarding)) { _ in

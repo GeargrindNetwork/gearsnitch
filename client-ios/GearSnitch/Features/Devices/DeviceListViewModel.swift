@@ -95,6 +95,10 @@ final class DeviceListViewModel: ObservableObject {
                     isSynced: true
                 )
             }
+            WidgetSyncStore.shared.storeDeviceSnapshot(
+                connectedCount: sorted.filter(\.isConnected).count,
+                totalCount: sorted.count
+            )
         } catch {
             self.error = error.localizedDescription
         }

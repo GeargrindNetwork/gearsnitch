@@ -74,6 +74,8 @@
 	<string>GearSnitch detects when you arrive at your gym.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>GearSnitch accesses your photos to set a profile picture.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
