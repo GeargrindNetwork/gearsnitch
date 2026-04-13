@@ -19,6 +19,12 @@ struct HealthDashboardView: View {
                 // Quick links
                 VStack(spacing: 12) {
                     NavigationLink {
+                        CycleTrackingView()
+                    } label: {
+                        quickLinkRow(icon: "calendar.badge.clock", label: "Cycle Tracking", color: .gsWarning)
+                    }
+
+                    NavigationLink {
                         MetricsLogView()
                     } label: {
                         quickLinkRow(icon: "pencil.line", label: "Log Weight / Height", color: .gsEmerald)

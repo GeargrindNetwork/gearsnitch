@@ -131,12 +131,13 @@ final class PanicAlarmManager: NSObject, ObservableObject {
     // MARK: - Backend Alert
 
     private func postPanicAlert(for device: BLEDevice) async {
+        let coordinate = DeviceEventSyncService.shared.lastKnownCoordinate(for: device)
         let body = DeviceDisconnectedBody(
             deviceId: device.persistedId ?? device.identifier.uuidString,
             deviceName: device.displayName,
             lastSeenAt: device.lastSeenAt ?? Date(),
-            latitude: nil,
-            longitude: nil
+            latitude: coordinate?.latitude,
+            longitude: coordinate?.longitude
         )
 
         do {

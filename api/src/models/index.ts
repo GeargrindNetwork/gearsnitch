@@ -13,6 +13,9 @@ export type { ISubscription } from './Subscription';
 export { Device } from './Device';
 export type { IDevice } from './Device';
 
+export { DeviceEvent } from './DeviceEvent';
+export type { IDeviceEvent } from './DeviceEvent';
+
 export { DeviceShare } from './DeviceShare';
 export type { IDeviceShare } from './DeviceShare';
 
@@ -78,3 +81,32 @@ export type { EventType } from './EventLog';
 
 export { DosingHistory } from './DosingHistory';
 export type { IDosingHistory } from './DosingHistory';
+
+export { MedicationDose } from './MedicationDose';
+export type {
+  IMedicationDose,
+  IMedicationDoseAmount,
+  MedicationDoseCategory,
+  MedicationDoseUnit,
+  MedicationDoseSource,
+} from './MedicationDose';
+
+export { Cycle } from './Cycle';
+export type {
+  ICycle,
+  ICycleCompoundPlan,
+  CycleType,
+  CycleStatus,
+  CycleCompoundCategory,
+  CycleDoseUnit,
+  CycleRoute,
+} from './Cycle';
+
+export { CycleEntry } from './CycleEntry';
+export type {
+  ICycleEntry,
+  CycleEntryCompoundCategory,
+  CycleEntryRoute,
+  CycleEntryDoseUnit,
+  CycleEntrySource,
+} from './CycleEntry';

@@ -34,14 +34,22 @@ struct APIEndpoint {
 
 extension APIEndpoint {
     enum Auth {
-        static func appleLogin(identityToken: String, authorizationCode: String, fullName: String?) -> APIEndpoint {
+        static func appleLogin(
+            identityToken: String,
+            authorizationCode: String,
+            fullName: String?,
+            givenName: String?,
+            familyName: String?
+        ) -> APIEndpoint {
             APIEndpoint(
                 path: "/api/v1/auth/oauth/apple",
                 method: .POST,
                 body: AppleLoginBody(
                     identityToken: identityToken,
                     authorizationCode: authorizationCode,
-                    fullName: fullName
+                    fullName: fullName,
+                    givenName: givenName,
+                    familyName: familyName
                 )
             )
         }
@@ -110,12 +118,28 @@ extension APIEndpoint {
             APIEndpoint(path: "/api/v1/devices/\(id)", method: .PATCH, body: body)
         }
 
-        static func statusUpdate(id: String, status: String) -> APIEndpoint {
+        static func statusUpdate(id: String, body: DeviceStatusUpdateBody) -> APIEndpoint {
             APIEndpoint(
                 path: "/api/v1/devices/\(id)/status",
                 method: .PATCH,
-                body: DeviceStatusUpdateBody(status: status)
+                body: body
             )
+        }
+
+        static func recordEvent(id: String, body: DeviceEventBody) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/devices/\(id)/events",
+                method: .POST,
+                body: body
+            )
+        }
+
+        static func eventHistory(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/devices/\(id)/events")
+        }
+
+        static var locations: APIEndpoint {
+            APIEndpoint(path: "/api/v1/devices/locations")
         }
     }
 }
@@ -223,6 +247,179 @@ extension APIEndpoint {
                 path: "/api/v1/health/apple/sync",
                 method: .POST,
                 body: HealthSyncBody(metrics: metrics)
+            )
+        }
+    }
+}
+
+// MARK: - Calendar Endpoints
+
+extension APIEndpoint {
+    enum Calendar {
+        static func month(year: Int, month: Int, includeMedication: Bool = false) -> APIEndpoint {
+            var queryItems = [
+                URLQueryItem(name: "year", value: "\(year)"),
+                URLQueryItem(name: "month", value: "\(month)"),
+            ]
+
+            if includeMedication {
+                queryItems.append(URLQueryItem(name: "include", value: "medication"))
+            }
+
+            return APIEndpoint(
+                path: "/api/v1/calendar/month",
+                queryItems: queryItems
+            )
+        }
+
+        static func day(date: String, includeMedication: Bool = false) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/calendar/day/\(date)",
+                queryItems: includeMedication
+                    ? [URLQueryItem(name: "include", value: "medication")]
+                    : nil
+            )
+        }
+    }
+}
+
+// MARK: - Medications Endpoints
+
+extension APIEndpoint {
+    enum Medications {
+        static func doses(
+            category: String? = nil,
+            from: String? = nil,
+            to: String? = nil,
+            page: Int? = nil,
+            limit: Int? = nil
+        ) -> APIEndpoint {
+            var queryItems: [URLQueryItem] = []
+
+            if let category {
+                queryItems.append(URLQueryItem(name: "category", value: category))
+            }
+            if let from {
+                queryItems.append(URLQueryItem(name: "from", value: from))
+            }
+            if let to {
+                queryItems.append(URLQueryItem(name: "to", value: to))
+            }
+            if let page {
+                queryItems.append(URLQueryItem(name: "page", value: "\(page)"))
+            }
+            if let limit {
+                queryItems.append(URLQueryItem(name: "limit", value: "\(limit)"))
+            }
+
+            return APIEndpoint(
+                path: "/api/v1/medications/doses",
+                queryItems: queryItems.isEmpty ? nil : queryItems
+            )
+        }
+
+        static func createDose(_ body: CreateMedicationDoseBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/medications/doses", method: .POST, body: body)
+        }
+
+        static func updateDose(id: String, body: UpdateMedicationDoseBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/medications/doses/\(id)", method: .PATCH, body: body)
+        }
+
+        static func deleteDose(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/medications/doses/\(id)", method: .DELETE)
+        }
+
+        static func yearGraph(year: Int) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/medications/graph/year",
+                queryItems: [URLQueryItem(name: "year", value: "\(year)")]
+            )
+        }
+    }
+}
+
+// MARK: - Cycles Endpoints
+
+extension APIEndpoint {
+    enum Cycles {
+        static var list: APIEndpoint {
+            APIEndpoint(path: "/api/v1/cycles")
+        }
+
+        static func detail(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/cycles/\(id)")
+        }
+
+        static func create(_ body: CreateCycleBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/cycles", method: .POST, body: body)
+        }
+
+        static func update(id: String, body: UpdateCycleBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/cycles/\(id)", method: .PATCH, body: body)
+        }
+
+        static func delete(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/cycles/\(id)", method: .DELETE)
+        }
+
+        static func entries(
+            cycleId: String,
+            from: String? = nil,
+            to: String? = nil,
+            page: Int? = nil,
+            limit: Int? = nil
+        ) -> APIEndpoint {
+            var queryItems: [URLQueryItem] = []
+            if let from {
+                queryItems.append(URLQueryItem(name: "from", value: from))
+            }
+            if let to {
+                queryItems.append(URLQueryItem(name: "to", value: to))
+            }
+            if let page {
+                queryItems.append(URLQueryItem(name: "page", value: "\(page)"))
+            }
+            if let limit {
+                queryItems.append(URLQueryItem(name: "limit", value: "\(limit)"))
+            }
+
+            return APIEndpoint(
+                path: "/api/v1/cycles/\(cycleId)/entries",
+                queryItems: queryItems.isEmpty ? nil : queryItems
+            )
+        }
+
+        static func createEntry(cycleId: String, body: CreateCycleEntryBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/cycles/\(cycleId)/entries", method: .POST, body: body)
+        }
+
+        static func updateEntry(entryId: String, body: UpdateCycleEntryBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/cycles/entries/\(entryId)", method: .PATCH, body: body)
+        }
+
+        static func deleteEntry(entryId: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/cycles/entries/\(entryId)", method: .DELETE)
+        }
+
+        static func day(date: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/cycles/day/\(date)")
+        }
+
+        static func month(year: Int, month: Int) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/cycles/month",
+                queryItems: [
+                    URLQueryItem(name: "year", value: "\(year)"),
+                    URLQueryItem(name: "month", value: "\(month)"),
+                ]
+            )
+        }
+
+        static func year(year: Int) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/cycles/year",
+                queryItems: [URLQueryItem(name: "year", value: "\(year)")]
             )
         }
     }
@@ -370,6 +567,8 @@ struct AppleLoginBody: Encodable {
     let identityToken: String
     let authorizationCode: String
     let fullName: String?
+    let givenName: String?
+    let familyName: String?
 }
 
 struct GoogleLoginBody: Encodable {
@@ -390,12 +589,61 @@ struct UpdateAvatarBody: Encodable {
 
 struct CreateDeviceBody: Encodable {
     let name: String
+    let nickname: String?
     let bluetoothIdentifier: String
     let type: String
+    let isFavorite: Bool?
 }
 
 struct DeviceStatusUpdateBody: Encodable {
     let status: String
+    let lastSeenLocation: GeoJSONPointBody?
+    let lastSignalStrength: Int?
+    let recordedAt: Date?
+
+    init(
+        status: String,
+        latitude: Double? = nil,
+        longitude: Double? = nil,
+        lastSignalStrength: Int? = nil,
+        recordedAt: Date? = nil
+    ) {
+        self.status = status
+        if let latitude, let longitude {
+            self.lastSeenLocation = GeoJSONPointBody(coordinates: [longitude, latitude])
+        } else {
+            self.lastSeenLocation = nil
+        }
+        self.lastSignalStrength = lastSignalStrength
+        self.recordedAt = recordedAt
+    }
+}
+
+struct DeviceEventBody: Encodable {
+    let action: String
+    let occurredAt: Date
+    let location: GeoJSONPointBody?
+    let signalStrength: Int?
+    let source: String
+
+    init(
+        action: String,
+        occurredAt: Date,
+        latitude: Double? = nil,
+        longitude: Double? = nil,
+        signalStrength: Int? = nil,
+        source: String
+    ) {
+        self.action = action
+        self.occurredAt = occurredAt
+        if let latitude, let longitude {
+            self.location = GeoJSONPointBody(coordinates: [longitude, latitude])
+        } else {
+            self.location = nil
+        }
+        self.signalStrength = signalStrength
+        self.source = source
+    }
 }
 
 struct UpdateDeviceBody: Encodable {
@@ -529,4 +777,87 @@ struct CreateSupportTicketBody: Encodable {
     let subject: String
     let message: String
     let source: String
+}
+
+struct CycleCompoundPlanBody: Encodable {
+    let compoundName: String
+    let compoundCategory: String
+    let targetDose: Double?
+    let doseUnit: String
+    let route: String?
+}
+
+struct CreateCycleBody: Encodable {
+    let name: String
+    let type: String
+    let status: String
+    let startDate: Date
+    let endDate: Date?
+    let timezone: String
+    let notes: String?
+    let tags: [String]?
+    let compounds: [CycleCompoundPlanBody]
+}
+
+struct UpdateCycleBody: Encodable {
+    let name: String?
+    let type: String?
+    let status: String?
+    let startDate: Date?
+    let endDate: Date??
+    let timezone: String?
+    let notes: String??
+    let tags: [String]?
+    let compounds: [CycleCompoundPlanBody]?
+}
+
+struct CreateCycleEntryBody: Encodable {
+    let compoundName: String
+    let compoundCategory: String
+    let route: String
+    let occurredAt: Date
+    let plannedDose: Double?
+    let actualDose: Double?
+    let doseUnit: String
+    let notes: String?
+    let source: String
+}
+
+struct UpdateCycleEntryBody: Encodable {
+    let compoundName: String?
+    let compoundCategory: String?
+    let route: String?
+    let occurredAt: Date?
+    let plannedDose: Double??
+    let actualDose: Double??
+    let doseUnit: String?
+    let notes: String??
+    let source: String?
+}
+
+struct MedicationDoseAmountBody: Encodable {
+    let value: Double
+    let unit: String
+}
+
+struct CreateMedicationDoseBody: Encodable {
+    let cycleId: String?
+    let dateKey: String?
+    let category: String
+    let compoundName: String
+    let dose: MedicationDoseAmountBody
+    let occurredAt: Date
+    let notes: String?
+    let source: String
+}
+
+struct UpdateMedicationDoseBody: Encodable {
+    let cycleId: String??
+    let dateKey: String?
+    let category: String?
+    let compoundName: String?
+    let dose: MedicationDoseAmountBody?
+    let occurredAt: Date?
+    let notes: String??
+    let source: String?
 }

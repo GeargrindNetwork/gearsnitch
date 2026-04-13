@@ -1,11 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import MedicationDoseDialog from '@/components/account/MedicationDoseDialog';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import MedicationYearGraphCard from '@/components/metrics/MedicationYearGraphCard';
+import CycleSummaryCard from '@/components/metrics/CycleSummaryCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { api } from '@/lib/api';
+import { api, getMedicationYearGraph } from '@/lib/api';
 
 interface DistributionPoint {
   label: string;
@@ -356,9 +360,16 @@ function RunGalleryCard({
 }
 
 export default function MetricsPage() {
+  const currentYear = new Date().getFullYear();
+  const [isMedicationDialogOpen, setMedicationDialogOpen] = useState(false);
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['workout-metrics-overview'],
     queryFn: fetchMetrics,
+    staleTime: 60_000,
+  });
+  const medicationGraphQuery = useQuery({
+    queryKey: ['medication-year-graph', currentYear],
+    queryFn: () => getMedicationYearGraph(currentYear),
     staleTime: 60_000,
   });
 
@@ -448,6 +459,39 @@ export default function MetricsPage() {
                 value={`${data.deviceSummary.monitoring}/${data.deviceSummary.totalDevices}`}
                 accent="text-sky-300"
               />
+            </section>
+
+            <section className="mt-4">
+              <CycleSummaryCard />
+            </section>
+
+            <section className="mt-4 space-y-3">
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  className="border-white/10 bg-zinc-950/70 text-zinc-100 hover:bg-zinc-900"
+                  onClick={() => setMedicationDialogOpen(true)}
+                >
+                  Log medication
+                </Button>
+              </div>
+
+              {medicationGraphQuery.isLoading ? (
+                <Card className="border-white/5 bg-zinc-900/70">
+                  <CardContent className="p-8 text-sm text-zinc-400">
+                    Loading medication dose graph...
+                  </CardContent>
+                </Card>
+              ) : medicationGraphQuery.isError ? (
+                <Card className="border-amber-500/20 bg-amber-500/5">
+                  <CardContent className="p-8 text-sm text-zinc-300">
+                    Medication graph data is not available yet. The backend contract is in place, but
+                    there is no readable year graph payload for this account.
+                  </CardContent>
+                </Card>
+              ) : medicationGraphQuery.data ? (
+                <MedicationYearGraphCard graph={medicationGraphQuery.data} />
+              ) : null}
             </section>
 
             <section className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -667,6 +711,10 @@ export default function MetricsPage() {
           </>
         ) : null}
       </main>
+      <MedicationDoseDialog
+        open={isMedicationDialogOpen}
+        onOpenChange={setMedicationDialogOpen}
+      />
       <Footer />
     </div>
   );

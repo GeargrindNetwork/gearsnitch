@@ -38,7 +38,9 @@ struct DeviceListView: View {
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("Devices")
         .navigationBarTitleDisplayMode(.large)
-        .sheet(isPresented: $showPairing) {
+        .sheet(isPresented: $showPairing, onDismiss: {
+            Task { await viewModel.loadDevices() }
+        }) {
             NavigationStack {
                 DevicePairingView()
             }
@@ -84,7 +86,7 @@ struct DeviceListView: View {
                         .foregroundColor(.gsText)
 
                     if device.isFavorite {
-                        Image(systemName: "star.fill")
+                        Image(systemName: "pin.fill")
                             .font(.caption2)
                             .foregroundColor(.gsWarning)
                     }

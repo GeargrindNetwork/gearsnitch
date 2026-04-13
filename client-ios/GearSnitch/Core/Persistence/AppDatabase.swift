@@ -11,6 +11,9 @@ final class LocalDevice {
     var bluetoothIdentifier: String
     var status: String
     var lastSeenAt: Date?
+    var lastSeenLatitude: Double?
+    var lastSeenLongitude: Double?
+    var lastSignalStrength: Int?
     var isSynced: Bool
 
     init(
@@ -19,6 +22,9 @@ final class LocalDevice {
         bluetoothIdentifier: String,
         status: String = "disconnected",
         lastSeenAt: Date? = nil,
+        lastSeenLatitude: Double? = nil,
+        lastSeenLongitude: Double? = nil,
+        lastSignalStrength: Int? = nil,
         isSynced: Bool = false
     ) {
         self.id = id
@@ -26,7 +32,54 @@ final class LocalDevice {
         self.bluetoothIdentifier = bluetoothIdentifier
         self.status = status
         self.lastSeenAt = lastSeenAt
+        self.lastSeenLatitude = lastSeenLatitude
+        self.lastSeenLongitude = lastSeenLongitude
+        self.lastSignalStrength = lastSignalStrength
         self.isSynced = isSynced
+    }
+}
+
+// MARK: - Local Device Event
+
+/// Persisted connect/disconnect history so device telemetry survives offline use.
+@Model
+final class LocalDeviceEvent {
+    @Attribute(.unique) var id: String
+    var deviceId: String
+    var deviceName: String
+    var bluetoothIdentifier: String
+    var action: String
+    var occurredAt: Date
+    var latitude: Double?
+    var longitude: Double?
+    var signalStrength: Int?
+    var isSynced: Bool
+    var syncedAt: Date?
+
+    init(
+        id: String = UUID().uuidString,
+        deviceId: String,
+        deviceName: String,
+        bluetoothIdentifier: String,
+        action: String,
+        occurredAt: Date,
+        latitude: Double? = nil,
+        longitude: Double? = nil,
+        signalStrength: Int? = nil,
+        isSynced: Bool = false,
+        syncedAt: Date? = nil
+    ) {
+        self.id = id
+        self.deviceId = deviceId
+        self.deviceName = deviceName
+        self.bluetoothIdentifier = bluetoothIdentifier
+        self.action = action
+        self.occurredAt = occurredAt
+        self.latitude = latitude
+        self.longitude = longitude
+        self.signalStrength = signalStrength
+        self.isSynced = isSynced
+        self.syncedAt = syncedAt
     }
 }
 

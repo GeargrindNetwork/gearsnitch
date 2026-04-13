@@ -89,7 +89,7 @@ struct DeviceDetailView: View {
                         .foregroundColor(.gsText)
 
                     if device.isFavorite {
-                        Image(systemName: "star.fill")
+                        Image(systemName: "pin.fill")
                             .font(.caption)
                             .foregroundColor(.gsWarning)
                     }
@@ -143,10 +143,10 @@ struct DeviceDetailView: View {
         VStack(spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Favorite Device")
+                    Text("Pinned Device")
                         .font(.subheadline.weight(.medium))
                         .foregroundColor(.gsText)
-                    Text("Favorites stay at the top and are checked first while monitoring.")
+                    Text("Pinned devices stay at the top and are checked first while monitoring.")
                         .font(.caption)
                         .foregroundColor(.gsTextSecondary)
                 }

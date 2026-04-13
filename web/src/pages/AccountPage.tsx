@@ -9,9 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import HeatmapCalendar from '@/components/account/HeatmapCalendar';
+import CyclesPanel from '@/components/account/CyclesPanel';
+import MedicationDoseDialog from '@/components/account/MedicationDoseDialog';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { api } from '@/lib/api';
+import type { CalendarMedicationOverlay } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
 // ---------------------------------------------------------------------------
@@ -38,20 +41,24 @@ interface UserProfile {
   } | null;
   subscription?: {
     status: 'active' | 'expired' | 'grace_period' | 'cancelled';
+    tier?: 'monthly' | 'annual' | 'lifetime' | 'free';
     plan?: string | null;
+    purchaseDate?: string | null;
     expiresAt?: string | null;
+    extensionDays?: number;
+    platform?: string | null;
   } | null;
   pinnedDeviceId?: string | null;
   devices?: Array<{
     _id: string;
-    deviceName: string;
+    name: string;
     nickname?: string | null;
-    platform: string;
+    type: string;
     bluetoothIdentifier?: string;
     status?: string;
     isFavorite?: boolean;
     isMonitoring?: boolean;
-    lastSeen?: string | null;
+    lastSeenAt?: string | null;
     createdAt?: string | null;
   }>;
   gyms?: Array<{
@@ -107,6 +114,13 @@ interface Order {
 interface CalendarDay {
   date: string;
   count: number;
+  gymVisits: number;
+  mealsLogged: number;
+  purchasesMade: number;
+  waterIntakeMl: number;
+  workoutsCompleted: number;
+  runsCompleted: number;
+  medication: CalendarMedicationOverlay;
 }
 
 interface CalendarDaySummary {
@@ -117,10 +131,27 @@ interface CalendarDaySummary {
   purchasesMade: number;
   waterIntakeMl: number;
   workoutsCompleted: number;
+  runsCompleted: number;
+  medication?: CalendarMedicationOverlay;
 }
 
 interface CalendarMonthResponse {
   days: Record<string, CalendarDaySummary>;
+}
+
+const EMPTY_CALENDAR_MEDICATION_OVERLAY: CalendarMedicationOverlay = {
+  entryCount: 0,
+  totalDoseMg: 0,
+  categoryDoseMg: {
+    steroid: 0,
+    peptide: 0,
+    oralMedication: 0,
+  },
+  hasMedication: false,
+};
+
+function buildCalendarDateKey(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,22 +186,36 @@ function useOrders(enabled: boolean) {
 
 function useCalendarMonth(year: number, month: number, enabled: boolean) {
   return useQuery<CalendarDay[]>({
-    queryKey: ['calendar', year, month],
+    queryKey: ['calendar', year, month, 'medication'],
     queryFn: async () => {
-      const res = await api.get<CalendarMonthResponse>(`/calendar/month?year=${year}&month=${month}`);
-      if (!res.success || !res.data?.days) return [];
+      const res = await api.get<CalendarMonthResponse>(`/calendar/month?year=${year}&month=${month}&include=medication`);
+      const summaries = res.success && res.data?.days ? res.data.days : {};
+      const totalDaysInMonth = new Date(year, month, 0).getDate();
 
-      return Object.entries(res.data.days)
-        .sort(([leftDate], [rightDate]) => leftDate.localeCompare(rightDate))
-        .map(([date, summary]) => ({
+      return Array.from({ length: totalDaysInMonth }, (_, index) => {
+        const date = buildCalendarDateKey(year, month, index + 1);
+        const summary = summaries[date];
+        const medication = summary?.medication ?? EMPTY_CALENDAR_MEDICATION_OVERLAY;
+
+        return {
           date,
           count:
-            summary.gymVisits
-            + summary.mealsLogged
-            + summary.purchasesMade
-            + summary.workoutsCompleted
-            + (summary.waterIntakeMl > 0 ? 1 : 0),
-        }));
+            (summary?.gymVisits ?? 0)
+            + (summary?.mealsLogged ?? 0)
+            + (summary?.purchasesMade ?? 0)
+            + (summary?.workoutsCompleted ?? 0)
+            + (summary?.runsCompleted ?? 0)
+            + ((summary?.waterIntakeMl ?? 0) > 0 ? 1 : 0)
+            + medication.entryCount,
+          gymVisits: summary?.gymVisits ?? 0,
+          mealsLogged: summary?.mealsLogged ?? 0,
+          purchasesMade: summary?.purchasesMade ?? 0,
+          waterIntakeMl: summary?.waterIntakeMl ?? 0,
+          workoutsCompleted: summary?.workoutsCompleted ?? 0,
+          runsCompleted: summary?.runsCompleted ?? 0,
+          medication,
+        };
+      });
     },
     enabled,
     retry: false,
@@ -391,11 +436,21 @@ function ProfileTab({
                   Plan: <span className="font-medium text-white">{user.subscription.plan}</span>
                 </p>
               )}
+              {user.subscription?.purchaseDate && (
+                <p className="text-sm text-zinc-400">
+                  Purchased: {formatDate(user.subscription.purchaseDate)}
+                </p>
+              )}
               {user.subscription?.expiresAt && (
                 <p className="text-sm text-zinc-400">
                   Renews: {formatDate(user.subscription.expiresAt)}
                 </p>
               )}
+              {typeof user.subscription?.extensionDays === 'number' && user.subscription.extensionDays > 0 ? (
+                <p className="text-sm text-zinc-400">
+                  Bonus days: +{user.subscription.extensionDays}
+                </p>
+              ) : null}
               <div className="flex flex-wrap gap-3">
                 <Button
                   className="bg-emerald-500 font-semibold text-black hover:bg-emerald-400"
@@ -485,7 +540,7 @@ function ProfileTab({
                 <li key={device._id} className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-medium text-white">{device.nickname || device.deviceName}</p>
+                      <p className="text-sm font-medium text-white">{device.nickname || device.name}</p>
                       {device.isFavorite ? (
                         <Badge variant="outline" className="border-amber-700 text-amber-300">
                           Pinned
@@ -498,13 +553,13 @@ function ProfileTab({
                       ) : null}
                     </div>
                     <p className="text-xs text-zinc-500 capitalize">
-                      {device.platform}
+                      {device.type}
                       {device.status ? ` • ${device.status.replace('_', ' ')}` : ''}
                     </p>
                   </div>
-                  {device.lastSeen && (
+                  {device.lastSeenAt && (
                     <span className="text-xs text-zinc-500">
-                      Last seen {formatDate(device.lastSeen)}
+                      Last seen {formatDate(device.lastSeenAt)}
                     </span>
                   )}
                 </li>
@@ -512,7 +567,7 @@ function ProfileTab({
             </ul>
           ) : (
             <p className="text-zinc-400">
-              Pair and manage your Bluetooth devices from the iOS app. Device status will appear here once connected.
+              Pair and pin your Bluetooth devices from the iOS app. Saved device status and pinned state will appear here once synced to your account.
             </p>
           )}
         </CardContent>
@@ -586,7 +641,7 @@ function ProfileTab({
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-zinc-400">
-              Share your code and earn 90 days free for every friend who subscribes.
+              Share your code and earn 28 bonus days for every qualifying referral while you have an active paid plan.
             </p>
             <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3">
               <code className="font-mono text-lg text-emerald-400">{user.referralCode}</code>
@@ -684,25 +739,128 @@ function PurchasesTab() {
 }
 
 function CalendarTab() {
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const now = new Date();
   const [year] = useState(now.getFullYear());
   const [month] = useState(now.getMonth() + 1);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [isMedicationDialogOpen, setMedicationDialogOpen] = useState(false);
   const { data: days, isLoading } = useCalendarMonth(year, month, isAuthenticated);
+  const medicationDays = (days ?? []).filter((day) => day.medication.hasMedication).length;
+  const totalDoseMg = (days ?? []).reduce((sum, day) => sum + day.medication.totalDoseMg, 0);
+  const selectedDay = (days ?? []).find((day) => day.date === selectedDate) ?? null;
+
+  const formattedSelectedDate = selectedDate
+    ? new Date(`${selectedDate}T12:00:00`).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      })
+    : null;
 
   return (
     <Card className="border-zinc-800 bg-zinc-900/50">
       <CardHeader>
-        <CardTitle>Activity Calendar</CardTitle>
+        <div className="space-y-2">
+          <CardTitle>Activity Calendar</CardTitle>
+          <p className="text-sm text-zinc-400">
+            Meals, water, gym sessions, workouts, runs, and medication overlays now share the same
+            month view. {medicationDays > 0 ? `${medicationDays} day${medicationDays === 1 ? '' : 's'} with doses • ${totalDoseMg.toFixed(totalDoseMg >= 10 ? 0 : 1)} mg total.` : 'No medication doses logged this month yet.'}
+          </p>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <p className="text-zinc-500">Loading calendar...</p>
         ) : (
-          <div className="max-w-xs">
-            <HeatmapCalendar data={days ?? []} year={year} month={month} />
-          </div>
+          <>
+            <div className="max-w-xs">
+              <HeatmapCalendar
+                data={days ?? []}
+                year={year}
+                month={month}
+                selectedDate={selectedDate}
+                onSelectDate={(date) => {
+                  setSelectedDate((current) => (current === date ? null : date));
+                }}
+              />
+            </div>
+
+            {selectedDay ? (
+              <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">{formattedSelectedDate}</p>
+                    <p className="mt-1 text-xs text-zinc-500">{selectedDay.date}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-zinc-700 text-zinc-200 hover:text-white"
+                      onClick={() => setMedicationDialogOpen(true)}
+                    >
+                      Log Medication
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-zinc-400 hover:text-white"
+                      onClick={() => navigate('/metrics')}
+                    >
+                      Open Metrics
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Gym</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{selectedDay.gymVisits} visits</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Workouts</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{selectedDay.workoutsCompleted} logged</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Runs</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{selectedDay.runsCompleted} logged</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Meals</p>
+                    <p className="mt-2 text-sm font-semibold text-white">{selectedDay.mealsLogged} logged</p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Water</p>
+                    <p className="mt-2 text-sm font-semibold text-white">
+                      {selectedDay.waterIntakeMl > 0 ? `${selectedDay.waterIntakeMl.toFixed(0)} ml` : 'No water logged'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Medication</p>
+                    <p className="mt-2 text-sm font-semibold text-white">
+                      {selectedDay.medication.hasMedication
+                        ? `${selectedDay.medication.entryCount} doses • ${selectedDay.medication.totalDoseMg.toFixed(selectedDay.medication.totalDoseMg >= 10 ? 0 : 1)} mg`
+                        : 'No medication logged'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-zinc-500">
+                Select a day to inspect the activity mix and jump straight into medication logging.
+              </p>
+            )}
+          </>
         )}
+
+        <MedicationDoseDialog
+          open={isMedicationDialogOpen}
+          onOpenChange={setMedicationDialogOpen}
+          defaultDateKey={selectedDate ?? undefined}
+        />
       </CardContent>
     </Card>
   );
@@ -856,6 +1014,7 @@ export default function AccountPage() {
                 <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="purchases">Purchases</TabsTrigger>
                 <TabsTrigger value="calendar">Calendar</TabsTrigger>
+                <TabsTrigger value="cycles">Cycles</TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile" className="mt-6">
@@ -875,6 +1034,10 @@ export default function AccountPage() {
 
               <TabsContent value="calendar" className="mt-6">
                 <CalendarTab />
+              </TabsContent>
+
+              <TabsContent value="cycles" className="mt-6">
+                <CyclesPanel />
               </TabsContent>
             </Tabs>
           )}

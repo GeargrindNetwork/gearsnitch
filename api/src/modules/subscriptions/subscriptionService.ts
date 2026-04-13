@@ -84,6 +84,7 @@ interface AppleTransactionPayload {
 
 export interface SubscriptionResult {
   status: ISubscription['status'];
+  purchaseDate: Date;
   expiryDate: Date;
   extensionDays: number;
   productId: string;
@@ -183,6 +184,7 @@ export async function validateAppleTransaction(
 
   return {
     status: subscription.status,
+    purchaseDate: subscription.purchaseDate,
     expiryDate: subscription.expiryDate,
     extensionDays: subscription.extensionDays,
     productId: subscription.productId,

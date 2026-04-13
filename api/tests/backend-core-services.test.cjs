@@ -55,11 +55,11 @@ describe('backend core services regression sweep', () => {
     expect(gymRoutes).toContain('gymService.deleteGym(');
     expect(gymRoutes).not.toContain('List gyms — not yet implemented');
     expect(gymRoutes).not.toContain('Get gym details — not yet implemented');
-    expect((gymRoutes.match(/StatusCodes\.NOT_IMPLEMENTED/g) || []).length).toBe(4);
-    expect(gymRoutes).toContain("router.post('/evaluate'");
-    expect(gymRoutes).toContain("router.post('/events'");
-    expect(gymRoutes).toContain("router.get('/nearby'");
-    expect(gymRoutes).toContain("router.post('/:id/check-in'");
+    expect((gymRoutes.match(/StatusCodes\.NOT_IMPLEMENTED/g) || []).length).toBe(3);
+    expect(gymRoutes).toContain("router.post('/evaluate', isAuthenticated");
+    expect(gymRoutes).toContain("'/events',");
+    expect(gymRoutes).toContain("router.get('/nearby', isAuthenticated");
+    expect(gymRoutes).toContain("router.post('/:id/check-in', isAuthenticated");
   });
 
   test('users/me aggregation reads live device and order collections', () => {

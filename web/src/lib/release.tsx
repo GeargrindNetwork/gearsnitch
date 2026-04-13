@@ -24,7 +24,9 @@ export function ReleaseProvider({ children }: { children: ReactNode }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    setStatus((current) => (payload ? current : 'checking'));
+    setStatus((current) => (
+      current === 'supported' || current === 'blocked' ? current : 'checking'
+    ));
     setErrorMessage(null);
 
     try {
@@ -39,7 +41,7 @@ export function ReleaseProvider({ children }: { children: ReactNode }) {
       setErrorMessage(error instanceof Error ? error.message : 'Unable to verify release status');
       setStatus('error');
     }
-  }, [payload]);
+  }, []);
 
   useEffect(() => {
     void refresh();

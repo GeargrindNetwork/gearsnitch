@@ -5,8 +5,13 @@ import { StatusCodes } from 'http-status-codes';
 import {
   validateAppleTransaction,
   getSubscriptionForUser,
+  getSubscriptionPlanFromProductId,
   getSubscriptionTierFromProductId,
 } from './subscriptionService.js';
+import {
+  processOutstandingReferralRewardsForReferrer,
+  processReferralQualificationForReferredUser,
+} from '../referrals/referralService.js';
 
 const router = Router();
 
@@ -19,6 +24,8 @@ async function respondWithCurrentSubscription(req: Request, res: Response) {
       successResponse(res, {
         status: 'none',
         tier: 'free',
+        plan: null,
+        purchaseDate: null,
         expiresAt: null,
         extensionDays: 0,
         autoRenew: false,
@@ -30,6 +37,8 @@ async function respondWithCurrentSubscription(req: Request, res: Response) {
     successResponse(res, {
       status: subscription.status,
       tier: getSubscriptionTierFromProductId(subscription.productId),
+      plan: getSubscriptionPlanFromProductId(subscription.productId),
+      purchaseDate: subscription.purchaseDate,
       expiresAt: subscription.expiryDate,
       extensionDays: subscription.extensionDays,
       autoRenew:
@@ -62,10 +71,27 @@ router.post('/validate-apple', isAuthenticated, async (req: Request, res: Respon
     const userId = req.user!.sub;
     const result = await validateAppleTransaction(jwsRepresentation, userId);
 
-    successResponse(res, {
+    await processReferralQualificationForReferredUser(userId);
+    await processOutstandingReferralRewardsForReferrer(userId);
+
+    const currentSubscription = await getSubscriptionForUser(userId);
+    const subscription = currentSubscription ?? {
       status: result.status,
-      expiryDate: result.expiryDate.toISOString(),
+      productId: result.productId,
+      provider: result.provider,
+      purchaseDate: result.purchaseDate,
+      expiryDate: result.expiryDate,
       extensionDays: result.extensionDays,
+    };
+
+    successResponse(res, {
+      status: subscription.status,
+      tier: getSubscriptionTierFromProductId(subscription.productId),
+      plan: getSubscriptionPlanFromProductId(subscription.productId),
+      purchaseDate: subscription.purchaseDate.toISOString(),
+      expiryDate: subscription.expiryDate.toISOString(),
+      extensionDays: subscription.extensionDays,
+      platform: subscription.provider,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Validation failed';

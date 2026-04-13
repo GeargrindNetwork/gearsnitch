@@ -37,5 +37,10 @@ export function createRateLimiter(
   });
 }
 
-export const globalRateLimiter = createRateLimiter(15 * 60 * 1000, 100, 'rl:global:');
-export const authRateLimiter = createRateLimiter(15 * 60 * 1000, 20, 'rl:auth:');
+export function createGlobalRateLimiter() {
+  return createRateLimiter(15 * 60 * 1000, 100, 'rl:global:');
+}
+
+export function createAuthRateLimiter() {
+  return createRateLimiter(15 * 60 * 1000, 20, 'rl:auth:');
+}

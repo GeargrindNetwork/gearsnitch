@@ -109,7 +109,7 @@ export async function processReferralQualification(
           type: 'qualified',
           referrerUserId,
           referredUserId: userId,
-          rewardAmount: referral.rewardDays ?? 90,
+          rewardAmount: referral.rewardDays ?? 28,
         },
       })
 

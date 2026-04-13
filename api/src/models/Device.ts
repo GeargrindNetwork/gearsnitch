@@ -30,6 +30,29 @@ export interface IDevice extends Document {
   updatedAt: Date;
 }
 
+const DeviceLocationSchema = new Schema(
+  {
+    type: {
+      type: String,
+      enum: ['Point'],
+      required: function requiresGeoType(this: { coordinates?: unknown[] }) {
+        return Array.isArray(this.coordinates) && this.coordinates.length === 2;
+      },
+    },
+    coordinates: {
+      type: [Number],
+      validate: {
+        validator: (value: unknown) => value == null || (Array.isArray(value) && value.length === 2),
+        message: 'Device lastSeenLocation coordinates must contain longitude and latitude.',
+      },
+    },
+  },
+  {
+    _id: false,
+    id: false,
+  }
+);
+
 const DeviceSchema = new Schema<IDevice>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -61,20 +84,7 @@ const DeviceSchema = new Schema<IDevice>(
     monitoringEnabled: { type: Boolean, default: true },
     lastSeenAt: { type: Date, default: null },
     lastSeenLocation: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        required: function requiresGeoType(this: { coordinates?: unknown[] }) {
-          return Array.isArray(this.coordinates) && this.coordinates.length === 2;
-        },
-      },
-      coordinates: {
-        type: [Number],
-        validate: {
-          validator: (value: unknown) => value == null || (Array.isArray(value) && value.length === 2),
-          message: 'Device lastSeenLocation coordinates must contain longitude and latitude.',
-        },
-      },
+      type: DeviceLocationSchema,
       default: undefined,
     },
     lastSignalStrength: { type: Number },

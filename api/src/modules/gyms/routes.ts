@@ -1,9 +1,13 @@
 import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
+import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 import { isAuthenticated, type JwtPayload } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate.js';
 import { errorResponse, successResponse } from '../../utils/response.js';
+import { EventLog } from '../../models/EventLog.js';
+import { Gym } from '../../models/Gym.js';
+import { GymSession } from '../../models/GymSession.js';
 import { GymService, GymServiceError } from './gymService.js';
 
 const router = Router();
@@ -36,6 +40,15 @@ const updateGymSchema = z.object({
     message: 'At least one field must be provided',
   },
 );
+
+const gymEventSchema = z.object({
+  gymId: z.string().trim().min(1),
+  eventType: z.enum(['entry', 'exit']),
+  occurredAt: z.coerce.date().optional(),
+  latitude: z.number().finite().min(-90).max(90).optional(),
+  longitude: z.number().finite().min(-180).max(180).optional(),
+  source: z.enum(['ios', 'web', 'system']).optional().default('ios'),
+});
 
 function getUserId(req: Request): string {
   return (req.user as JwtPayload).sub;
@@ -98,13 +111,103 @@ router.post('/evaluate', isAuthenticated, (_req, res) => {
 });
 
 // POST /gyms/events
-router.post('/events', isAuthenticated, (_req, res) => {
-  errorResponse(
-    res,
-    StatusCodes.NOT_IMPLEMENTED,
-    'Gym event ingestion is deferred to a follow-up geofence track.',
-  );
-});
+router.post(
+  '/events',
+  isAuthenticated,
+  validateBody(gymEventSchema),
+  async (req, res) => {
+    try {
+      const userId = new Types.ObjectId(getUserId(req));
+      const { gymId, eventType, occurredAt, latitude, longitude, source } =
+        req.body as z.infer<typeof gymEventSchema>;
+
+      if (!Types.ObjectId.isValid(gymId)) {
+        errorResponse(res, StatusCodes.BAD_REQUEST, 'gymId must be a valid ObjectId');
+        return;
+      }
+
+      const gym = await Gym.findOne({
+        _id: new Types.ObjectId(gymId),
+        userId,
+      });
+
+      if (!gym) {
+        errorResponse(res, StatusCodes.NOT_FOUND, 'Gym not found');
+        return;
+      }
+
+      const timestamp = occurredAt ?? new Date();
+      const location =
+        latitude !== undefined && longitude !== undefined
+          ? { latitude, longitude }
+          : null;
+      const sessionEventType = eventType === 'entry' ? 'gym_entry' : 'gym_exit';
+
+      await EventLog.create({
+        userId,
+        eventType: sessionEventType,
+        source,
+        timestamp,
+        metadata: {
+          gymId: String(gym._id),
+          gymName: gym.name,
+          latitude: location?.latitude ?? null,
+          longitude: location?.longitude ?? null,
+        },
+      });
+
+      let session = await GymSession.findOne({
+        userId,
+        gymId: gym._id,
+        endedAt: null,
+      }).sort({ startedAt: -1 });
+
+      if (eventType === 'entry') {
+        if (!session) {
+          session = await GymSession.create({
+            userId,
+            gymId: gym._id,
+            gymName: gym.name,
+            startedAt: timestamp,
+            source: 'geofence',
+            events: [],
+          });
+        }
+      }
+
+      if (session) {
+        session.events.push({
+          type: sessionEventType,
+          timestamp,
+          metadata: {
+            latitude: location?.latitude ?? null,
+            longitude: location?.longitude ?? null,
+            radiusMeters: gym.radiusMeters,
+          },
+        });
+
+        if (eventType === 'exit' && !session.endedAt) {
+          session.endedAt = timestamp;
+          session.durationMinutes = Math.max(
+            0,
+            Math.round((timestamp.getTime() - session.startedAt.getTime()) / 60_000),
+          );
+        }
+
+        await session.save();
+      }
+
+      successResponse(res, {
+        gymId: String(gym._id),
+        eventType,
+        occurredAt: timestamp,
+        sessionId: session ? String(session._id) : null,
+      });
+    } catch (err) {
+      handleGymError(res, err, 'Failed to ingest gym event');
+    }
+  },
+);
 
 // GET /gyms/nearby
 router.get('/nearby', isAuthenticated, (_req, res) => {

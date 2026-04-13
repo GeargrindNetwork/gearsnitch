@@ -201,8 +201,61 @@ private struct RawBody: Encodable {
     let data: Data
 
     func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        // Encode as base64 string; the RequestBuilder will handle it
-        try container.encode(data.base64EncodedString())
+        let jsonObject = try JSONSerialization.jsonObject(with: data)
+        try JSONValueEncodable(value: jsonObject).encode(to: encoder)
+    }
+}
+
+private struct JSONValueEncodable: Encodable {
+    let value: Any
+
+    func encode(to encoder: Encoder) throws {
+        switch value {
+        case let string as String:
+            var container = encoder.singleValueContainer()
+            try container.encode(string)
+        case let number as NSNumber:
+            var container = encoder.singleValueContainer()
+            switch CFNumberGetType(number) {
+            case .charType:
+                try container.encode(number.boolValue)
+            default:
+                try container.encode(number.doubleValue)
+            }
+        case is NSNull:
+            var container = encoder.singleValueContainer()
+            try container.encodeNil()
+        case let array as [Any]:
+            var container = encoder.unkeyedContainer()
+            for item in array {
+                try container.encode(JSONValueEncodable(value: item))
+            }
+        case let dictionary as [String: Any]:
+            var container = encoder.container(keyedBy: DynamicCodingKey.self)
+            for (key, item) in dictionary {
+                try container.encode(JSONValueEncodable(value: item), forKey: DynamicCodingKey(stringValue: key)!)
+            }
+        default:
+            let context = EncodingError.Context(
+                codingPath: encoder.codingPath,
+                debugDescription: "Unsupported JSON payload type: \(type(of: value))"
+            )
+            throw EncodingError.invalidValue(value, context)
+        }
+    }
+}
+
+private struct DynamicCodingKey: CodingKey {
+    let stringValue: String
+    let intValue: Int?
+
+    init?(stringValue: String) {
+        self.stringValue = stringValue
+        intValue = nil
+    }
+
+    init?(intValue: Int) {
+        stringValue = String(intValue)
+        self.intValue = intValue
     }
 }

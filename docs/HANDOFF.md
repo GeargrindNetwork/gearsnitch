@@ -47,7 +47,7 @@ The original QA closure was too optimistic. A follow-on audit found remaining in
 | **GCP Project** | gearsnitch | Billing linked, all APIs enabled |
 | **Cloudflare** | Active | Worker proxy routing gearsnitch.com, api.gearsnitch.com, ws.gearsnitch.com |
 | **Artifact Registry** | 4 images | api, web, worker, realtime pushed |
-| **Secret Manager** | 18 secrets | JWT keys, MongoDB, Redis, Stripe, OAuth, Apple, encryption |
+| **Secret Manager** | 16 secrets | JWT keys, MongoDB, Redis, Stripe, OAuth, Apple, encryption |
 | **TestFlight** | Build uploaded | v1.0.0 (build 3), App ID: 6761991800 |
 
 ### Credentials & IDs
@@ -89,8 +89,8 @@ gearsnitch/ (30 commits, ~300 files, ~40k lines)
 │   │   ├── config/               # Env var config
 │   │   ├── loaders/              # MongoDB + Redis connections
 │   │   ├── middleware/           # Auth (JWT RS256), rate limiter, Zod validation, error handler
-│   │   ├── models/               # 23 Mongoose models with indexes
-│   │   ├── modules/              # 20 route modules (16 original + sessions, calendar, events, dosing)
+│   │   ├── models/               # 28 Mongoose models with indexes
+│   │   ├── modules/              # 22 route modules (16 original + sessions, calendar, events, dosing, cycles, health)
 │   │   ├── services/             # AuthService (Google+Apple), PaymentService (Stripe), OrderService, subscriptionService
 │   │   ├── routes/               # Main router mounting all modules
 │   │   └── utils/                # Logger (Winston), response envelope
@@ -179,8 +179,8 @@ gearsnitch/ (30 commits, ~300 files, ~40k lines)
 | User profile / account basics | Yes (UI) | Yes | Yes (UI) | **Partial** |
 | Sessions | Yes (UI) | Routes built | — | **Partial** (routes exist but not deployed) |
 | Calendar | Yes (UI) | Routes built | Yes (UI) | **Partial** |
-| Health metrics | Yes (UI) | **501 stub** | — | **No** |
-| Calories/meals | Yes (UI) | **501 stub** | — | **No** |
+| Health metrics | Yes (UI) | Yes | — | **Partial** |
+| Calories/meals | Yes (UI) | Yes | — | **Partial** |
 | Workouts | Yes (UI) | Yes | — | **Partial** |
 | Store products / cart / checkout | Yes (UI) | Yes | Yes (UI) | **Partial** (live merchant verification still external) |
 | Referrals | Yes (UI) | Yes | — | **YES** |
@@ -219,7 +219,7 @@ If production is still running an older image revision, redeploy from the curren
 
 ### P2: Remaining Non-Launch Product Follow-Up
 
-- Finish non-launch modules that are still outside the current slice (`health-data`, `calories`, `content`, `admin`, `config`) if those surfaces are promoted to active client paths.
+- Finish non-launch modules that are still outside the current slice (`content`, `admin`) if those surfaces are promoted to active client paths.
 - Add the missing Widget Extension target so WidgetKit files are no longer parked in the app tree without a shipping target.
 - Replace any remaining worker TODO processors that are not on the launch-critical path today but would matter for broader production hardening.
 

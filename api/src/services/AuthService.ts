@@ -189,6 +189,8 @@ export class AuthService {
     identityToken: string,
     authorizationCode: string,
     fullName: string | undefined,
+    givenName: string | undefined,
+    familyName: string | undefined,
     deviceInfo: DeviceInfo,
   ): Promise<AuthResult> {
     const decoded = await AuthService.verifyAppleToken(identityToken);
@@ -216,7 +218,12 @@ export class AuthService {
 
     const appleId = decoded.sub;
     const email = decoded.email ?? exchanged?.email;
-    const normalizedFullName = fullName?.trim() || undefined;
+    const normalizedGivenName = givenName?.trim() || undefined;
+    const normalizedFamilyName = familyName?.trim() || undefined;
+    const normalizedFullName =
+      fullName?.trim()
+      || [normalizedGivenName, normalizedFamilyName].filter(Boolean).join(' ').trim()
+      || undefined;
 
     let user = await User.findOne({ appleId });
 
@@ -230,6 +237,16 @@ export class AuthService {
 
       if (normalizedFullName && !user.displayName) {
         user.displayName = normalizedFullName;
+        shouldSave = true;
+      }
+
+      if (normalizedGivenName && !user.firstName) {
+        user.firstName = normalizedGivenName;
+        shouldSave = true;
+      }
+
+      if (normalizedFamilyName && !user.lastName) {
+        user.lastName = normalizedFamilyName;
         shouldSave = true;
       }
 
@@ -255,6 +272,12 @@ export class AuthService {
         if (normalizedFullName && !user.displayName) {
           user.displayName = normalizedFullName;
         }
+        if (normalizedGivenName && !user.firstName) {
+          user.firstName = normalizedGivenName;
+        }
+        if (normalizedFamilyName && !user.lastName) {
+          user.lastName = normalizedFamilyName;
+        }
         await user.save();
       } else {
         AuthService.assertProvisioningAllowed('apple', deviceInfo.platform);
@@ -263,6 +286,8 @@ export class AuthService {
           email,
           emailHash: emailHash,
           displayName: normalizedFullName || email.split('@')[0],
+          firstName: normalizedGivenName,
+          lastName: normalizedFamilyName,
           appleId,
           authProviders: ['apple'],
           roles: ['user'],

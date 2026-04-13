@@ -2,6 +2,7 @@ import Foundation
 import CoreBluetooth
 import os
 import UIKit
+import UserNotifications
 
 // MARK: - BLE Manager
 
@@ -19,6 +20,29 @@ struct DisconnectDecisionPrompt: Identifiable {
     let lastSeenAt: Date?
 }
 
+enum BLEScanMode {
+    case discovery
+    case monitoring
+
+    var allowsDuplicates: Bool {
+        switch self {
+        case .discovery:
+            return false
+        case .monitoring:
+            return true
+        }
+    }
+
+    var timeout: TimeInterval? {
+        switch self {
+        case .discovery:
+            return AppConfig.bleScanTimeout
+        case .monitoring:
+            return nil
+        }
+    }
+}
+
 /// Central BLE manager handling scanning, connection, reconnection, and
 /// state restoration for GearSnitch device peripherals.
 @MainActor
@@ -31,6 +55,7 @@ final class BLEManager: NSObject, ObservableObject {
     private static let restorationIdentifier = "com.gearsnitch.ble.central"
     private static let reconnectionTimeout: TimeInterval = 30
     private static let reconnectionTimerInterval: TimeInterval = 1
+    private static let protectedDisconnectNotificationPrefix = "protected-disconnect-"
 
     /// Service UUIDs the app monitors. Register these in Info.plist under
     /// `UIBackgroundModes` -> `bluetooth-central` for background BLE.
@@ -43,6 +68,8 @@ final class BLEManager: NSObject, ObservableObject {
     @Published private(set) var connectedDevices: [BLEDevice] = []
     @Published private(set) var isScanning = false
     @Published private(set) var pendingDisconnectPrompt: DisconnectDecisionPrompt?
+    @Published private(set) var isDisconnectProtectionArmed = false
+    @Published private(set) var armedGymId: String?
 
     // MARK: - Private Properties
 
@@ -53,6 +80,8 @@ final class BLEManager: NSObject, ObservableObject {
     /// Tracks reconnection timers per device identifier.
     private var reconnectionTimers: [UUID: ReconnectionState] = [:]
     private var persistedMetadataByIdentifier: [String: PersistedBLEDeviceMetadata] = [:]
+    private var scanTimeoutTask: Task<Void, Never>?
+    private var stalePruningTask: Task<Void, Never>?
 
     // MARK: - Init
 
@@ -74,7 +103,7 @@ final class BLEManager: NSObject, ObservableObject {
 
     /// Start scanning for BLE peripherals. Filters by registered service UUIDs
     /// when available, otherwise scans for all devices.
-    func startScanning() {
+    func startScanning(mode: BLEScanMode = .monitoring) {
         guard let centralManager = configureCentralManagerIfAuthorized() else {
             logger.info("Skipping BLE scan until Bluetooth permission is explicitly requested")
             return
@@ -93,15 +122,16 @@ final class BLEManager: NSObject, ObservableObject {
         centralManager.scanForPeripherals(
             withServices: services,
             options: [
-                CBCentralManagerScanOptionAllowDuplicatesKey: true,
+                CBCentralManagerScanOptionAllowDuplicatesKey: mode.allowsDuplicates,
             ]
         )
 
         isScanning = true
-        logger.info("Started BLE scanning")
+        logger.info("Started BLE scanning in \(String(describing: mode)) mode")
 
         // Schedule periodic stale-device pruning
         scheduleStalePruning()
+        scheduleScanTimeoutIfNeeded(for: mode)
     }
 
     /// Stop scanning for BLE peripherals.
@@ -109,6 +139,10 @@ final class BLEManager: NSObject, ObservableObject {
         guard isScanning, let centralManager else { return }
         centralManager.stopScan()
         isScanning = false
+        scanTimeoutTask?.cancel()
+        scanTimeoutTask = nil
+        stalePruningTask?.cancel()
+        stalePruningTask = nil
         logger.info("Stopped BLE scanning")
     }
 
@@ -179,9 +213,28 @@ final class BLEManager: NSObject, ObservableObject {
         pendingDisconnectPrompt = nil
     }
 
+    func armDisconnectProtection(gymId: String? = nil) {
+        isDisconnectProtectionArmed = true
+        armedGymId = gymId
+        logger.info("Disconnect protection armed\(gymId.map { " for gym \($0)" } ?? "")")
+    }
+
+    func disarmDisconnectProtection(reason: String? = nil) {
+        isDisconnectProtectionArmed = false
+        armedGymId = nil
+        pendingDisconnectPrompt = nil
+
+        if let reason, !reason.isEmpty {
+            logger.info("Disconnect protection disarmed (\(reason))")
+        } else {
+            logger.info("Disconnect protection disarmed")
+        }
+    }
+
     func resolvePendingDisconnectAsEndedSession() {
         guard let prompt = pendingDisconnectPrompt else { return }
         pendingDisconnectPrompt = nil
+        clearProtectedDisconnectAlert(for: prompt.deviceIdentifier)
 
         if let device = knownDevice(identifier: prompt.deviceIdentifier) {
             cancelReconnection(for: device.identifier)
@@ -193,6 +246,7 @@ final class BLEManager: NSObject, ObservableObject {
     func resolvePendingDisconnectAsLostGear() {
         guard let prompt = pendingDisconnectPrompt else { return }
         pendingDisconnectPrompt = nil
+        clearProtectedDisconnectAlert(for: prompt.deviceIdentifier)
 
         guard let device = knownDevice(identifier: prompt.deviceIdentifier) else { return }
 
@@ -249,16 +303,21 @@ final class BLEManager: NSObject, ObservableObject {
             reconnectionTimers.removeValue(forKey: deviceIdentifier)
             device.status = .disconnected
 
-            logger.warning("Reconnection timeout for \(device.displayName) — awaiting user decision")
-            pendingDisconnectPrompt = DisconnectDecisionPrompt(
-                id: device.identifier.uuidString,
-                deviceIdentifier: device.identifier,
-                deviceName: device.displayName,
-                lastSeenAt: device.lastSeenAt
-            )
-            triggerDisconnectHaptic()
-            Task { [weak self] in
-                await self?.postDisconnectAlert(for: device)
+            if isDisconnectProtectionArmed {
+                logger.warning("Reconnection timeout for \(device.displayName) while protection is armed — awaiting user decision")
+                pendingDisconnectPrompt = DisconnectDecisionPrompt(
+                    id: device.identifier.uuidString,
+                    deviceIdentifier: device.identifier,
+                    deviceName: device.displayName,
+                    lastSeenAt: device.lastSeenAt
+                )
+                triggerDisconnectHaptic()
+                Task { [weak self] in
+                    await self?.scheduleProtectedDisconnectAlert(for: device)
+                    await self?.postDisconnectAlert(for: device)
+                }
+            } else {
+                logger.info("Reconnection timeout for \(device.displayName) while protection is disarmed")
             }
             sortKnownDevices()
         }
@@ -271,12 +330,13 @@ final class BLEManager: NSObject, ObservableObject {
     }
 
     private func postDisconnectAlert(for device: BLEDevice) async {
+        let coordinate = DeviceEventSyncService.shared.lastKnownCoordinate(for: device)
         let body = DeviceDisconnectedBody(
             deviceId: device.persistedId ?? device.identifier.uuidString,
             deviceName: device.displayName,
             lastSeenAt: device.lastSeenAt ?? Date(),
-            latitude: nil,
-            longitude: nil
+            latitude: coordinate?.latitude,
+            longitude: coordinate?.longitude
         )
 
         do {
@@ -292,6 +352,68 @@ final class BLEManager: NSObject, ObservableObject {
     private func triggerDisconnectHaptic() {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.warning)
+    }
+
+    private func scheduleProtectedDisconnectAlert(for device: BLEDevice) async {
+        guard UIApplication.shared.applicationState != .active else { return }
+
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        let allowedStatuses: Set<UNAuthorizationStatus> = [.authorized, .provisional, .ephemeral]
+        guard allowedStatuses.contains(settings.authorizationStatus) else {
+            logger.info("Skipping local disconnect alert because notifications are not authorized")
+            return
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Device disconnected"
+        content.body = "\(device.displayName) disconnected while gym protection was armed."
+        content.categoryIdentifier = NotificationCategory.deviceDisconnect.rawValue
+        content.threadIdentifier = "ble-disconnect-protection"
+        content.userInfo = [
+            "type": "device",
+            "deviceId": device.persistedId ?? device.identifier.uuidString,
+        ]
+
+        if settings.criticalAlertSetting == .enabled {
+            content.sound = .defaultCriticalSound(withAudioVolume: 1.0)
+            content.interruptionLevel = .critical
+        } else {
+            content.sound = .default
+        }
+
+        let criticalAlertsEnabled = settings.criticalAlertSetting == .enabled
+        let deviceName = device.displayName
+
+        let request = UNNotificationRequest(
+            identifier: Self.protectedDisconnectNotificationId(for: device.identifier),
+            content: content,
+            trigger: nil
+        )
+
+        await withCheckedContinuation { continuation in
+            center.add(request) { [weak self] error in
+                if let error {
+                    self?.logger.error("Failed to schedule protected disconnect alert: \(error.localizedDescription)")
+                } else if criticalAlertsEnabled {
+                    self?.logger.info("Scheduled critical disconnect alert for \(deviceName)")
+                } else {
+                    self?.logger.info("Scheduled standard disconnect alert for \(deviceName) because critical alerts are unavailable")
+                }
+                continuation.resume()
+            }
+        }
+    }
+
+    private func clearProtectedDisconnectAlert(for identifier: UUID) {
+        let requestIdentifier = Self.protectedDisconnectNotificationId(for: identifier)
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [requestIdentifier])
+        center.removeDeliveredNotifications(withIdentifiers: [requestIdentifier])
+    }
+
+    private static func protectedDisconnectNotificationId(for identifier: UUID) -> String {
+        "\(protectedDisconnectNotificationPrefix)\(identifier.uuidString)"
     }
 
     /// Called internally to set self as the peripheral delegate for RSSI callbacks.
@@ -311,13 +433,30 @@ final class BLEManager: NSObject, ObservableObject {
     // MARK: - Stale Pruning
 
     private func scheduleStalePruning() {
-        Task { [weak self] in
+        stalePruningTask?.cancel()
+        stalePruningTask = Task { [weak self] in
             while let self, self.isScanning {
                 try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
                 let pruned = self.scanner.pruneStaleDevices()
                 if !pruned.isEmpty {
                     self.discoveredDevices = self.scanner.discoveredDevices
                 }
+            }
+        }
+    }
+
+    private func scheduleScanTimeoutIfNeeded(for mode: BLEScanMode) {
+        scanTimeoutTask?.cancel()
+        scanTimeoutTask = nil
+
+        guard let timeout = mode.timeout else { return }
+
+        scanTimeoutTask = Task { [weak self] in
+            let nanoseconds = UInt64(timeout * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: nanoseconds)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                self?.stopScanning()
             }
         }
     }
@@ -370,6 +509,7 @@ extension BLEManager: CBCentralManagerDelegate {
             self.cancelReconnection(for: peripheral.identifier)
 
             self.registerAsPeripheralDelegate(for: peripheral)
+            self.clearProtectedDisconnectAlert(for: peripheral.identifier)
 
             if let device = self.findDevice(for: peripheral) {
                 device.status = .connected
@@ -385,6 +525,10 @@ extension BLEManager: CBCentralManagerDelegate {
                 // Start signal monitoring when first device connects
                 if self.connectedDevices.count == 1 {
                     BLESignalMonitor.shared.startMonitoring()
+                }
+
+                Task {
+                    await DeviceEventSyncService.shared.record(action: .connect, for: device)
                 }
             }
         }
@@ -417,6 +561,10 @@ extension BLEManager: CBCentralManagerDelegate {
 
             if let device = self.findDevice(for: peripheral) {
                 self.connectedDevices.removeAll { $0.identifier == device.identifier }
+
+                Task {
+                    await DeviceEventSyncService.shared.record(action: .disconnect, for: device)
+                }
 
                 // Stop signal monitoring when no devices remain connected
                 if self.connectedDevices.isEmpty {

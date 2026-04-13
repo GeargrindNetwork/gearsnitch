@@ -61,6 +61,9 @@ targets:
       - target: GearSnitchWidgets
         embed: true
     scheme:
+      testTargets:
+        - GearSnitchTests
+        - GearSnitchUITests
       storeKitConfiguration: GearSnitch/Configuration/GearSnitch.storekit
 
   GearSnitchWidgets:
@@ -90,6 +93,9 @@ targets:
     sources:
       - path: GearSnitchTests
         optional: true
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: GearSnitch
 
@@ -99,5 +105,8 @@ targets:
     sources:
       - path: GearSnitchUITests
         optional: true
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: GearSnitch

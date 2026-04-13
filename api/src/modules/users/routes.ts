@@ -355,7 +355,10 @@ function buildSubscriptionSummary(
   subscription: {
     status: string;
     productId: string;
+    purchaseDate: Date;
     expiryDate: Date;
+    extensionDays: number;
+    provider: string;
   } | null,
 ) {
   if (!subscription) {
@@ -364,8 +367,12 @@ function buildSubscriptionSummary(
 
   return {
     status: subscription.status,
+    tier: getSubscriptionTierFromProductId(subscription.productId),
     plan: formatSubscriptionPlan(subscription.productId),
+    purchaseDate: subscription.purchaseDate.toISOString(),
     expiresAt: subscription.expiryDate.toISOString(),
+    extensionDays: subscription.extensionDays,
+    platform: subscription.provider,
   };
 }
 
@@ -391,6 +398,59 @@ function serializeGymSummary(gym: {
     },
     createdAt: gym.createdAt.toISOString(),
     updatedAt: gym.updatedAt.toISOString(),
+  };
+}
+
+function serializeProfileDeviceSummary(device: {
+  _id: { toString(): string };
+  name: string;
+  nickname?: string | null;
+  type: string;
+  identifier: string;
+  status: string;
+  isFavorite?: boolean;
+  monitoringEnabled?: boolean;
+  lastSeenAt?: Date | null;
+  createdAt: Date;
+}) {
+  return {
+    _id: String(device._id),
+    name: device.name,
+    nickname: device.nickname ?? null,
+    type: device.type,
+    bluetoothIdentifier: device.identifier,
+    status: device.status,
+    isFavorite: device.isFavorite === true,
+    isMonitoring: device.monitoringEnabled === true,
+    lastSeenAt: toIsoString(device.lastSeenAt),
+    createdAt: device.createdAt.toISOString(),
+  };
+}
+
+function serializeExportDevice(device: {
+  _id: { toString(): string };
+  name: string;
+  nickname?: string | null;
+  type: string;
+  identifier: string;
+  hardwareModel?: string | null;
+  firmwareVersion?: string | null;
+  status: string;
+  isFavorite?: boolean;
+  monitoringEnabled?: boolean;
+  lastSeenAt?: Date | null;
+  lastSeenLocation?: unknown;
+  lastSignalStrength?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    ...serializeProfileDeviceSummary(device),
+    hardwareModel: device.hardwareModel ?? null,
+    firmwareVersion: device.firmwareVersion ?? null,
+    lastSeenLocation: device.lastSeenLocation ?? null,
+    lastSignalStrength: device.lastSignalStrength ?? null,
+    updatedAt: device.updatedAt.toISOString(),
   };
 }
 
@@ -462,18 +522,7 @@ async function buildProfileResponse(userId: string) {
     preferences: user.preferences,
     linkedAccounts: user.authProviders,
     subscription: buildSubscriptionSummary(subscription),
-    devices: devices.map((device) => ({
-      _id: String(device._id),
-      deviceName: device.name,
-      nickname: device.nickname ?? null,
-      platform: device.type,
-      bluetoothIdentifier: device.identifier,
-      status: device.status,
-      isFavorite: device.isFavorite === true,
-      isMonitoring: device.monitoringEnabled === true,
-      lastSeen: toIsoString(device.lastSeenAt),
-      createdAt: toIsoString(device.createdAt),
-    })),
+    devices: devices.map(serializeProfileDeviceSummary),
     pinnedDeviceId:
       devices.find((device) => device.isFavorite === true)?._id?.toString() ?? null,
     gyms: gyms.map(serializeGymSummary),
@@ -521,7 +570,7 @@ async function buildDataExport(userId: string) {
   const normalizedPermissions = normalizePermissionsState(user.permissionsState);
 
   return {
-    exportVersion: 1,
+    exportVersion: 2,
     exportedAt: new Date().toISOString(),
     account: {
       _id: String(user._id),
@@ -600,23 +649,7 @@ async function buildDataExport(userId: string) {
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
     })),
-    devices: devices.map((device) => ({
-      _id: String(device._id),
-      name: device.name,
-      nickname: device.nickname ?? null,
-      type: device.type,
-      identifier: device.identifier,
-      hardwareModel: device.hardwareModel ?? null,
-      firmwareVersion: device.firmwareVersion ?? null,
-      status: device.status,
-      isFavorite: device.isFavorite === true,
-      monitoringEnabled: device.monitoringEnabled,
-      lastSeenAt: toIsoString(device.lastSeenAt),
-      lastSeenLocation: device.lastSeenLocation ?? null,
-      lastSignalStrength: device.lastSignalStrength ?? null,
-      createdAt: device.createdAt.toISOString(),
-      updatedAt: device.updatedAt.toISOString(),
-    })),
+    devices: devices.map(serializeExportDevice),
     gyms: gyms.map(serializeGymSummary),
     sessions: sessions.map((session) => ({
       _id: String(session._id),

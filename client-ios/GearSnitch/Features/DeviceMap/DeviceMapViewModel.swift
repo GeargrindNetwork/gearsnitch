@@ -98,7 +98,7 @@ final class DeviceMapViewModel: ObservableObject {
                 let dtos: [DeviceLocationDTO] = try await apiClient.request(
                     APIEndpoint.Devices.locations
                 )
-                devices = dtos.compactMap { dto in
+                let remoteDevices: [TrackedDevice] = dtos.compactMap { dto -> TrackedDevice? in
                     guard let date = parseDate(dto.lastSeenAt) else { return nil }
                     return TrackedDevice(
                         id: dto.id,
@@ -113,9 +113,13 @@ final class DeviceMapViewModel: ObservableObject {
                         isConnected: dto.isConnected ?? false
                     )
                 }
+
+                devices = remoteDevices.isEmpty ? localFallbackDevices() : remoteDevices
             } catch {
-                // On failure, keep existing local data for offline access
-                if devices.isEmpty {
+                let fallbackDevices = localFallbackDevices()
+                if !fallbackDevices.isEmpty {
+                    devices = fallbackDevices
+                } else if devices.isEmpty {
                     self.error = error.localizedDescription
                 }
                 logger.error("Failed to load device locations: \(error.localizedDescription)")
@@ -138,12 +142,28 @@ final class DeviceMapViewModel: ObservableObject {
         }
         return ISO8601DateFormatter.standard.date(from: string)
     }
-}
 
-// MARK: - API Endpoint Extension
+    private func localFallbackDevices() -> [TrackedDevice] {
+        DeviceEventSyncService.shared.cachedDevices()
+            .compactMap { device in
+                guard
+                    let latitude = device.lastSeenLatitude,
+                    let longitude = device.lastSeenLongitude,
+                    let lastSeenAt = device.lastSeenAt
+                else {
+                    return nil
+                }
 
-extension APIEndpoint.Devices {
-    static var locations: APIEndpoint {
-        APIEndpoint(path: "/api/v1/devices/locations")
+                return TrackedDevice(
+                    id: device.id,
+                    name: device.name,
+                    coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+                    lastSeenAt: lastSeenAt,
+                    signalStrength: device.lastSignalStrength ?? -100,
+                    batteryPercentage: nil,
+                    isConnected: ["connected", "monitoring", "reconnected"].contains(device.status)
+                )
+            }
+            .sorted { $0.lastSeenAt > $1.lastSeenAt }
     }
 }

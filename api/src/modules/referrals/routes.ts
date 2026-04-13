@@ -7,6 +7,10 @@ import { isAuthenticated, type JwtPayload } from '../../middleware/auth.js';
 import { Referral } from '../../models/Referral.js';
 import { Subscription } from '../../models/Subscription.js';
 import { User } from '../../models/User.js';
+import {
+  REFERRAL_REWARD_DAYS,
+  processReferralQualificationForReferredUser,
+} from './referralService.js';
 import { errorResponse, successResponse } from '../../utils/response.js';
 
 const router = Router();
@@ -15,7 +19,6 @@ const redeemSchema = z.object({
   referralCode: z.string().trim().min(4).max(32),
 });
 
-const REFERRAL_REWARD_DAYS = 90;
 const REFERRAL_BASE_URL = 'https://gearsnitch.com/ref';
 
 function getUserId(req: Request): string {
@@ -229,7 +232,6 @@ router.post('/redeem', isAuthenticated, async (req, res) => {
       return;
     }
 
-    const now = new Date();
     const referredSubscription = await Subscription.findOne({
       userId: currentUser._id,
       status: { $in: ['active', 'grace_period'] },
@@ -239,17 +241,22 @@ router.post('/redeem', isAuthenticated, async (req, res) => {
       referrerUserId: referrer._id,
       referredUserId: currentUser._id,
       referralCode: normalizedCode,
-      status: referredSubscription ? 'qualified' : 'pending',
+      status: 'pending',
       rewardDays: REFERRAL_REWARD_DAYS,
-      qualifiedAt: referredSubscription ? now : undefined,
       reason: referredSubscription ? undefined : 'Awaiting qualifying subscription',
     });
+
+    if (referredSubscription) {
+      await processReferralQualificationForReferredUser(currentUser._id);
+    }
+
+    const persistedReferral = await Referral.findById(referral._id).lean();
 
     successResponse(
       res,
       {
         referralId: String(referral._id),
-        status: referral.status,
+        status: persistedReferral?.status ?? referral.status,
       },
       StatusCodes.CREATED,
     );

@@ -1,11 +1,16 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let debugResetOnboarding = Notification.Name("debugResetOnboarding")
+}
+
 struct RootView: View {
     @EnvironmentObject private var authManager: AuthManager
     @EnvironmentObject private var coordinator: AppCoordinator
     @ObservedObject private var gateManager = PermissionGateManager.shared
     @ObservedObject private var releaseGateManager = ReleaseGateManager.shared
 
+    @AppStorage("debug.forceOnboardingReset") private var forceOnboardingReset = false
     @State private var showFixPermissions = false
     @State private var onboardingComplete = false
     @StateObject private var onboardingViewModel = OnboardingViewModel()
@@ -28,13 +33,17 @@ struct RootView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 // Re-check permissions when app returns from Settings
-                Task {
+                Task { @MainActor in
                     await gateManager.checkAll()
                     await releaseGateManager.forceRefresh()
+                    checkRequiredPermissions()
                     if authManager.isAuthenticated {
                         await GymSessionManager.shared.processPendingWidgetActionIfNeeded()
                     }
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .debugResetOnboarding)) { _ in
+                restartOnboarding(startAt: .welcome)
             }
     }
 
@@ -60,11 +69,9 @@ struct RootView: View {
             onboardingFlow
 
         case .authenticated(let user):
-            if !user.hasCompletedOnboarding && !onboardingComplete {
-                // User is authenticated but hasn't completed onboarding
+            if shouldShowOnboarding(for: user) {
                 onboardingFlow
             } else if showFixPermissions {
-                // Required permission was revoked -- show fix flow
                 fixPermissionsView
             } else {
                 MainTabView()
@@ -80,26 +87,33 @@ struct RootView: View {
             OnboardingView(
                 viewModel: onboardingViewModel,
                 onComplete: {
+                    forceOnboardingReset = false
                     onboardingComplete = true
+                    showFixPermissions = false
                 }
             )
         }
     }
 
+    private func shouldShowOnboarding(for user: GSUser) -> Bool {
+        forceOnboardingReset || (!user.hasCompletedOnboarding && !onboardingComplete)
+    }
+
     // MARK: - Permission Check
 
     private func checkRequiredPermissions() {
-        Task {
+        Task { @MainActor in
             await gateManager.checkAll()
 
-            // Only check bluetooth and location -- gym/device are server-side state
-            let bluetoothOK = gateManager.bluetoothGranted
-            let locationOK = gateManager.locationGranted
-
-            if !bluetoothOK || !locationOK {
+            if gateManager.requiresPermissionRepair {
                 showFixPermissions = true
-            } else {
-                showFixPermissions = false
+                return
+            }
+
+            showFixPermissions = false
+
+            if !gateManager.bluetoothGranted || !gateManager.locationGranted {
+                restartOnboarding(startAt: recoveryStep())
             }
         }
     }
@@ -126,7 +140,7 @@ struct RootView: View {
                 .foregroundColor(.gsText)
                 .padding(.bottom, 12)
 
-            Text("GearSnitch needs certain permissions to monitor your gear. Some required permissions have been revoked.")
+            Text("GearSnitch needs a couple of permissions that were revoked after setup. Re-enable them, then come back here to continue.")
                 .font(.body)
                 .foregroundColor(.gsTextSecondary)
                 .multilineTextAlignment(.center)
@@ -182,8 +196,7 @@ struct RootView: View {
                 }
 
                 Button {
-                    // Re-check and dismiss if fixed
-                    checkRequiredPermissions()
+                    handlePermissionsFixed()
                 } label: {
                     Text("I've Fixed It")
                         .font(.subheadline.weight(.medium))
@@ -191,6 +204,18 @@ struct RootView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                 }
+
+                #if DEBUG
+                Button {
+                    restartOnboarding(startAt: .welcome)
+                } label: {
+                    Text("Reset Onboarding")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.gsTextSecondary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                }
+                #endif
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 40)
@@ -225,6 +250,41 @@ struct RootView: View {
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
         }
+    }
+
+    private func handlePermissionsFixed() {
+        Task { @MainActor in
+            await gateManager.checkAll()
+
+            if gateManager.bluetoothGranted && gateManager.locationGranted {
+                showFixPermissions = false
+                return
+            }
+
+            if !gateManager.requiresPermissionRepair {
+                restartOnboarding(startAt: recoveryStep())
+            }
+        }
+    }
+
+    private func recoveryStep() -> OnboardingStep {
+        if !gateManager.bluetoothGranted {
+            return .bluetoothPrePrompt
+        }
+
+        if !gateManager.locationGranted {
+            return .locationWhenInUse
+        }
+
+        return .welcome
+    }
+
+    private func restartOnboarding(startAt step: OnboardingStep) {
+        forceOnboardingReset = true
+        onboardingComplete = false
+        showFixPermissions = false
+        onboardingViewModel.syncAuthenticationState(isAuthenticated: authManager.isAuthenticated)
+        onboardingViewModel.resetForTesting(startStep: step)
     }
 
     // MARK: - Splash

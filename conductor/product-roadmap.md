@@ -34,3 +34,4 @@ Phase 3 execution queue after the foundation tracks closed.
 
 - external deployment and store/account configuration once Apple, Google, APNs, and payment credentials are ready
 - social sharing, achievements, and Apple Watch companion work after the launch-critical loop closes
+- peptide/steroid cycle tracking as a shared health-adjacent logging and reporting domain after the backend contract is defined

@@ -5,6 +5,8 @@ import SwiftUI
 struct SubscriptionDTO: Decodable {
     let status: String
     let tier: String
+    let plan: String?
+    let purchaseDate: Date?
     let expiresAt: Date?
     let extensionDays: Int
     let autoRenew: Bool
@@ -45,7 +47,7 @@ struct SubscriptionStatusView: View {
                         .font(.system(size: 48))
                         .foregroundColor(sub.status == "active" ? .gsWarning : .gsTextSecondary)
 
-                    Text(sub.tier.capitalized)
+                    Text(sub.plan ?? sub.tier.capitalized)
                         .font(.title2.weight(.bold))
                         .foregroundColor(.gsText)
 
@@ -57,6 +59,11 @@ struct SubscriptionStatusView: View {
                 // Details
                 VStack(spacing: 0) {
                     detailRow(label: "Status", value: sub.status.capitalized)
+
+                    if let purchased = sub.purchaseDate {
+                        Divider().background(Color.gsBorder)
+                        detailRow(label: "Purchased", value: purchased.shortDateString())
+                    }
 
                     if let expires = sub.expiresAt {
                         Divider().background(Color.gsBorder)

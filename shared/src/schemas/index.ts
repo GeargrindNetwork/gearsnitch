@@ -47,8 +47,10 @@ export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 /** Register a new BLE device */
 export const createDeviceSchema = z.object({
   name: z.string().min(1).max(100),
+  nickname: z.string().trim().min(1).max(100).nullable().optional(),
   type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'other']),
-  identifier: z.string().min(1).max(255),
+  bluetoothIdentifier: z.string().min(1).max(255),
+  isFavorite: z.boolean().optional(),
   hardwareModel: z.string().max(100).optional(),
   firmwareVersion: z.string().max(50).optional(),
 });
@@ -57,10 +59,11 @@ export type CreateDeviceInput = z.infer<typeof createDeviceSchema>;
 /** Update an existing device */
 export const updateDeviceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  nickname: z.string().trim().min(1).max(100).nullable().optional(),
   type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'other']).optional(),
   hardwareModel: z.string().max(100).optional(),
   firmwareVersion: z.string().max(50).optional(),
-  monitoringEnabled: z.boolean().optional(),
+  isFavorite: z.boolean().optional(),
 });
 export type UpdateDeviceInput = z.infer<typeof updateDeviceSchema>;
 
@@ -71,6 +74,7 @@ export const deviceStatusSchema = z.object({
     'active',
     'inactive',
     'connected',
+    'monitoring',
     'disconnected',
     'lost',
     'reconnected',
@@ -192,4 +196,505 @@ export const createEmergencyContactSchema = z.object({
 });
 export type CreateEmergencyContactInput = z.infer<
   typeof createEmergencyContactSchema
+>;
+
+// ─── Cycle Tracking ───────────────────────────────────────────────────────
+
+const cycleDateKeySchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD');
+
+/** Cycle domain type */
+export const cycleTypeSchema = z.enum(['peptide', 'steroid', 'mixed', 'other']);
+export type CycleTypeInput = z.infer<typeof cycleTypeSchema>;
+
+/** Cycle lifecycle state */
+export const cycleStatusSchema = z.enum([
+  'planned',
+  'active',
+  'paused',
+  'completed',
+  'archived',
+]);
+export type CycleStatusInput = z.infer<typeof cycleStatusSchema>;
+
+/** Compound category for planned compounds and logged entries */
+export const cycleCompoundCategorySchema = z.enum([
+  'peptide',
+  'steroid',
+  'support',
+  'pct',
+  'other',
+]);
+export type CycleCompoundCategoryInput = z.infer<
+  typeof cycleCompoundCategorySchema
+>;
+
+/** Dose units supported for cycle compounds and entries */
+export const cycleDoseUnitSchema = z.enum(['mg', 'mcg', 'iu', 'ml', 'units']);
+export type CycleDoseUnitInput = z.infer<typeof cycleDoseUnitSchema>;
+
+/** Compound administration route */
+export const cycleRouteSchema = z.enum([
+  'injection',
+  'oral',
+  'topical',
+  'other',
+]);
+export type CycleRouteInput = z.infer<typeof cycleRouteSchema>;
+
+/** Entry source channel */
+export const cycleEntrySourceSchema = z.enum([
+  'manual',
+  'ios',
+  'web',
+  'imported',
+]);
+export type CycleEntrySourceInput = z.infer<typeof cycleEntrySourceSchema>;
+
+/** Planned compound attached to a cycle */
+export const cycleCompoundSchema = z.object({
+  compoundName: z.string().trim().min(1).max(120),
+  compoundCategory: cycleCompoundCategorySchema,
+  targetDose: z.number().min(0).nullable().optional(),
+  doseUnit: cycleDoseUnitSchema,
+  route: cycleRouteSchema.nullable().optional(),
+});
+export type CycleCompoundInput = z.infer<typeof cycleCompoundSchema>;
+
+/** Full cycle object payload */
+export const cycleSchema = z.object({
+  _id: z.string().min(1),
+  userId: z.string().min(1),
+  name: z.string().trim().min(1).max(120),
+  type: cycleTypeSchema,
+  status: cycleStatusSchema,
+  startDate: cycleDateKeySchema,
+  endDate: cycleDateKeySchema.nullable().optional(),
+  timezone: z.string().min(1).max(100),
+  notes: z.string().max(2000).nullable().optional(),
+  tags: z.array(z.string().trim().min(1).max(64)).max(20).optional(),
+  compounds: z.array(cycleCompoundSchema).optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type CyclePayload = z.infer<typeof cycleSchema>;
+
+/** Full cycle entry object payload */
+export const cycleEntrySchema = z.object({
+  _id: z.string().min(1),
+  userId: z.string().min(1),
+  cycleId: z.string().min(1),
+  compoundName: z.string().trim().min(1).max(120),
+  compoundCategory: cycleCompoundCategorySchema,
+  route: cycleRouteSchema,
+  occurredAt: z.string().datetime(),
+  dateKey: cycleDateKeySchema,
+  plannedDose: z.number().min(0).nullable().optional(),
+  actualDose: z.number().min(0).nullable().optional(),
+  doseUnit: cycleDoseUnitSchema,
+  notes: z.string().max(2000).nullable().optional(),
+  source: cycleEntrySourceSchema,
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type CycleEntryPayload = z.infer<typeof cycleEntrySchema>;
+
+/** Route params for cycle detail/update/delete */
+export const cycleIdParamsSchema = z.object({
+  id: z.string().min(1),
+});
+export type CycleIdParamsInput = z.infer<typeof cycleIdParamsSchema>;
+
+/** Route params for entry update/delete */
+export const cycleEntryIdParamsSchema = z.object({
+  entryId: z.string().min(1),
+});
+export type CycleEntryIdParamsInput = z.infer<typeof cycleEntryIdParamsSchema>;
+
+/** Query params for cycle list endpoint */
+export const listCyclesQuerySchema = z.object({
+  status: cycleStatusSchema.optional(),
+  type: cycleTypeSchema.optional(),
+  from: cycleDateKeySchema.optional(),
+  to: cycleDateKeySchema.optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+export type ListCyclesQueryInput = z.infer<typeof listCyclesQuerySchema>;
+
+/** Request body for creating a cycle */
+export const createCycleSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  type: cycleTypeSchema,
+  status: cycleStatusSchema.optional(),
+  startDate: cycleDateKeySchema,
+  endDate: cycleDateKeySchema.nullable().optional(),
+  timezone: z.string().min(1).max(100),
+  notes: z.string().max(2000).nullable().optional(),
+  tags: z.array(z.string().trim().min(1).max(64)).max(20).optional(),
+  compounds: z.array(cycleCompoundSchema).optional(),
+});
+export type CreateCycleInput = z.infer<typeof createCycleSchema>;
+
+/** Request body for updating a cycle */
+export const updateCycleSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  type: cycleTypeSchema.optional(),
+  status: cycleStatusSchema.optional(),
+  startDate: cycleDateKeySchema.optional(),
+  endDate: cycleDateKeySchema.nullable().optional(),
+  timezone: z.string().min(1).max(100).optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  tags: z.array(z.string().trim().min(1).max(64)).max(20).optional(),
+  compounds: z.array(cycleCompoundSchema).optional(),
+});
+export type UpdateCycleInput = z.infer<typeof updateCycleSchema>;
+
+/** Query params for cycle entry list endpoint */
+export const listCycleEntriesQuerySchema = z.object({
+  from: cycleDateKeySchema.optional(),
+  to: cycleDateKeySchema.optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+});
+export type ListCycleEntriesQueryInput = z.infer<
+  typeof listCycleEntriesQuerySchema
+>;
+
+/** Request body for creating a cycle entry */
+export const createCycleEntrySchema = z.object({
+  cycleId: z.string().min(1),
+  compoundName: z.string().trim().min(1).max(120),
+  compoundCategory: cycleCompoundCategorySchema,
+  route: cycleRouteSchema,
+  occurredAt: z.string().datetime(),
+  dateKey: cycleDateKeySchema.optional(),
+  plannedDose: z.number().min(0).nullable().optional(),
+  actualDose: z.number().min(0).nullable().optional(),
+  doseUnit: cycleDoseUnitSchema,
+  notes: z.string().max(2000).nullable().optional(),
+  source: cycleEntrySourceSchema.optional(),
+});
+export type CreateCycleEntryInput = z.infer<typeof createCycleEntrySchema>;
+
+/** Request body for updating a cycle entry */
+export const updateCycleEntrySchema = z.object({
+  compoundName: z.string().trim().min(1).max(120).optional(),
+  compoundCategory: cycleCompoundCategorySchema.optional(),
+  route: cycleRouteSchema.optional(),
+  occurredAt: z.string().datetime().optional(),
+  dateKey: cycleDateKeySchema.optional(),
+  plannedDose: z.number().min(0).nullable().optional(),
+  actualDose: z.number().min(0).nullable().optional(),
+  doseUnit: cycleDoseUnitSchema.optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  source: cycleEntrySourceSchema.optional(),
+});
+export type UpdateCycleEntryInput = z.infer<typeof updateCycleEntrySchema>;
+
+/** Request shape for deleting an entry */
+export const deleteCycleEntrySchema = cycleEntryIdParamsSchema;
+export type DeleteCycleEntryInput = z.infer<typeof deleteCycleEntrySchema>;
+
+/** Common pagination payload used by list responses */
+export const cyclePaginationSchema = z.object({
+  page: z.number().int().min(1),
+  limit: z.number().int().min(1),
+  total: z.number().int().min(0),
+  totalPages: z.number().int().min(0),
+});
+export type CyclePaginationPayload = z.infer<typeof cyclePaginationSchema>;
+
+/** List cycles response payload */
+export const cycleListResponseSchema = z.object({
+  cycles: z.array(cycleSchema),
+  pagination: cyclePaginationSchema,
+});
+export type CycleListResponsePayload = z.infer<typeof cycleListResponseSchema>;
+
+/** Single-cycle response payload for detail/create/update */
+export const cycleResponseSchema = z.object({
+  cycle: cycleSchema,
+});
+export type CycleResponsePayload = z.infer<typeof cycleResponseSchema>;
+
+/** List entries response payload */
+export const cycleEntryListResponseSchema = z.object({
+  entries: z.array(cycleEntrySchema),
+  pagination: cyclePaginationSchema,
+});
+export type CycleEntryListResponsePayload = z.infer<
+  typeof cycleEntryListResponseSchema
+>;
+
+/** Single-entry response payload for create/update */
+export const cycleEntryResponseSchema = z.object({
+  entry: cycleEntrySchema,
+});
+export type CycleEntryResponsePayload = z.infer<typeof cycleEntryResponseSchema>;
+
+/** Entry deletion response payload */
+export const cycleEntryDeleteResponseSchema = z.object({
+  entryId: z.string().min(1),
+  deleted: z.literal(true),
+});
+export type CycleEntryDeleteResponsePayload = z.infer<
+  typeof cycleEntryDeleteResponseSchema
+>;
+
+/** Query params for cycle day summary endpoint */
+export const cycleDaySummaryQuerySchema = z.object({
+  date: cycleDateKeySchema,
+  cycleId: z.string().min(1).optional(),
+});
+export type CycleDaySummaryQueryInput = z.infer<
+  typeof cycleDaySummaryQuerySchema
+>;
+
+/** Query params for cycle month summary endpoint */
+export const cycleMonthSummaryQuerySchema = z.object({
+  year: z.coerce.number().int().min(1970).max(9999),
+  month: z.coerce.number().int().min(1).max(12),
+  cycleId: z.string().min(1).optional(),
+});
+export type CycleMonthSummaryQueryInput = z.infer<
+  typeof cycleMonthSummaryQuerySchema
+>;
+
+/** Query params for cycle year summary endpoint */
+export const cycleYearSummaryQuerySchema = z.object({
+  year: z.coerce.number().int().min(1970).max(9999),
+  cycleId: z.string().min(1).optional(),
+});
+export type CycleYearSummaryQueryInput = z.infer<
+  typeof cycleYearSummaryQuerySchema
+>;
+
+/** Daily per-compound aggregate for cycle reporting */
+export const cycleDayCompoundTotalSchema = z.object({
+  compoundName: z.string().min(1),
+  doseUnit: cycleDoseUnitSchema,
+  entryCount: z.number().int().min(0),
+  totalPlannedDose: z.number().min(0),
+  totalActualDose: z.number().min(0),
+});
+export type CycleDayCompoundTotalPayload = z.infer<
+  typeof cycleDayCompoundTotalSchema
+>;
+
+/** Day summary payload */
+export const cycleDaySummaryResponseSchema = z.object({
+  date: cycleDateKeySchema,
+  timezone: z.string().min(1),
+  totalEntries: z.number().int().min(0),
+  activeCycles: z.number().int().min(0),
+  entries: z.array(cycleEntrySchema),
+  compoundTotals: z.array(cycleDayCompoundTotalSchema),
+  cycleStatusCounts: z.object({
+    planned: z.number().int().min(0),
+    active: z.number().int().min(0),
+    paused: z.number().int().min(0),
+    completed: z.number().int().min(0),
+    archived: z.number().int().min(0),
+  }),
+});
+export type CycleDaySummaryResponsePayload = z.infer<
+  typeof cycleDaySummaryResponseSchema
+>;
+
+/** Per-day bucket for month summary */
+export const cycleMonthDayBucketSchema = z.object({
+  date: cycleDateKeySchema,
+  day: z.number().int().min(1).max(31),
+  entryCount: z.number().int().min(0),
+  activeCycles: z.number().int().min(0),
+});
+export type CycleMonthDayBucketPayload = z.infer<
+  typeof cycleMonthDayBucketSchema
+>;
+
+/** Month summary payload */
+export const cycleMonthSummaryResponseSchema = z.object({
+  year: z.number().int().min(1970).max(9999),
+  month: z.number().int().min(1).max(12),
+  timezone: z.string().min(1),
+  days: z.array(cycleMonthDayBucketSchema),
+  totals: z.object({
+    entryCount: z.number().int().min(0),
+    activeDays: z.number().int().min(0),
+    activeCycles: z.number().int().min(0),
+    cycleCount: z.number().int().min(0),
+  }),
+});
+export type CycleMonthSummaryResponsePayload = z.infer<
+  typeof cycleMonthSummaryResponseSchema
+>;
+
+/** Per-month bucket for year summary */
+export const cycleYearMonthBucketSchema = z.object({
+  month: z.number().int().min(1).max(12),
+  entryCount: z.number().int().min(0),
+  activeDays: z.number().int().min(0),
+  activeCycles: z.number().int().min(0),
+  cycleStarts: z.number().int().min(0),
+  cycleEnds: z.number().int().min(0),
+});
+export type CycleYearMonthBucketPayload = z.infer<
+  typeof cycleYearMonthBucketSchema
+>;
+
+/** Most frequent compounds for a year summary */
+export const cycleTopCompoundSchema = z.object({
+  compoundName: z.string().min(1),
+  entryCount: z.number().int().min(0),
+  totalActualDose: z.number().min(0).nullable().optional(),
+});
+export type CycleTopCompoundPayload = z.infer<typeof cycleTopCompoundSchema>;
+
+/** Year summary payload */
+export const cycleYearSummaryResponseSchema = z.object({
+  year: z.number().int().min(1970).max(9999),
+  timezone: z.string().min(1),
+  months: z.array(cycleYearMonthBucketSchema).length(12),
+  totals: z.object({
+    entryCount: z.number().int().min(0),
+    activeDays: z.number().int().min(0),
+    activeCycles: z.number().int().min(0),
+    cycleStarts: z.number().int().min(0),
+    cycleEnds: z.number().int().min(0),
+  }),
+  topCompounds: z.array(cycleTopCompoundSchema),
+});
+export type CycleYearSummaryResponsePayload = z.infer<
+  typeof cycleYearSummaryResponseSchema
+>;
+
+// ─── Medication Tracking ───────────────────────────────────────────────────
+
+/** First-release medication categories shown in graphing and calendar overlays */
+export const medicationDoseCategorySchema = z.enum([
+  'steroid',
+  'peptide',
+  'oralMedication',
+]);
+export type MedicationDoseCategoryInput = z.infer<
+  typeof medicationDoseCategorySchema
+>;
+
+/** Canonical nested dose payload */
+export const medicationDoseAmountSchema = z.object({
+  value: z.number().min(0),
+  unit: cycleDoseUnitSchema,
+});
+export type MedicationDoseAmountPayload = z.infer<
+  typeof medicationDoseAmountSchema
+>;
+
+/** Stored medication dose object */
+export const medicationDoseSchema = z.object({
+  _id: z.string().min(1),
+  userId: z.string().min(1),
+  cycleId: z.string().min(1).nullable().optional(),
+  dateKey: cycleDateKeySchema,
+  dayOfYear: z.number().int().min(1).max(366),
+  category: medicationDoseCategorySchema,
+  compoundName: z.string().trim().min(1).max(120),
+  dose: medicationDoseAmountSchema,
+  doseMg: z.number().min(0).nullable().optional(),
+  occurredAt: z.string().datetime(),
+  notes: z.string().max(2000).nullable().optional(),
+  source: cycleEntrySourceSchema,
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type MedicationDosePayload = z.infer<typeof medicationDoseSchema>;
+
+/** Create medication dose request */
+export const createMedicationDoseSchema = z.object({
+  cycleId: z.string().min(1).nullable().optional(),
+  dateKey: cycleDateKeySchema.optional(),
+  category: medicationDoseCategorySchema,
+  compoundName: z.string().trim().min(1).max(120),
+  dose: medicationDoseAmountSchema,
+  occurredAt: z.string().datetime(),
+  notes: z.string().max(2000).nullable().optional(),
+  source: cycleEntrySourceSchema.optional(),
+});
+export type CreateMedicationDoseInput = z.infer<
+  typeof createMedicationDoseSchema
+>;
+
+/** Update medication dose request */
+export const updateMedicationDoseSchema = z.object({
+  cycleId: z.string().min(1).nullable().optional(),
+  dateKey: cycleDateKeySchema.optional(),
+  category: medicationDoseCategorySchema.optional(),
+  compoundName: z.string().trim().min(1).max(120).optional(),
+  dose: medicationDoseAmountSchema.optional(),
+  occurredAt: z.string().datetime().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  source: cycleEntrySourceSchema.optional(),
+});
+export type UpdateMedicationDoseInput = z.infer<
+  typeof updateMedicationDoseSchema
+>;
+
+/** Medication day totals */
+export const medicationDailySummarySchema = z.object({
+  dateKey: cycleDateKeySchema,
+  entryCount: z.number().int().min(0),
+  totalsMg: z.object({
+    steroid: z.number().min(0),
+    peptide: z.number().min(0),
+    oralMedication: z.number().min(0),
+    all: z.number().min(0),
+  }),
+});
+export type MedicationDailySummaryPayload = z.infer<
+  typeof medicationDailySummarySchema
+>;
+
+/** Calendar overlay medication block */
+export const calendarMedicationOverlaySchema = z.object({
+  entryCount: z.number().int().min(0),
+  totalDoseMg: z.number().min(0),
+  categoryDoseMg: z.object({
+    steroid: z.number().min(0),
+    peptide: z.number().min(0),
+    oralMedication: z.number().min(0),
+  }),
+  hasMedication: z.boolean(),
+});
+export type CalendarMedicationOverlayPayload = z.infer<
+  typeof calendarMedicationOverlaySchema
+>;
+
+/** Year graph response for 365/366-day medication charting */
+export const medicationYearGraphResponseSchema = z.object({
+  year: z.number().int().min(1970).max(9999),
+  axis: z.object({
+    x: z.object({
+      startDay: z.number().int().min(1).max(366),
+      endDay: z.number().int().min(1).max(366),
+    }),
+    yMg: z.object({
+      min: z.number().min(0),
+      max: z.number().min(0),
+    }),
+  }),
+  series: z.object({
+    steroidMgByDay: z.array(z.number().min(0)),
+    peptideMgByDay: z.array(z.number().min(0)),
+    oralMedicationMgByDay: z.array(z.number().min(0)),
+  }),
+  totalsMg: z.object({
+    steroid: z.number().min(0),
+    peptide: z.number().min(0),
+    oralMedication: z.number().min(0),
+    all: z.number().min(0),
+  }),
+});
+export type MedicationYearGraphResponsePayload = z.infer<
+  typeof medicationYearGraphResponseSchema
 >;

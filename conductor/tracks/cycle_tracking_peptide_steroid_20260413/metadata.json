@@ -1,0 +1,53 @@
+{
+  "version": 3,
+  "track_id": "cycle_tracking_peptide_steroid_20260413",
+  "name": "Peptide And Steroid Cycle Tracking",
+  "type": "feature",
+  "status": "planned",
+  "priority": "P1",
+  "created_at": "2026-04-13T12:49:56Z",
+  "updated_at": "2026-04-13T14:05:00Z",
+  "superpower_enhanced": true,
+  "dependencies": [],
+  "summary": "Define and implement a shared cycle-tracking domain with day, month, and year reporting across backend, iOS, and web.",
+  "loop_state": {
+    "current_step": "PLAN",
+    "step_status": "PASSED",
+    "fix_cycle_count": 0,
+    "max_fix_cycles": 3,
+    "checkpoints": {
+      "PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-13T12:49:56Z",
+        "completed_at": "2026-04-13T12:49:56Z",
+        "agent": "research-agents+manual-synthesis",
+        "plan_version": 1
+      },
+      "EVALUATE_PLAN": { "status": "NOT_STARTED" },
+      "EXECUTE": { "status": "NOT_STARTED" },
+      "EVALUATE_EXECUTION": { "status": "NOT_STARTED" },
+      "FIX": { "status": "NOT_STARTED" },
+      "ENRICH": { "status": "NOT_STARTED" }
+    }
+  },
+  "lead_consultations": [
+    {
+      "role": "backend-contracts",
+      "agent": "Socrates"
+    },
+    {
+      "role": "ios-integration",
+      "agent": "Lovelace"
+    },
+    {
+      "role": "web-integration",
+      "agent": "Franklin"
+    }
+  ],
+  "discovered_work": [
+    "conductor/tracks/cycle_tracking_peptide_steroid_20260413/prd.md",
+    "conductor/tracks/cycle_tracking_peptide_steroid_20260413/spec.md",
+    "conductor/tracks/cycle_tracking_peptide_steroid_20260413/plan.md"
+  ],
+  "blockers": []
+}

@@ -423,6 +423,38 @@ final class OnboardingViewModel: ObservableObject {
         isCompleting = false
     }
 
+    func resetForTesting(startStep: OnboardingStep = .welcome) {
+        error = nil
+        isCompleting = false
+
+        selectedGymName = ""
+        selectedGymCoordinate = nil
+        pairedDeviceName = ""
+
+        hasAddedGym = false
+        hasPairedDevice = false
+        PermissionGateManager.shared.setHasGym(false)
+        PermissionGateManager.shared.setHasPairedDevice(false)
+
+        bluetoothGranted = (CBManager.authorization == .allowedAlways)
+
+        let locationStatus = CLLocationManager().authorizationStatus
+        locationWhenInUseGranted = (locationStatus == .authorizedWhenInUse || locationStatus == .authorizedAlways)
+        locationAlwaysGranted = (locationStatus == .authorizedAlways)
+
+        let notificationState = NotificationPermissionManager.shared.permissionState
+        notificationsGranted =
+            notificationState == .authorized
+            || notificationState == .provisional
+            || notificationState == .ephemeral
+
+        HealthKitPermissions.shared.updateState()
+        healthKitAuthorized = HealthKitPermissions.shared.canQuery
+
+        currentStep = startStep
+        logger.info("Onboarding reset for testing at step \(startStep.rawValue)")
+    }
+
     // MARK: - Helpers
 
     private func withAnimationOnMain(_ body: @escaping () -> Void) {
