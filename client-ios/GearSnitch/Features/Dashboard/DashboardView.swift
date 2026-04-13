@@ -375,7 +375,7 @@ struct DashboardView: View {
                             .lineLimit(1)
 
                         if device.isFavorite {
-                            Image(systemName: "star.fill")
+                            Image(systemName: "pin.fill")
                                 .font(.caption2)
                                 .foregroundColor(.gsWarning)
                         }

@@ -65,7 +65,10 @@ export async function processReferralReward(
       }
 
       const subscription = await subscriptions.findOne(
-        { userId: referrerUserIdObject },
+        {
+          userId: referrerUserIdObject,
+          status: { $in: ['active', 'grace_period'] },
+        },
         { sort: { expiryDate: -1 } },
       )
 
@@ -81,7 +84,7 @@ export async function processReferralReward(
       const rewardDays =
         typeof referral.rewardDays === 'number' && referral.rewardDays > 0
           ? referral.rewardDays
-          : 90
+          : 28
 
       const currentExpiry =
         subscription.expiryDate instanceof Date

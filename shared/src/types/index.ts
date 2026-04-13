@@ -109,9 +109,10 @@ export interface IDevice {
   _id: string;
   userId: string;
   name: string;
+  nickname?: string | null;
   type: 'earbuds' | 'tracker' | 'belt' | 'bag' | 'other';
   /** BLE peripheral identifier or serial number */
-  identifier: string;
+  bluetoothIdentifier: string;
   hardwareModel?: string;
   firmwareVersion?: string;
   status:
@@ -119,9 +120,11 @@ export interface IDevice {
     | 'active'
     | 'inactive'
     | 'connected'
+    | 'monitoring'
     | 'disconnected'
     | 'lost'
     | 'reconnected';
+  isFavorite: boolean;
   monitoringEnabled: boolean;
   lastSeenAt?: string;
   lastSeenLocation?: GeoJSONPoint;
@@ -433,4 +436,411 @@ export interface ApiResponse<T = unknown> {
   data?: T;
   meta?: ApiMeta;
   error?: ApiError;
+}
+
+// ─── Cycle Tracking ───────────────────────────────────────────────────────
+
+/** Cycle classification */
+export type CycleTypeValue = 'peptide' | 'steroid' | 'mixed' | 'other';
+
+/** Cycle lifecycle state */
+export type CycleStatusValue =
+  | 'planned'
+  | 'active'
+  | 'paused'
+  | 'completed'
+  | 'archived';
+
+/** Supported compound categories inside cycle plans and entries */
+export type CycleCompoundCategoryValue =
+  | 'peptide'
+  | 'steroid'
+  | 'support'
+  | 'pct'
+  | 'other';
+
+/** Supported dose units for cycle entries */
+export type CycleDoseUnitValue = 'mg' | 'mcg' | 'iu' | 'ml' | 'units';
+
+/** Compound administration routes */
+export type CycleRouteValue = 'injection' | 'oral' | 'topical' | 'other';
+
+/** Client that created a cycle entry */
+export type CycleEntrySourceValue = 'manual' | 'ios' | 'web' | 'imported';
+
+/** Planned compound definition attached to a cycle */
+export interface ICycleCompoundPlan {
+  compoundName: string;
+  compoundCategory: CycleCompoundCategoryValue;
+  targetDose?: number | null;
+  doseUnit: CycleDoseUnitValue;
+  route?: CycleRouteValue | null;
+}
+
+/** Stored cycle object */
+export interface ICycle {
+  _id: string;
+  userId: string;
+  name: string;
+  type: CycleTypeValue;
+  status: CycleStatusValue;
+  startDate: string;
+  endDate?: string | null;
+  timezone: string;
+  notes?: string | null;
+  tags?: string[];
+  compounds?: ICycleCompoundPlan[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Stored cycle entry object */
+export interface ICycleEntry {
+  _id: string;
+  userId: string;
+  cycleId: string;
+  compoundName: string;
+  compoundCategory: CycleCompoundCategoryValue;
+  route: CycleRouteValue;
+  occurredAt: string;
+  dateKey: string;
+  plannedDose?: number | null;
+  actualDose?: number | null;
+  doseUnit: CycleDoseUnitValue;
+  notes?: string | null;
+  source: CycleEntrySourceValue;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Shared pagination shape used by cycle list endpoints */
+export interface CyclePagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+/** Request params for list cycles */
+export interface ListCyclesRequest {
+  status?: CycleStatusValue;
+  type?: CycleTypeValue;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+}
+
+/** Request params for cycle detail/read operations */
+export interface GetCycleRequest {
+  id: string;
+}
+
+/** Request body for creating a cycle */
+export interface CreateCycleRequest {
+  name: string;
+  type: CycleTypeValue;
+  status?: CycleStatusValue;
+  startDate: string;
+  endDate?: string | null;
+  timezone: string;
+  notes?: string | null;
+  tags?: string[];
+  compounds?: ICycleCompoundPlan[];
+}
+
+/** Request body for updating a cycle */
+export interface UpdateCycleRequest {
+  name?: string;
+  type?: CycleTypeValue;
+  status?: CycleStatusValue;
+  startDate?: string;
+  endDate?: string | null;
+  timezone?: string;
+  notes?: string | null;
+  tags?: string[];
+  compounds?: ICycleCompoundPlan[];
+}
+
+/** Response payload for cycle list endpoint */
+export interface CycleListResponse {
+  cycles: ICycle[];
+  pagination: CyclePagination;
+}
+
+/** Response payload for cycle detail/create/update endpoints */
+export interface CycleResponse {
+  cycle: ICycle;
+}
+
+/** Response payload for cycle detail endpoint */
+export interface CycleDetailResponse extends CycleResponse {}
+
+/** Response payload for cycle create endpoint */
+export interface CycleCreateResponse extends CycleResponse {}
+
+/** Response payload for cycle update endpoint */
+export interface CycleUpdateResponse extends CycleResponse {}
+
+/** Request params for listing cycle entries */
+export interface ListCycleEntriesRequest {
+  cycleId: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+}
+
+/** Request body for creating a cycle entry */
+export interface CreateCycleEntryRequest {
+  cycleId: string;
+  compoundName: string;
+  compoundCategory: CycleCompoundCategoryValue;
+  route: CycleRouteValue;
+  occurredAt: string;
+  dateKey?: string;
+  plannedDose?: number | null;
+  actualDose?: number | null;
+  doseUnit: CycleDoseUnitValue;
+  notes?: string | null;
+  source?: CycleEntrySourceValue;
+}
+
+/** Request body for updating a cycle entry */
+export interface UpdateCycleEntryRequest {
+  compoundName?: string;
+  compoundCategory?: CycleCompoundCategoryValue;
+  route?: CycleRouteValue;
+  occurredAt?: string;
+  dateKey?: string;
+  plannedDose?: number | null;
+  actualDose?: number | null;
+  doseUnit?: CycleDoseUnitValue;
+  notes?: string | null;
+  source?: CycleEntrySourceValue;
+}
+
+/** Request params for deleting a cycle entry */
+export interface DeleteCycleEntryRequest {
+  entryId: string;
+}
+
+/** Response payload for cycle entry create/update endpoints */
+export interface CycleEntryResponse {
+  entry: ICycleEntry;
+}
+
+/** Response payload for cycle entry list endpoint */
+export interface CycleEntryListResponse {
+  entries: ICycleEntry[];
+  pagination: CyclePagination;
+}
+
+/** Response payload for cycle entry create endpoint */
+export interface CycleEntryCreateResponse extends CycleEntryResponse {}
+
+/** Response payload for cycle entry update endpoint */
+export interface CycleEntryUpdateResponse extends CycleEntryResponse {}
+
+/** Response payload for cycle entry delete endpoint */
+export interface CycleEntryDeleteResponse {
+  entryId: string;
+  deleted: true;
+}
+
+/** Per-compound day totals for a cycle summary */
+export interface CycleDayCompoundTotal {
+  compoundName: string;
+  doseUnit: CycleDoseUnitValue;
+  entryCount: number;
+  totalPlannedDose: number;
+  totalActualDose: number;
+}
+
+/** Request params for cycle day summary */
+export interface CycleDaySummaryRequest {
+  date: string;
+  cycleId?: string;
+}
+
+/** Day summary payload */
+export interface CycleDaySummaryResponse {
+  date: string;
+  timezone: string;
+  totalEntries: number;
+  activeCycles: number;
+  entries: ICycleEntry[];
+  compoundTotals: CycleDayCompoundTotal[];
+  cycleStatusCounts: Record<CycleStatusValue, number>;
+}
+
+/** Per-day activity bucket in month summary */
+export interface CycleMonthDayBucket {
+  date: string;
+  day: number;
+  entryCount: number;
+  activeCycles: number;
+}
+
+/** Request params for cycle month summary */
+export interface CycleMonthSummaryRequest {
+  year: number;
+  month: number;
+  cycleId?: string;
+}
+
+/** Month summary payload */
+export interface CycleMonthSummaryResponse {
+  year: number;
+  month: number;
+  timezone: string;
+  days: CycleMonthDayBucket[];
+  totals: {
+    entryCount: number;
+    activeDays: number;
+    activeCycles: number;
+    cycleCount: number;
+  };
+}
+
+/** Per-month activity bucket in year summary */
+export interface CycleYearMonthBucket {
+  month: number;
+  entryCount: number;
+  activeDays: number;
+  activeCycles: number;
+  cycleStarts: number;
+  cycleEnds: number;
+}
+
+/** Top compounds in yearly cycle reporting */
+export interface CycleTopCompound {
+  compoundName: string;
+  entryCount: number;
+  totalActualDose?: number | null;
+}
+
+/** Request params for cycle year summary */
+export interface CycleYearSummaryRequest {
+  year: number;
+  cycleId?: string;
+}
+
+/** Year summary payload */
+export interface CycleYearSummaryResponse {
+  year: number;
+  timezone: string;
+  months: CycleYearMonthBucket[];
+  totals: {
+    entryCount: number;
+    activeDays: number;
+    activeCycles: number;
+    cycleStarts: number;
+    cycleEnds: number;
+  };
+  topCompounds: CycleTopCompound[];
+}
+
+/** Supported first-release medication graph categories */
+export type MedicationDoseCategoryValue =
+  | 'steroid'
+  | 'peptide'
+  | 'oralMedication';
+
+/** Canonical medication dose amount */
+export interface MedicationDoseAmount {
+  value: number;
+  unit: CycleDoseUnitValue;
+}
+
+/** Stored medication dose object */
+export interface IMedicationDose {
+  _id: string;
+  userId: string;
+  cycleId?: string | null;
+  dateKey: string;
+  dayOfYear: number;
+  category: MedicationDoseCategoryValue;
+  compoundName: string;
+  dose: MedicationDoseAmount;
+  doseMg?: number | null;
+  occurredAt: string;
+  notes?: string | null;
+  source: CycleEntrySourceValue;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Create medication dose request */
+export interface CreateMedicationDoseRequest {
+  cycleId?: string | null;
+  dateKey?: string;
+  category: MedicationDoseCategoryValue;
+  compoundName: string;
+  dose: MedicationDoseAmount;
+  occurredAt: string;
+  notes?: string | null;
+  source?: CycleEntrySourceValue;
+}
+
+/** Update medication dose request */
+export interface UpdateMedicationDoseRequest {
+  cycleId?: string | null;
+  dateKey?: string;
+  category?: MedicationDoseCategoryValue;
+  compoundName?: string;
+  dose?: MedicationDoseAmount;
+  occurredAt?: string;
+  notes?: string | null;
+  source?: CycleEntrySourceValue;
+}
+
+/** Aggregated medication totals for one day */
+export interface MedicationDailySummary {
+  dateKey: string;
+  entryCount: number;
+  totalsMg: {
+    steroid: number;
+    peptide: number;
+    oralMedication: number;
+    all: number;
+  };
+}
+
+/** Additive medication overlay included in calendar responses */
+export interface CalendarMedicationOverlay {
+  entryCount: number;
+  totalDoseMg: number;
+  categoryDoseMg: {
+    steroid: number;
+    peptide: number;
+    oralMedication: number;
+  };
+  hasMedication: boolean;
+}
+
+/** Medication graph response for yearly charting */
+export interface MedicationYearGraphResponse {
+  year: number;
+  axis: {
+    x: {
+      startDay: number;
+      endDay: number;
+    };
+    yMg: {
+      min: number;
+      max: number;
+    };
+  };
+  series: {
+    steroidMgByDay: number[];
+    peptideMgByDay: number[];
+    oralMedicationMgByDay: number[];
+  };
+  totalsMg: {
+    steroid: number;
+    peptide: number;
+    oralMedication: number;
+    all: number;
+  };
 }

@@ -15,6 +15,7 @@ describe('device priority and disconnect UX regression sweep', () => {
   const deviceDetailViewModel = read('client-ios/GearSnitch/Features/Devices/DeviceDetailViewModel.swift');
   const deviceListView = read('client-ios/GearSnitch/Features/Devices/DeviceListView.swift');
   const deviceDetailView = read('client-ios/GearSnitch/Features/Devices/DeviceDetailView.swift');
+  const devicePairingFlowView = read('client-ios/GearSnitch/Features/Devices/DevicePairingFlowView.swift');
   const dashboardView = read('client-ios/GearSnitch/Features/Dashboard/DashboardView.swift');
   const bleDevice = read('client-ios/GearSnitch/Core/BLE/BLEDevice.swift');
   const bleManager = read('client-ios/GearSnitch/Core/BLE/BLEManager.swift');
@@ -32,6 +33,7 @@ describe('device priority and disconnect UX regression sweep', () => {
     expect(deviceService).toContain('isFavorite: device.isFavorite === true,');
     expect(deviceService).toContain(".sort({ isFavorite: -1, updatedAt: -1, createdAt: -1 });");
     expect(deviceService).toContain('const shouldPinDevice =');
+    expect(deviceService).toContain('await this.clearPinnedDevices(normalizedUserId, device._id);');
     expect(deviceRoutes).toContain('nickname: z.preprocess(');
     expect(deviceRoutes).toContain('isFavorite: z.boolean().optional(),');
   });
@@ -42,10 +44,12 @@ describe('device priority and disconnect UX regression sweep', () => {
     expect(deviceListViewModel).toContain('var priorityMetadata: PersistedBLEDeviceMetadata');
     expect(deviceDetailViewModel).toContain('func updatePriority(');
     expect(deviceDetailView).toContain('Text(device.displayName)');
-    expect(deviceDetailView).toContain('Text("Favorite Device")');
+    expect(deviceDetailView).toContain('Text("Pinned Device")');
     expect(deviceDetailView).toContain('showRenameSheet = true');
     expect(deviceListView).toContain('device.displayName');
     expect(deviceListView).toContain('if device.isFavorite {');
+    expect(devicePairingFlowView).toContain('Toggle(isOn: $pinDevice)');
+    expect(devicePairingFlowView).toContain('let savedDevice: DeviceDTO = try await APIClient.shared.request(');
   });
 
   test('BLE manager uses persisted metadata and an explicit disconnect decision path', () => {
@@ -59,6 +63,8 @@ describe('device priority and disconnect UX regression sweep', () => {
     expect(bleManager).toContain('func upsertPersistedMetadata(');
     expect(bleManager).toContain('func resolvePendingDisconnectAsEndedSession()');
     expect(bleManager).toContain('func resolvePendingDisconnectAsLostGear()');
+    expect(bleManager).toContain('func startScanning(mode: BLEScanMode = .monitoring)');
+    expect(bleManager).toContain('CBCentralManagerScanOptionAllowDuplicatesKey: mode.allowsDuplicates');
     expect(bleManager).toContain('awaiting user decision');
     expect(bleManager).not.toContain('triggering panic');
   });

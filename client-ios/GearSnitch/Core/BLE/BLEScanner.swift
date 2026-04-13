@@ -61,6 +61,7 @@ final class BLEScanner {
         // Many BLE peripherals only expose a local name in advertisement data.
         let name = resolvedName(peripheral: peripheral, advertisementData: advertisementData)
         let hasName = name != nil
+        let isConnectable = (advertisementData[CBAdvertisementDataIsConnectable] as? NSNumber)?.boolValue ?? true
         let advertisedServices = advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID]
         let matchesServiceFilter: Bool = {
             guard let filter = serviceFilter, let advertised = advertisedServices else {
@@ -68,6 +69,10 @@ final class BLEScanner {
             }
             return !Set(filter).intersection(Set(advertised)).isEmpty
         }()
+
+        guard isConnectable else {
+            return nil
+        }
 
         guard hasName || matchesServiceFilter else {
             return nil

@@ -27,7 +27,7 @@ struct ResponseError: Decodable {
 
 struct AuthTokenResponse: Decodable {
     let accessToken: String
-    let refreshToken: String
+    let refreshToken: String?
     let user: UserDTO?
 
     private enum CodingKeys: String, CodingKey {
@@ -60,7 +60,7 @@ struct AuthTokenResponse: Decodable {
                 tokenContainer.decode(String.self, forKey: .token)
             refreshToken =
                 try tokenContainer.decodeIfPresent(String.self, forKey: .refreshToken) ??
-                tokenContainer.decode(String.self, forKey: .refreshTokenSnake)
+                tokenContainer.decodeIfPresent(String.self, forKey: .refreshTokenSnake)
         } else {
             accessToken =
                 try container.decodeIfPresent(String.self, forKey: .accessToken) ??
@@ -68,7 +68,7 @@ struct AuthTokenResponse: Decodable {
                 container.decode(String.self, forKey: .token)
             refreshToken =
                 try container.decodeIfPresent(String.self, forKey: .refreshToken) ??
-                container.decode(String.self, forKey: .refreshTokenSnake)
+                container.decodeIfPresent(String.self, forKey: .refreshTokenSnake)
         }
 
         user =
@@ -79,7 +79,7 @@ struct AuthTokenResponse: Decodable {
 
 struct TokenPairResponse: Decodable {
     let accessToken: String
-    let refreshToken: String
+    let refreshToken: String?
 
     private enum CodingKeys: String, CodingKey {
         case accessToken
@@ -109,7 +109,7 @@ struct TokenPairResponse: Decodable {
                 tokenContainer.decode(String.self, forKey: .token)
             refreshToken =
                 try tokenContainer.decodeIfPresent(String.self, forKey: .refreshToken) ??
-                tokenContainer.decode(String.self, forKey: .refreshTokenSnake)
+                tokenContainer.decodeIfPresent(String.self, forKey: .refreshTokenSnake)
         } else {
             accessToken =
                 try container.decodeIfPresent(String.self, forKey: .accessToken) ??
@@ -117,7 +117,7 @@ struct TokenPairResponse: Decodable {
                 container.decode(String.self, forKey: .token)
             refreshToken =
                 try container.decodeIfPresent(String.self, forKey: .refreshToken) ??
-                container.decode(String.self, forKey: .refreshTokenSnake)
+                container.decodeIfPresent(String.self, forKey: .refreshTokenSnake)
         }
     }
 }
@@ -128,6 +128,7 @@ struct UserDTO: Decodable, Identifiable {
     let displayName: String?
     let avatarURL: String?
     let role: String?
+    let status: String?
     let referralCode: String?
     let subscriptionTier: String?
     let createdAt: String?
@@ -149,26 +150,145 @@ struct UserDTO: Decodable, Identifiable {
     }
 
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let container = try decoder.container(keyedBy: DynamicCodingKey.self)
 
         id =
-            try container.decodeIfPresent(String.self, forKey: .id) ??
-            container.decode(String.self, forKey: .plainID)
-        email = try container.decodeIfPresent(String.self, forKey: .email)
-        displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
-        avatarURL =
-            try container.decodeIfPresent(String.self, forKey: .avatarURL) ??
-            container.decodeIfPresent(String.self, forKey: .avatarUrl) ??
-            container.decodeIfPresent(String.self, forKey: .photoUrl)
+            try UserDTO.decodeString(
+                from: container,
+                candidates: ["_id", "id", "Id"],
+                required: true
+            ) ?? ""
+        email = try UserDTO.decodeString(from: container, candidates: ["email"])
+        displayName = try UserDTO.decodeString(from: container, candidates: ["displayName", "display_name"])
+        avatarURL = try UserDTO.decodeString(
+            from: container,
+            candidates: ["avatarURL", "avatarUrl", "avatar_url", "photoUrl", "photo_url"]
+        )
         role =
-            try container.decodeIfPresent(String.self, forKey: .role) ??
-            container.decodeIfPresent([String].self, forKey: .roles)?.first
-        referralCode = try container.decodeIfPresent(String.self, forKey: .referralCode)
-        subscriptionTier = try container.decodeIfPresent(String.self, forKey: .subscriptionTier)
-        createdAt = try container.decodeIfPresent(String.self, forKey: .createdAt)
-        defaultGymId = try container.decodeIfPresent(String.self, forKey: .defaultGymId)
-        onboardingCompletedAt = try container.decodeIfPresent(Date.self, forKey: .onboardingCompletedAt)
-        permissionsState = try container.decodeIfPresent(PermissionsState.self, forKey: .permissionsState)
+            try UserDTO.decodeString(from: container, candidates: ["role"]) ??
+            UserDTO.decodeStringArray(from: container, candidates: ["roles"])?.first
+        status = try UserDTO.decodeString(from: container, candidates: ["status"])
+        referralCode = try UserDTO.decodeString(from: container, candidates: ["referralCode", "referral_code"])
+        subscriptionTier = try UserDTO.decodeString(from: container, candidates: ["subscriptionTier", "subscription_tier"])
+        createdAt = try UserDTO.decodeString(from: container, candidates: ["createdAt", "created_at"])
+        defaultGymId = try UserDTO.decodeString(from: container, candidates: ["defaultGymId", "default_gym_id"])
+        onboardingCompletedAt = try UserDTO.decodeDate(
+            from: container,
+            candidates: ["onboardingCompletedAt", "onboarding_completed_at"]
+        )
+        permissionsState = try UserDTO.decodeValue(
+            PermissionsState.self,
+            from: container,
+            candidates: ["permissionsState", "permissions_state"]
+        )
+    }
+}
+
+private struct DynamicCodingKey: CodingKey {
+    let stringValue: String
+    let intValue: Int?
+
+    init?(stringValue: String) {
+        self.stringValue = stringValue
+        intValue = nil
+    }
+
+    init?(intValue: Int) {
+        stringValue = String(intValue)
+        self.intValue = intValue
+    }
+}
+
+private extension UserDTO {
+    static func decodeString(
+        from container: KeyedDecodingContainer<DynamicCodingKey>,
+        candidates: [String],
+        required: Bool = false
+    ) throws -> String? {
+        for candidate in candidates {
+            guard let key = container.allKeys.first(where: { $0.stringValue == candidate }) else {
+                continue
+            }
+
+            do {
+                if let value = try container.decodeIfPresent(String.self, forKey: key) {
+                    return value
+                }
+            } catch {
+                if required {
+                    throw error
+                }
+            }
+        }
+
+        if required {
+            throw DecodingError.keyNotFound(
+                DynamicCodingKey(stringValue: candidates.first ?? "unknown")!,
+                .init(codingPath: container.codingPath, debugDescription: "Missing required string field")
+            )
+        }
+
+        return nil
+    }
+
+    static func decodeStringArray(
+        from container: KeyedDecodingContainer<DynamicCodingKey>,
+        candidates: [String]
+    ) -> [String]? {
+        for candidate in candidates {
+            guard let key = container.allKeys.first(where: { $0.stringValue == candidate }) else {
+                continue
+            }
+
+            if let value = try? container.decodeIfPresent([String].self, forKey: key) {
+                return value
+            }
+        }
+
+        return nil
+    }
+
+    static func decodeDate(
+        from container: KeyedDecodingContainer<DynamicCodingKey>,
+        candidates: [String]
+    ) throws -> Date? {
+        for candidate in candidates {
+            guard let key = container.allKeys.first(where: { $0.stringValue == candidate }) else {
+                continue
+            }
+
+            do {
+                if let value = try container.decodeIfPresent(Date.self, forKey: key) {
+                    return value
+                }
+            } catch {
+                continue
+            }
+        }
+
+        return nil
+    }
+
+    static func decodeValue<T: Decodable>(
+        _ type: T.Type,
+        from container: KeyedDecodingContainer<DynamicCodingKey>,
+        candidates: [String]
+    ) throws -> T? {
+        for candidate in candidates {
+            guard let key = container.allKeys.first(where: { $0.stringValue == candidate }) else {
+                continue
+            }
+
+            do {
+                if let value = try container.decodeIfPresent(T.self, forKey: key) {
+                    return value
+                }
+            } catch {
+                continue
+            }
+        }
+
+        return nil
     }
 }
 

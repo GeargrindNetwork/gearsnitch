@@ -4,6 +4,7 @@ import SwiftUI
 
 struct HeatmapCalendarView: View {
     @StateObject private var viewModel = HeatmapCalendarViewModel()
+    @State private var medicationEditorState: CycleTrackingMedicationEditorState?
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
     private let weekdayLabels = ["S", "M", "T", "W", "T", "F", "S"]
@@ -18,6 +19,16 @@ struct HeatmapCalendarView: View {
         .background(Color.gsBackground)
         .task {
             await viewModel.fetchMonthData()
+        }
+        .sheet(item: $medicationEditorState) { editorState in
+            NavigationStack {
+                CycleTrackingMedicationFormView(editorState: editorState) {
+                    Task {
+                        await refreshCalendar(dateKey: editorState.defaultDateKey)
+                    }
+                }
+            }
+            .preferredColorScheme(.dark)
         }
     }
 
@@ -63,7 +74,7 @@ struct HeatmapCalendarView: View {
 
     private var weekdayHeader: some View {
         LazyVGrid(columns: columns, spacing: 4) {
-            ForEach(weekdayLabels, id: \.self) { label in
+            ForEach(Array(weekdayLabels.enumerated()), id: \.offset) { _, label in
                 Text(label)
                     .font(.caption2.weight(.medium))
                     .foregroundColor(.gsTextSecondary)
@@ -99,14 +110,11 @@ struct HeatmapCalendarView: View {
         let isSelected = viewModel.selectedDate == dateKey
         let isToday = viewModel.isToday(dateKey)
         let hasPurchase = viewModel.hasPurchases(for: dateKey)
+        let hasMedication = viewModel.hasMedication(for: dateKey)
 
         return Button {
             withAnimation(.easeInOut(duration: 0.2)) {
-                if viewModel.selectedDate == dateKey {
-                    viewModel.selectedDate = nil
-                } else {
-                    viewModel.selectedDate = dateKey
-                }
+                viewModel.toggleDateSelection(dateKey)
             }
         } label: {
             ZStack {
@@ -138,6 +146,15 @@ struct HeatmapCalendarView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.gsText, lineWidth: 2)
                 }
+
+                if hasMedication {
+                    Circle()
+                        .fill(Color.gsWarning)
+                        .frame(width: 6, height: 6)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .padding(.top, 5)
+                        .padding(.trailing, 5)
+                }
             }
             .frame(height: 44)
         }
@@ -168,9 +185,36 @@ struct HeatmapCalendarView: View {
     @ViewBuilder
     private var selectedDayDetail: some View {
         if let dateKey = viewModel.selectedDate {
-            DayDetailView(dateKey: dateKey, activity: viewModel.selectedDayActivity)
+            DayDetailView(
+                dateKey: dateKey,
+                activity: viewModel.selectedDayActivity,
+                detail: viewModel.selectedDayDetail,
+                isLoadingDetail: viewModel.isLoadingDetail,
+                detailError: viewModel.detailError,
+                onLogMedication: { selectedDateKey in
+                    presentMedicationEditor(dateKey: selectedDateKey, dose: nil)
+                },
+                onEditMedication: { dose, selectedDateKey in
+                    presentMedicationEditor(dateKey: selectedDateKey, dose: dose)
+                }
+            )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .padding(.top, 12)
+        }
+    }
+
+    private func presentMedicationEditor(dateKey: String, dose: CalendarMedicationDoseDTO?) {
+        medicationEditorState = CycleTrackingMedicationEditorState(
+            existingDose: dose,
+            defaultDateKey: dateKey,
+            defaultCycleId: dose?.cycleId
+        )
+    }
+
+    private func refreshCalendar(dateKey: String) async {
+        await viewModel.fetchMonthData()
+        if viewModel.selectedDate == dateKey {
+            await viewModel.fetchDayDetail(for: dateKey)
         }
     }
 }

@@ -15,6 +15,8 @@ describe('subscription contract regression sweep', () => {
   test('subscription status is available on both canonical and legacy client paths', () => {
     expect(subscriptionRoutes).toContain("router.get('/', isAuthenticated, respondWithCurrentSubscription);");
     expect(subscriptionRoutes).toContain("router.get('/me', isAuthenticated, respondWithCurrentSubscription);");
+    expect(subscriptionRoutes).toContain('purchaseDate: subscription.purchaseDate');
+    expect(subscriptionRoutes).toContain('plan: getSubscriptionPlanFromProductId(subscription.productId)');
   });
 
   test('subscription formatting and Apple validation accept all supported product identifiers', () => {
@@ -25,6 +27,8 @@ describe('subscription contract regression sweep', () => {
     expect(subscriptionService).toContain("'com.gearsnitch.app.annual'");
     expect(subscriptionService).toContain("'com.geargrind.gearsnitch.lifetime'");
     expect(subscriptionService).toContain("'com.gearsnitch.app.lifetime'");
+    expect(subscriptionService).toContain('purchaseDate: subscription.purchaseDate,');
     expect(userRoutes).toContain('getSubscriptionPlanFromProductId(productId)');
+    expect(userRoutes).toContain('purchaseDate: subscription.purchaseDate.toISOString()');
   });
 });

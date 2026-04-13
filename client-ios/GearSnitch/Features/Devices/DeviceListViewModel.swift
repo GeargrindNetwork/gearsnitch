@@ -84,6 +84,17 @@ final class DeviceListViewModel: ObservableObject {
             }
             devices = sorted
             BLEManager.shared.replacePersistedMetadata(sorted.map(\.priorityMetadata))
+            for device in sorted {
+                DeviceEventSyncService.shared.cacheRegisteredDevice(
+                    id: device.id,
+                    name: device.displayName,
+                    bluetoothIdentifier: device.bluetoothIdentifier,
+                    status: device.status,
+                    lastSeenAt: device.lastSeenAt,
+                    signalStrength: device.signalStrength,
+                    isSynced: true
+                )
+            }
         } catch {
             self.error = error.localizedDescription
         }

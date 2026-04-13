@@ -42,7 +42,7 @@ const faqEntries = [
   {
     question: 'How does the referral program work?',
     answer:
-      'Share your unique referral code or QR code with friends. When they subscribe, you earn 90 days of free premium access per qualifying referral.',
+      'Share your unique referral code or QR code with friends. When they subscribe, you earn 28 bonus days per qualifying referral while your account has an active paid plan.',
   },
   {
     question: 'Are peptide store products safe for consumption?',

@@ -12,7 +12,9 @@ final class RequestBuilderTests: XCTestCase {
             from: APIEndpoint.Auth.appleLogin(
                 identityToken: "identity-token",
                 authorizationCode: "auth-code",
-                fullName: "Test User"
+                fullName: "Test User",
+                givenName: nil,
+                familyName: nil
             ),
             baseURL: try XCTUnwrap(URL(string: AppConfig.apiBaseURL))
         )
@@ -28,7 +30,9 @@ final class RequestBuilderTests: XCTestCase {
             from: APIEndpoint.Auth.appleLogin(
                 identityToken: "identity-token",
                 authorizationCode: "auth-code",
-                fullName: "Test User"
+                fullName: "Test User",
+                givenName: nil,
+                familyName: nil
             ),
             baseURL: try XCTUnwrap(URL(string: "https://api.gearsnitch.com/api/v1"))
         )

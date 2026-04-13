@@ -9,6 +9,7 @@ struct GSUser: Codable, Identifiable, Equatable, Sendable {
     let displayName: String?
     let photoUrl: String?
     let roles: [String]
+    let subscriptionTier: String?
     let status: UserStatus
     let defaultGymId: String?
     let onboardingCompletedAt: Date?
@@ -21,6 +22,7 @@ struct GSUser: Codable, Identifiable, Equatable, Sendable {
         case displayName
         case photoUrl
         case roles
+        case subscriptionTier
         case status
         case defaultGymId
         case onboardingCompletedAt
@@ -79,7 +81,8 @@ extension GSUser {
             displayName: dto.displayName,
             photoUrl: dto.avatarURL,
             roles: [dto.role ?? "user"],
-            status: .active,
+            subscriptionTier: dto.subscriptionTier,
+            status: dto.status.flatMap(UserStatus.init(rawValue:)) ?? .active,
             defaultGymId: dto.defaultGymId,
             onboardingCompletedAt: dto.onboardingCompletedAt,
             permissionsState: dto.permissionsState,

@@ -25,10 +25,28 @@ final class NotificationPermissionManager: ObservableObject {
     @Published private(set) var apnsToken: String?
 
     private let logger = Logger(subsystem: "com.gearsnitch", category: "NotificationPermissions")
+    private var didSignInObserver: NSObjectProtocol?
 
     private init() {
+        didSignInObserver = NotificationCenter.default.addObserver(
+            forName: AuthManager.didSignInNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                await self.syncTokenWithBackendIfPossible(trigger: "sign_in")
+            }
+        }
+
         Task {
             await refreshPermissionState()
+        }
+    }
+
+    deinit {
+        if let didSignInObserver {
+            NotificationCenter.default.removeObserver(didSignInObserver)
         }
     }
 
@@ -100,9 +118,8 @@ final class NotificationPermissionManager: ObservableObject {
 
         logger.info("APNs token received: \(token.prefix(8))...")
 
-        // Register token with backend
         Task {
-            await registerTokenWithBackend(token: token)
+            await syncTokenWithBackendIfPossible(trigger: "apns_registration")
         }
     }
 
@@ -113,12 +130,19 @@ final class NotificationPermissionManager: ObservableObject {
 
     // MARK: - Backend Registration
 
-    private func registerTokenWithBackend(token: String) async {
+    private func syncTokenWithBackendIfPossible(trigger: StaticString) async {
+        guard let token = apnsToken else { return }
+
+        guard AuthManager.shared.isAuthenticated else {
+            logger.info("Deferring push token sync until authenticated (\(String(describing: trigger)))")
+            return
+        }
+
         do {
             let _: EmptyData = try await APIClient.shared.request(
                 APIEndpoint.Notifications.registerToken(token: token)
             )
-            logger.info("Push token registered with backend")
+            logger.info("Push token registered with backend (\(String(describing: trigger)))")
         } catch {
             logger.error("Failed to register push token: \(error.localizedDescription)")
         }

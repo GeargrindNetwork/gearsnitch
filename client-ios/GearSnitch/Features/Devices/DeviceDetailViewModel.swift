@@ -74,6 +74,15 @@ final class DeviceDetailViewModel: ObservableObject {
             let fetched: DeviceDetailDTO = try await apiClient.request(endpoint)
             device = fetched
             BLEManager.shared.upsertPersistedMetadata(fetched.priorityMetadata)
+            DeviceEventSyncService.shared.cacheRegisteredDevice(
+                id: fetched.id,
+                name: fetched.displayName,
+                bluetoothIdentifier: fetched.bluetoothIdentifier,
+                status: fetched.status,
+                lastSeenAt: fetched.lastSeenAt,
+                signalStrength: fetched.signalStrength,
+                isSynced: true
+            )
         } catch {
             self.error = error.localizedDescription
         }
@@ -88,7 +97,10 @@ final class DeviceDetailViewModel: ObservableObject {
         let newStatus = current.isMonitoring ? "connected" : "monitoring"
 
         do {
-            let endpoint = APIEndpoint.Devices.statusUpdate(id: deviceId, status: newStatus)
+            let endpoint = APIEndpoint.Devices.statusUpdate(
+                id: deviceId,
+                body: DeviceStatusUpdateBody(status: newStatus)
+            )
             let _: EmptyData = try await apiClient.request(endpoint)
             await loadDevice()
         } catch {

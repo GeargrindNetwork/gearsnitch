@@ -6,6 +6,13 @@ import { getRedisClient } from '../loaders/redis.js';
 import config from '../config/index.js';
 import { enforceSupportedClientRelease } from './clientRelease.js';
 
+class AuthenticationFailureError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthenticationFailureError';
+  }
+}
+
 export interface JwtPayload {
   sub: string;
   jti: string;
@@ -47,7 +54,7 @@ async function authenticateToken(token: string): Promise<JwtPayload> {
   const sessionKey = `session:${decoded.sub}:${decoded.jti}`;
   const sessionExists = await redis.exists(sessionKey);
   if (!sessionExists) {
-    throw new Error('Session expired or revoked');
+    throw new AuthenticationFailureError('Session expired or revoked');
   }
 
   return decoded;
@@ -69,6 +76,10 @@ export async function isAuthenticated(
     req.user = decoded;
     enforceSupportedClientRelease(req, res, next);
   } catch (err) {
+    if (err instanceof AuthenticationFailureError) {
+      errorResponse(res, StatusCodes.UNAUTHORIZED, err.message);
+      return;
+    }
     if (err instanceof jwt.TokenExpiredError) {
       errorResponse(res, StatusCodes.UNAUTHORIZED, 'Token expired');
       return;

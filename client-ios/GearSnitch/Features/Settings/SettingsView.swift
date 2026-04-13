@@ -94,6 +94,24 @@ struct SettingsView: View {
             }
             .listRowBackground(Color.gsSurface)
 
+            #if DEBUG
+            Section {
+                Button {
+                    NotificationCenter.default.post(name: .debugResetOnboarding, object: nil)
+                } label: {
+                    Label("Reset Onboarding", systemImage: "arrow.counterclockwise")
+                        .foregroundColor(.gsText)
+                }
+            } header: {
+                Text("Developer")
+                    .foregroundColor(.gsTextSecondary)
+            } footer: {
+                Text("Restarts onboarding locally for simulator and device testing.")
+                    .foregroundColor(.gsTextSecondary)
+            }
+            .listRowBackground(Color.gsSurface)
+            #endif
+
             Section {
                 Button {
                     showSignOutConfirm = true

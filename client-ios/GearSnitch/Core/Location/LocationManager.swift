@@ -36,6 +36,10 @@ final class LocationManager: NSObject, ObservableObject {
         locationManager.pausesLocationUpdatesAutomatically = false
 
         authorizationStatus = locationManager.authorizationStatus
+
+        if authorizationStatus == .authorizedAlways || authorizationStatus == .authorizedWhenInUse {
+            locationManager.startUpdatingLocation()
+        }
     }
 
     // MARK: - Authorization
@@ -116,6 +120,13 @@ extension LocationManager: CLLocationManagerDelegate {
             guard let self else { return }
             self.authorizationStatus = manager.authorizationStatus
             self.logger.info("Location authorization changed: \(manager.authorizationStatus.rawValue)")
+
+            if manager.authorizationStatus == .authorizedAlways || manager.authorizationStatus == .authorizedWhenInUse {
+                manager.startUpdatingLocation()
+            } else {
+                manager.stopUpdatingLocation()
+                self.currentLocation = nil
+            }
         }
     }
 

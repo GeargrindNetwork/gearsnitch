@@ -54,9 +54,13 @@ targets:
         com.apple.developer.applesignin:
           - Default
         com.apple.developer.healthkit: true
+        com.apple.developer.usernotifications.critical-alerts: true
     dependencies:
       - package: GoogleSignIn
     scheme:
+      testTargets:
+        - GearSnitchTests
+        - GearSnitchUITests
       storeKitConfiguration: GearSnitch/Configuration/GearSnitch.storekit
 
   GearSnitchTests:
@@ -65,6 +69,9 @@ targets:
     sources:
       - path: GearSnitchTests
         optional: true
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: GearSnitch
 
@@ -74,5 +81,8 @@ targets:
     sources:
       - path: GearSnitchUITests
         optional: true
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: GearSnitch

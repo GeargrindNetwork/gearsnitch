@@ -71,7 +71,8 @@ final class GeofenceManager {
             eventType: eventType,
             latitude: region.center.latitude,
             longitude: region.center.longitude,
-            timestamp: Date()
+            occurredAt: Date(),
+            source: "ios-geofence"
         )
 
         do {
@@ -92,7 +93,8 @@ struct GymEventBody: Encodable {
     let eventType: String
     let latitude: Double
     let longitude: Double
-    let timestamp: Date
+    let occurredAt: Date
+    let source: String?
 }
 
 // MARK: - Gym Events Endpoint

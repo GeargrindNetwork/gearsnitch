@@ -24,12 +24,12 @@ gearsnitch/
 | Layer | Technology |
 |-------|-----------|
 | **Backend** | Node.js 20+, Express, TypeScript 5, Mongoose |
-| **Frontend** | Vite, React 18, shadcn/ui, Tailwind CSS, React Router |
+| **Frontend** | Vite, React 19.2, shadcn/ui, Tailwind CSS v4, react-router-dom v7 |
 | **Database** | MongoDB Atlas, Redis |
 | **Queue** | BullMQ (Redis-backed) |
 | **Realtime** | Socket.IO with Redis adapter |
 | **Auth** | Apple Sign-In, Google OAuth, JWT (RS256) |
-| **Cloud** | Google Cloud Run, Secret Manager, Cloud Build, Cloud Armor |
+| **Cloud** | Google Cloud Run, Secret Manager, Cloud Build |
 | **iOS** | SwiftUI, Swift 5.9+, MVVM, CoreBluetooth, CoreLocation, HealthKit |
 
 ## Quick Start

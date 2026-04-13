@@ -22,6 +22,8 @@ actor APIClient {
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 120
         config.waitsForConnectivity = true
+        config.httpCookieStorage = HTTPCookieStorage.shared
+        config.httpShouldSetCookies = true
         self.session = URLSession(configuration: config)
     }
 
@@ -54,14 +56,19 @@ actor APIClient {
     private func executeWithAuth(_ endpoint: APIEndpoint) async throws -> (Data, Int) {
         let tokenStore = TokenStore.shared
         let accessToken = tokenStore.accessToken
+        let refreshToken = tokenStore.refreshToken
 
         do {
             return try await execute(endpoint, accessToken: accessToken)
         } catch NetworkError.unauthorized {
+            guard let existingRefreshToken = refreshToken else {
+                logger.info("Received 401 with no refresh token available")
+                throw NetworkError.unauthorized
+            }
             logger.info("Received 401, attempting token refresh")
             // Attempt refresh, then retry once
             do {
-                let newToken = try await refreshTokenIfNeeded()
+                let newToken = try await refreshTokenIfNeeded(existingRefreshToken: existingRefreshToken)
                 return try await execute(endpoint, accessToken: newToken)
             } catch {
                 logger.error("Token refresh failed: \(error.localizedDescription)")
@@ -128,7 +135,7 @@ actor APIClient {
 
     /// Coalesces concurrent refresh requests — only one HTTP call is made,
     /// all waiters receive the same result.
-    private func refreshTokenIfNeeded() async throws -> String {
+    private func refreshTokenIfNeeded(existingRefreshToken: String) async throws -> String {
         if isRefreshingToken {
             // Wait for the in-flight refresh
             return try await withCheckedThrowingContinuation { continuation in
@@ -156,7 +163,7 @@ actor APIClient {
 
             TokenStore.shared.save(
                 accessToken: tokenResponse.accessToken,
-                refreshToken: tokenResponse.refreshToken
+                refreshToken: tokenResponse.refreshToken ?? existingRefreshToken
             )
 
             let newToken = tokenResponse.accessToken

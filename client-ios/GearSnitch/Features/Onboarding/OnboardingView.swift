@@ -1,7 +1,6 @@
 import SwiftUI
 import MapKit
 import CoreLocation
-import CoreBluetooth
 
 struct OnboardingView: View {
     @ObservedObject var viewModel: OnboardingViewModel
@@ -71,6 +70,35 @@ struct OnboardingView: View {
                 ))
                 .animation(.easeInOut(duration: 0.35), value: viewModel.currentStep)
             }
+            .contentShape(Rectangle())
+            .simultaneousGesture(onboardingSwipeGesture)
+        }
+    }
+
+    private var onboardingSwipeGesture: some Gesture {
+        DragGesture(minimumDistance: 24, coordinateSpace: .local)
+            .onEnded { value in
+                guard swipeNavigationEnabled else { return }
+
+                let horizontalTravel = value.translation.width
+                let verticalTravel = abs(value.translation.height)
+
+                guard abs(horizontalTravel) > 60, verticalTravel < 80 else { return }
+
+                if horizontalTravel < 0 {
+                    viewModel.advance()
+                } else {
+                    viewModel.goBack()
+                }
+            }
+    }
+
+    private var swipeNavigationEnabled: Bool {
+        switch viewModel.currentStep {
+        case .addGym, .pairDevice:
+            return false
+        default:
+            return true
         }
     }
 
@@ -230,10 +258,10 @@ struct OnboardingView: View {
     // MARK: - Pair Device Step
 
     private var pairDeviceStep: some View {
-        OnboardingPairDeviceView(
+        DevicePairingFlowView(
             bleManager: bleManager,
-            onDevicePaired: { name in
-                viewModel.devicePaired(name: name)
+            onDeviceRegistered: { device in
+                viewModel.devicePaired(name: device.displayName)
             }
         )
     }
@@ -698,310 +726,6 @@ final class GymSearchModel: ObservableObject {
                     results = []
                 }
             }
-        }
-    }
-}
-
-// MARK: - Onboarding Pair Device View
-
-struct OnboardingPairDeviceView: View {
-    @ObservedObject var bleManager: BLEManager
-    let onDevicePaired: (String) -> Void
-
-    @State private var isPairing = false
-    @State private var isRegisteringDevice = false
-    @State private var pairingDevice: BLEDevice?
-    @State private var pairingStatusMessage: String?
-    @State private var error: String?
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            VStack(spacing: 8) {
-                Text("Pair Your Device")
-                    .font(.title2.bold())
-                    .foregroundColor(.gsText)
-
-                Text("Make sure your Bluetooth tracker is powered on and nearby.")
-                    .font(.subheadline)
-                    .foregroundColor(.gsTextSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-            }
-            .padding(.top, 24)
-            .padding(.bottom, 16)
-
-            // Scanning indicator
-            if bleManager.isScanning {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .tint(.gsEmerald)
-                    Text("Scanning for devices...")
-                        .font(.caption)
-                        .foregroundColor(.gsTextSecondary)
-                }
-                .padding(.bottom, 12)
-            }
-
-            if let error {
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.gsDanger)
-                        .font(.caption)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(.gsDanger)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 8)
-            }
-
-            if isPairing, let pairingStatusMessage {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .tint(.gsEmerald)
-                    Text(pairingStatusMessage)
-                        .font(.caption)
-                        .foregroundColor(.gsTextSecondary)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 12)
-            }
-
-            // Device list
-            if bleManager.discoveredDevices.isEmpty && bleManager.isScanning {
-                Spacer()
-                VStack(spacing: 16) {
-                    Image(systemName: "wave.3.right")
-                        .font(.system(size: 48))
-                        .foregroundColor(.gsTextSecondary)
-                        .symbolEffect(.variableColor.iterative, options: .repeating)
-
-                    Text("Looking for nearby devices...")
-                        .font(.subheadline)
-                        .foregroundColor(.gsTextSecondary)
-                }
-                Spacer()
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        ForEach(bleManager.discoveredDevices) { device in
-                            deviceCard(device)
-                        }
-
-                        ForEach(bleManager.connectedDevices) { device in
-                            connectedDeviceCard(device)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
-                }
-            }
-
-            // Bottom controls
-            VStack(spacing: 12) {
-                if !bleManager.isScanning {
-                    Button {
-                        bleManager.startScanning()
-                    } label: {
-                        Label("Start Scanning", systemImage: "antenna.radiowaves.left.and.right")
-                            .font(.headline)
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 54)
-                            .background(Color.gsEmerald)
-                            .cornerRadius(14)
-                    }
-                } else {
-                    Button {
-                        bleManager.stopScanning()
-                    } label: {
-                        Text("Stop Scanning")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundColor(.gsEmerald)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                    }
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 32)
-        }
-        .onAppear {
-            if bleManager.bluetoothState == .poweredOn {
-                bleManager.startScanning()
-            }
-        }
-        .onChange(of: bleManager.bluetoothState) { _, newState in
-            guard newState == .poweredOn else { return }
-            guard !bleManager.isScanning else { return }
-            bleManager.startScanning()
-        }
-        .onChange(of: bleManager.connectedDevices.map(\.identifier)) { _, connectedIdentifiers in
-            handleConnectedDeviceChange(connectedIdentifiers)
-        }
-        .onDisappear {
-            bleManager.stopScanning()
-        }
-    }
-
-    // MARK: - Device Card
-
-    private func deviceCard(_ device: BLEDevice) -> some View {
-        Button {
-            pairDevice(device)
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "wave.3.right.circle.fill")
-                    .font(.title2)
-                    .foregroundColor(.gsEmerald)
-                    .frame(width: 44, height: 44)
-                    .background(Color.gsEmerald.opacity(0.12))
-                    .cornerRadius(10)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(device.name)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(.gsText)
-
-                    HStack(spacing: 8) {
-                        Text("Signal: \(device.rssi) dBm")
-                            .font(.caption)
-                            .foregroundColor(.gsTextSecondary)
-
-                        signalBars(rssi: device.rssi)
-                    }
-                }
-
-                Spacer()
-
-                if isPairing && pairingDevice?.identifier == device.identifier {
-                    ProgressView()
-                        .tint(.gsEmerald)
-                } else {
-                    Text("Pair")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.gsEmerald)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background(Color.gsEmerald.opacity(0.12))
-                        .cornerRadius(8)
-                }
-            }
-            .cardStyle()
-        }
-        .disabled(isPairing || isRegisteringDevice)
-    }
-
-    private func connectedDeviceCard(_ device: BLEDevice) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.title2)
-                .foregroundColor(.gsSuccess)
-                .frame(width: 44, height: 44)
-                .background(Color.gsSuccess.opacity(0.12))
-                .cornerRadius(10)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(device.name)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(.gsText)
-
-                Text("Connected")
-                    .font(.caption)
-                    .foregroundColor(.gsSuccess)
-            }
-
-            Spacer()
-        }
-        .cardStyle()
-    }
-
-    private func signalBars(rssi: Int) -> some View {
-        HStack(spacing: 2) {
-            ForEach(0..<4, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(barActive(index: index, rssi: rssi) ? Color.gsEmerald : Color.gsBorder)
-                    .frame(width: 3, height: CGFloat(4 + index * 3))
-            }
-        }
-    }
-
-    private func barActive(index: Int, rssi: Int) -> Bool {
-        let thresholds = [-90, -70, -55, -40]
-        return rssi >= thresholds[index]
-    }
-
-    // MARK: - Pair
-
-    private func pairDevice(_ device: BLEDevice) {
-        isPairing = true
-        isRegisteringDevice = false
-        pairingDevice = device
-        pairingStatusMessage = "Connecting to \(device.name)…"
-        error = nil
-
-        guard bleManager.connect(to: device) else {
-            isPairing = false
-            pairingDevice = nil
-            pairingStatusMessage = nil
-            error = "Unable to connect to \(device.name). Try scanning again with the tracker nearby."
-            return
-        }
-
-        schedulePairingTimeout(for: device)
-    }
-
-    private func handleConnectedDeviceChange(_ connectedIdentifiers: [UUID]) {
-        guard isPairing, !isRegisteringDevice, let pairingDevice else { return }
-        guard connectedIdentifiers.contains(pairingDevice.identifier) else { return }
-
-        registerConnectedDevice(pairingDevice)
-    }
-
-    private func registerConnectedDevice(_ device: BLEDevice) {
-        isRegisteringDevice = true
-        pairingStatusMessage = "Registering \(device.name)…"
-
-        Task { @MainActor in
-            let body = CreateDeviceBody(
-                name: device.name,
-                bluetoothIdentifier: device.identifier.uuidString,
-                type: "tracker"
-            )
-
-            do {
-                let _: DeviceDTO = try await APIClient.shared.request(APIEndpoint.Devices.create(body))
-                bleManager.stopScanning()
-                isPairing = false
-                isRegisteringDevice = false
-                pairingDevice = nil
-                pairingStatusMessage = nil
-                onDevicePaired(device.name)
-            } catch {
-                isPairing = false
-                isRegisteringDevice = false
-                pairingDevice = nil
-                pairingStatusMessage = nil
-                self.error = "Connected to \(device.name), but registration failed: \(error.localizedDescription)"
-            }
-        }
-    }
-
-    private func schedulePairingTimeout(for device: BLEDevice) {
-        let deviceIdentifier = device.identifier
-
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 15_000_000_000)
-
-            guard isPairing, !isRegisteringDevice else { return }
-            guard pairingDevice?.identifier == deviceIdentifier else { return }
-            guard !bleManager.connectedDevices.contains(where: { $0.identifier == deviceIdentifier }) else { return }
-
-            isPairing = false
-            pairingDevice = nil
-            pairingStatusMessage = nil
-            error = "Unable to connect to \(device.name). Make sure it is powered on and nearby, then try again."
         }
     }
 }

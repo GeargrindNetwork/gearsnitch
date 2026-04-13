@@ -9,6 +9,11 @@ import { getRedisClient } from '../../loaders/redis.js';
 import { Session } from '../../models/Session.js';
 import { AuthService, AuthServiceError, type DeviceInfo } from '../../services/AuthService.js';
 import { normalizePermissionsState } from '../../utils/permissionsState.js';
+import {
+  getSubscriptionForUser,
+  getSubscriptionPlanFromProductId,
+  getSubscriptionTierFromProductId,
+} from '../subscriptions/subscriptionService.js';
 
 const router = Router();
 
@@ -24,6 +29,8 @@ const appleOAuthSchema = z.object({
   identityToken: z.string().min(1, 'identityToken is required'),
   authorizationCode: z.string().min(1, 'authorizationCode is required'),
   fullName: z.string().optional(),
+  givenName: z.string().optional(),
+  familyName: z.string().optional(),
 });
 
 const refreshSchema = z.object({
@@ -112,7 +119,7 @@ router.post(
       successResponse(res, {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
-        user: sanitizeUser(result.user),
+        user: await serializeAuthUser(result.user),
       });
     } catch (err) {
       handleServiceError(res, err);
@@ -129,7 +136,7 @@ router.post(
   validateBody(appleOAuthSchema),
   async (req: Request, res: Response) => {
     try {
-      const { identityToken, authorizationCode, fullName } =
+      const { identityToken, authorizationCode, fullName, givenName, familyName } =
         req.body as z.infer<typeof appleOAuthSchema>;
       const deviceInfo = extractDeviceInfo(req);
 
@@ -137,6 +144,8 @@ router.post(
         identityToken,
         authorizationCode,
         fullName,
+        givenName,
+        familyName,
         deviceInfo,
       );
 
@@ -151,7 +160,7 @@ router.post(
       successResponse(res, {
         accessToken: result.accessToken,
         refreshToken: result.refreshToken,
-        user: sanitizeUser(result.user),
+        user: await serializeAuthUser(result.user),
       });
     } catch (err) {
       handleServiceError(res, err);
@@ -233,7 +242,7 @@ router.get('/me', isAuthenticated, async (req: Request, res: Response) => {
   try {
     const user = req.user as JwtPayload;
     const profile = await AuthService.getMe(user.sub);
-    successResponse(res, sanitizeUser(profile));
+    successResponse(res, await serializeAuthUser(profile));
   } catch (err) {
     handleServiceError(res, err);
   }
@@ -341,15 +350,69 @@ router.post('/sessions/revoke-others', isAuthenticated, async (req: Request, res
 // Sanitize user for API response
 // ---------------------------------------------------------------------------
 
-function sanitizeUser(user: { _id?: unknown; email?: string; displayName?: string; photoUrl?: string; referralCode?: string | null; roles?: string[]; status?: string; defaultGymId?: unknown; onboardingCompletedAt?: Date | null; permissionsState?: unknown; preferences?: unknown }) {
+function buildSubscriptionSummary(
+  subscription: {
+    status: string;
+    productId: string;
+    purchaseDate: Date;
+    expiryDate: Date;
+    extensionDays: number;
+    provider: string;
+  } | null,
+) {
+  if (!subscription) {
+    return null;
+  }
+
+  return {
+    status: subscription.status,
+    tier: getSubscriptionTierFromProductId(subscription.productId),
+    plan: getSubscriptionPlanFromProductId(subscription.productId),
+    purchaseDate: subscription.purchaseDate.toISOString(),
+    expiresAt: subscription.expiryDate.toISOString(),
+    extensionDays: subscription.extensionDays,
+    platform: subscription.provider,
+  };
+}
+
+async function serializeAuthUser(user: {
+  _id?: unknown;
+  email?: string;
+  displayName?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  photoUrl?: string;
+  referralCode?: string | null;
+  authProviders?: string[];
+  roles?: string[];
+  status?: string;
+  defaultGymId?: unknown;
+  onboardingCompletedAt?: Date | null;
+  permissionsState?: unknown;
+  preferences?: unknown;
+  createdAt?: Date;
+}) {
+  const subscription = user._id
+    ? await getSubscriptionForUser(String(user._id))
+    : null;
+
   return {
     _id: String(user._id),
     email: user.email,
     displayName: user.displayName,
-    avatarURL: user.photoUrl,
+    firstName: user.firstName ?? null,
+    lastName: user.lastName ?? null,
+    avatarURL: user.photoUrl ?? null,
     referralCode: user.referralCode ?? null,
     role: user.roles?.[0] ?? 'user',
     status: user.status,
+    linkedAccounts: user.authProviders ?? [],
+    subscriptionTier:
+      subscription && ['active', 'grace_period'].includes(subscription.status)
+        ? getSubscriptionTierFromProductId(subscription.productId)
+        : 'free',
+    subscription: buildSubscriptionSummary(subscription),
+    createdAt: user.createdAt?.toISOString?.() ?? null,
     defaultGymId: user.defaultGymId ? String(user.defaultGymId) : null,
     onboardingCompletedAt: user.onboardingCompletedAt?.toISOString?.() ?? null,
     permissionsState: normalizePermissionsState(user.permissionsState),

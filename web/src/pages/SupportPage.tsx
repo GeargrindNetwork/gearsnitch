@@ -40,7 +40,7 @@ const fallbackFaqs = [
   {
     question: 'How does the referral program work?',
     answer:
-      'Share your unique referral code or QR code with friends. When they subscribe, you earn 90 days of free premium access per referral. There is no cap on referral rewards.',
+      'Share your unique referral code or QR code with friends. When they subscribe, you earn 28 bonus days per qualifying referral while your account has an active paid plan. There is no cap on referral rewards.',
   },
   {
     question: 'Are peptide store products safe for consumption?',

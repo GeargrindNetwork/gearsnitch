@@ -110,11 +110,11 @@ class StoreKitManager: ObservableObject {
 
         switch result {
         case .success(let verification):
-            let transaction = try verifyTransaction(verification)
-            await sendReceiptToBackend(transaction: transaction)
-            await transaction.finish()
+            let verified = try verifyTransaction(verification)
+            await sendReceiptToBackend(verified)
+            await verified.transaction.finish()
             await checkSubscriptionStatus()
-            logger.info("Purchase successful for \(tier.displayName): \(transaction.id)")
+            logger.info("Purchase successful for \(tier.displayName): \(verified.transaction.id)")
 
         case .userCancelled:
             logger.info("User cancelled purchase")
@@ -136,7 +136,8 @@ class StoreKitManager: ObservableObject {
 
         for await result in Transaction.currentEntitlements {
             do {
-                let transaction = try verifyTransaction(result)
+                let verified = try verifyTransaction(result)
+                let transaction = verified.transaction
                 guard transaction.revocationDate == nil else { continue }
                 guard let tier = tier(for: transaction.productID) else { continue }
 
@@ -172,10 +173,10 @@ class StoreKitManager: ObservableObject {
         transactionListener = Task.detached { [weak self] in
             for await result in Transaction.updates {
                 do {
-                    let transaction = try await self?.verifyTransaction(result)
-                    if let transaction {
-                        await self?.handleUpdatedTransaction(transaction)
-                        await transaction.finish()
+                    let verified = try await self?.verifyTransaction(result)
+                    if let verified {
+                        await self?.handleUpdatedTransaction(verified)
+                        await verified.transaction.finish()
                     }
                 } catch {
                     let logger = Logger(subsystem: "com.gearsnitch", category: "StoreKit")
@@ -190,6 +191,7 @@ class StoreKitManager: ObservableObject {
     func restorePurchases() async {
         do {
             try await AppStore.sync()
+            _ = await syncCurrentEntitlementsToBackend()
             await checkSubscriptionStatus()
             logger.info("Purchases restored")
         } catch {
@@ -214,34 +216,63 @@ class StoreKitManager: ObservableObject {
         return (tierPriority[tier] ?? 0) > (tierPriority[currentTier] ?? 0)
     }
 
-    private func verifyTransaction(
-        _ result: VerificationResult<Transaction>
-    ) throws -> Transaction {
+    private func verifyTransaction(_ result: VerificationResult<Transaction>) throws -> VerifiedTransaction {
         switch result {
         case .verified(let transaction):
-            return transaction
+            return VerifiedTransaction(
+                transaction: transaction,
+                jwsRepresentation: result.jwsRepresentation
+            )
         case .unverified(_, let error):
             logger.error("Unverified transaction: \(error.localizedDescription)")
             throw StoreKitError.verificationFailed
         }
     }
 
-    private func handleUpdatedTransaction(_ transaction: Transaction) async {
+    private func handleUpdatedTransaction(_ verified: VerifiedTransaction) async {
+        let transaction = verified.transaction
         guard tier(for: transaction.productID) != nil else { return }
-        await sendReceiptToBackend(transaction: transaction)
+        await sendReceiptToBackend(verified)
         await checkSubscriptionStatus()
+    }
+
+    @discardableResult
+    func syncCurrentEntitlementsToBackend() async -> Bool {
+        var syncedAnyEntitlement = false
+
+        for await result in Transaction.currentEntitlements {
+            do {
+                let verified = try verifyTransaction(result)
+                let transaction = verified.transaction
+                guard transaction.revocationDate == nil else { continue }
+                guard tier(for: transaction.productID) != nil else { continue }
+
+                await sendReceiptToBackend(verified)
+                syncedAnyEntitlement = true
+            } catch {
+                logger.error("Failed to sync entitlement: \(error.localizedDescription)")
+            }
+        }
+
+        if syncedAnyEntitlement {
+            await checkSubscriptionStatus()
+        }
+
+        return syncedAnyEntitlement
     }
 
     /// Sends the JWS representation of the transaction to the backend for
     /// server-side validation and subscription record creation.
-    private func sendReceiptToBackend(transaction: Transaction) async {
-        let receiptData = String(data: transaction.jsonRepresentation, encoding: .utf8) ?? ""
-
+    private func sendReceiptToBackend(_ verified: VerifiedTransaction) async {
         do {
             let _: SubscriptionValidationResponse = try await APIClient.shared.request(
-                APIEndpoint.Subscriptions.validateAppleJWS(jwsRepresentation: receiptData)
+                APIEndpoint.Subscriptions.validateAppleJWS(
+                    jwsRepresentation: verified.jwsRepresentation
+                )
             )
-            logger.info("Backend validated subscription for transaction \(transaction.id)")
+            logger.info(
+                "Backend validated subscription for transaction \(verified.transaction.id)"
+            )
         } catch {
             logger.error("Backend validation failed: \(error.localizedDescription)")
         }
@@ -251,6 +282,11 @@ class StoreKitManager: ObservableObject {
 // MARK: - Errors
 
 extension StoreKitManager {
+    private struct VerifiedTransaction {
+        let transaction: Transaction
+        let jwsRepresentation: String
+    }
+
     enum StoreKitError: LocalizedError {
         case productNotFound
         case verificationFailed

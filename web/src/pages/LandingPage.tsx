@@ -42,7 +42,7 @@ const features = [
       </svg>
     ),
     title: 'Referral Rewards',
-    description: 'Invite friends and earn 90 days of free premium for every subscriber. The more your crew grows, the bigger your rewards stack.',
+    description: 'Invite friends and earn 28 bonus days for every qualifying referral while you stay on an active paid plan.',
   },
   {
     icon: (

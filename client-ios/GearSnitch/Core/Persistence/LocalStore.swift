@@ -17,6 +17,7 @@ final class LocalStore {
     private init() {
         let schema = Schema([
             LocalDevice.self,
+            LocalDeviceEvent.self,
             LocalGym.self,
             OfflineOperation.self,
             DoseHistoryEntry.self,

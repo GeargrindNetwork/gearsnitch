@@ -6,7 +6,7 @@ This file tracks the active delivery sequence for finishing the application.
 
 | Track ID | Type | Status | Progress |
 |----------|------|--------|----------|
-| _None._ | — | — | — |
+| `cycle_tracking_peptide_steroid_20260413` | `feature` | `planned` | `PRD, spec, and execution plan created from 3-lane reverse engineering; implementation not started` |
 
 ## Completed Tracks
 

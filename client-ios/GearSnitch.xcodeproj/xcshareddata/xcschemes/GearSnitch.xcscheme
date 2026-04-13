@@ -39,6 +39,28 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "86AC59BA8F8019D810326896"
+               BuildableName = "GearSnitchTests.xctest"
+               BlueprintName = "GearSnitchTests"
+               ReferencedContainer = "container:GearSnitch.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B7C595239251A97BE5D4D4AD"
+               BuildableName = "GearSnitchUITests.xctest"
+               BlueprintName = "GearSnitchUITests"
+               ReferencedContainer = "container:GearSnitch.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

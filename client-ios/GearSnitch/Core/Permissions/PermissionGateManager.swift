@@ -41,6 +41,50 @@ enum PermissionGate: String, CaseIterable, Identifiable {
     }
 }
 
+private extension CBManagerAuthorization {
+    var debugName: String {
+        switch self {
+        case .allowedAlways:
+            return "allowedAlways"
+        case .denied:
+            return "denied"
+        case .restricted:
+            return "restricted"
+        case .notDetermined:
+            return "notDetermined"
+        @unknown default:
+            return "unknown"
+        }
+    }
+
+    var requiresSettingsRepair: Bool {
+        self == .denied || self == .restricted
+    }
+}
+
+private extension CLAuthorizationStatus {
+    var debugName: String {
+        switch self {
+        case .authorizedAlways:
+            return "authorizedAlways"
+        case .authorizedWhenInUse:
+            return "authorizedWhenInUse"
+        case .denied:
+            return "denied"
+        case .restricted:
+            return "restricted"
+        case .notDetermined:
+            return "notDetermined"
+        @unknown default:
+            return "unknown"
+        }
+    }
+
+    var requiresSettingsRepair: Bool {
+        self == .denied || self == .restricted
+    }
+}
+
 // MARK: - Permission Gate Manager
 
 @MainActor
@@ -57,6 +101,9 @@ final class PermissionGateManager: ObservableObject {
     @Published var healthKitGranted = false
     @Published var hasGym = false
     @Published var hasPairedDevice = false
+    @Published private(set) var bluetoothAuthorizationStatus: CBManagerAuthorization = .notDetermined
+    @Published private(set) var locationAuthorizationStatus: CLAuthorizationStatus = .notDetermined
+    @Published private(set) var systemLocationServicesEnabled = true
 
     private let logger = Logger(subsystem: "com.gearsnitch", category: "PermissionGateManager")
 
@@ -83,6 +130,18 @@ final class PermissionGateManager: ObservableObject {
         failingGates.first { $0.isRequired }
     }
 
+    var bluetoothRequiresSettingsRepair: Bool {
+        bluetoothAuthorizationStatus.requiresSettingsRepair
+    }
+
+    var locationRequiresSettingsRepair: Bool {
+        !systemLocationServicesEnabled || locationAuthorizationStatus.requiresSettingsRepair
+    }
+
+    var requiresPermissionRepair: Bool {
+        bluetoothRequiresSettingsRepair || locationRequiresSettingsRepair
+    }
+
     // MARK: - Init
 
     private init() {}
@@ -99,16 +158,24 @@ final class PermissionGateManager: ObservableObject {
     // MARK: - Individual Checks
 
     func checkBluetooth() async {
-        let status = CBManager.authorization
+        let status = CBCentralManager.authorization
+        bluetoothAuthorizationStatus = status
         bluetoothGranted = (status == .allowedAlways)
-        logger.debug("Bluetooth: \(self.bluetoothGranted ? "granted" : "denied")")
+        logger.debug("Bluetooth authorization: \(status.debugName), granted: \(self.bluetoothGranted ? "yes" : "no")")
     }
 
     func checkLocation() async {
+        let servicesEnabled = await Task.detached(priority: .utility) {
+            CLLocationManager.locationServicesEnabled()
+        }.value
         let status = CLLocationManager().authorizationStatus
-        locationGranted = (status == .authorizedWhenInUse || status == .authorizedAlways)
-        backgroundLocationGranted = (status == .authorizedAlways)
-        logger.debug("Location: \(self.locationGranted ? "granted" : "denied"), background: \(self.backgroundLocationGranted ? "granted" : "denied")")
+        systemLocationServicesEnabled = servicesEnabled
+        locationAuthorizationStatus = status
+        locationGranted = servicesEnabled && (status == .authorizedWhenInUse || status == .authorizedAlways)
+        backgroundLocationGranted = servicesEnabled && (status == .authorizedAlways)
+        logger.debug(
+            "Location services: \(servicesEnabled ? "enabled" : "disabled"), authorization: \(status.debugName), granted: \(self.locationGranted ? "yes" : "no"), background: \(self.backgroundLocationGranted ? "yes" : "no")"
+        )
     }
 
     func checkNotifications() async {

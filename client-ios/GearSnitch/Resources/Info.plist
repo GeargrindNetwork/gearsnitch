@@ -58,6 +58,10 @@
 	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>GearSnitch can add completed gym sessions to your calendar with workout and run details.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>GearSnitch can add completed gym sessions to your calendar with workout and run details.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>GearSnitch uses the camera to scan referral QR codes.</string>
 	<key>NSHealthShareUsageDescription</key>

@@ -78,6 +78,7 @@ final class AuthManager: ObservableObject {
         authState = .loading
 
         do {
+            _ = await StoreKitManager.shared.syncCurrentEntitlementsToBackend()
             let userDTO: UserDTO = try await apiClient.request(APIEndpoint.Auth.me)
             let user = GSUser(from: userDTO)
             authState = .authenticated(user)
@@ -109,6 +110,8 @@ final class AuthManager: ObservableObject {
 
         // Build full name from Apple credential (only provided on first sign-in)
         var fullName: String?
+        let givenName = credential.fullName?.givenName
+        let familyName = credential.fullName?.familyName
         if let nameComponents = credential.fullName {
             let parts = [nameComponents.givenName, nameComponents.familyName].compactMap { $0 }
             if !parts.isEmpty {
@@ -119,7 +122,9 @@ final class AuthManager: ObservableObject {
         let endpoint = APIEndpoint.Auth.appleLogin(
             identityToken: identityToken,
             authorizationCode: authorizationCode,
-            fullName: fullName
+            fullName: fullName,
+            givenName: givenName,
+            familyName: familyName
         )
 
         do {
@@ -168,13 +173,16 @@ final class AuthManager: ObservableObject {
 
     /// Exposed for direct token refresh when needed (e.g. before socket connect).
     func refreshToken() async throws -> String {
-        guard tokenStore.refreshToken != nil else {
+        guard let existingRefreshToken = tokenStore.refreshToken else {
             throw NetworkError.tokenRefreshFailed
         }
 
         let endpoint = APIEndpoint.Auth.refresh
         let response: TokenPairResponse = try await apiClient.request(endpoint)
-        tokenStore.save(accessToken: response.accessToken, refreshToken: response.refreshToken)
+        tokenStore.save(
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken ?? existingRefreshToken
+        )
         return response.accessToken
     }
 
@@ -183,12 +191,13 @@ final class AuthManager: ObservableObject {
     private func completeSignIn(response: AuthTokenResponse, method: String = "unknown") async throws {
         tokenStore.save(accessToken: response.accessToken, refreshToken: response.refreshToken)
         let userDTO: UserDTO
+        let syncedEntitlements = await StoreKitManager.shared.syncCurrentEntitlementsToBackend()
 
-        if let embeddedUser = response.user {
+        if let embeddedUser = response.user, !syncedEntitlements {
             logger.info("Sign-in response included embedded user payload")
             userDTO = embeddedUser
         } else {
-            logger.info("Sign-in response omitted user payload; fetching current profile")
+            logger.info("Fetching current profile after \(method) sign-in")
             do {
                 userDTO = try await apiClient.request(APIEndpoint.Auth.me)
             } catch {
@@ -204,7 +213,7 @@ final class AuthManager: ObservableObject {
         AnalyticsClient.shared.identify(userId: user.id, traits: [
             "email": user.email,
             "displayName": user.displayName ?? "",
-            "subscriptionTier": user.roles.first ?? "free",
+            "subscriptionTier": user.subscriptionTier ?? "free",
         ])
         AnalyticsClient.shared.track(event: .signInCompleted(method: method))
 

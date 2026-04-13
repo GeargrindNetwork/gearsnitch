@@ -21,6 +21,8 @@ describe('apple sign-in contract regression sweep', () => {
     expect(authService).toContain('if (decoded.sub !== exchanged.sub)');
     expect(authService).toContain("logger.warn(");
     expect(authService).toContain("const email = decoded.email ?? exchanged?.email;");
+    expect(authService).toContain('const normalizedGivenName = givenName?.trim() || undefined;');
+    expect(authService).toContain('const normalizedFamilyName = familyName?.trim() || undefined;');
   });
 
   test('apple oauth configuration includes the private key needed to mint the client secret', () => {
@@ -38,5 +40,12 @@ describe('apple sign-in contract regression sweep', () => {
   test('apple auth treats placeholder exchange credentials as unconfigured', () => {
     expect(authService).toContain("normalized !== 'placeholder'");
     expect(authService).toContain('private static hasAppleCodeExchangeConfig(): boolean');
+  });
+
+  test('apple sign-in persists first and last names when Apple provides them', () => {
+    expect(authService).toContain('user.firstName = normalizedGivenName;');
+    expect(authService).toContain('user.lastName = normalizedFamilyName;');
+    expect(authService).toContain('firstName: normalizedGivenName,');
+    expect(authService).toContain('lastName: normalizedFamilyName,');
   });
 });

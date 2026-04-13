@@ -166,7 +166,50 @@ function serializeProduct(
 }
 
 export class StoreService {
+  private async ensureSeedData(): Promise<void> {
+    let category = await StoreCategory.findOne({ slug: 'training-gear' });
+
+    if (!category) {
+      category = await StoreCategory.create({
+        name: 'Training Gear',
+        slug: 'training-gear',
+        sortOrder: 10,
+        active: true,
+      });
+    }
+
+    await StoreProduct.findOneAndUpdate(
+      { sku: 'GS-JUMPROPE-001' },
+      {
+        $set: {
+          name: 'GearSnitch Speed Jump Rope',
+          slug: 'gearsnitch-speed-jump-rope',
+          description:
+            'Adjustable speed jump rope for warm-ups, conditioning, and travel workouts.',
+          categoryId: category._id,
+          price: 24.99,
+          currency: 'USD',
+          inventory: 50,
+          active: true,
+          images: [
+            'https://cdn.gearsnitch.app/store/products/jump-rope.png',
+          ],
+          compliance: {},
+        },
+        $setOnInsert: {
+          sku: 'GS-JUMPROPE-001',
+        },
+      },
+      {
+        new: true,
+        upsert: true,
+      },
+    );
+  }
+
   async listProducts(): Promise<ProductResponse[]> {
+    await this.ensureSeedData();
+
     const products = await StoreProduct.find({ active: true }).sort({
       createdAt: -1,
     });
@@ -192,6 +235,8 @@ export class StoreService {
   }
 
   async getProductByReference(reference: string): Promise<ProductResponse> {
+    await this.ensureSeedData();
+
     const product = Types.ObjectId.isValid(reference)
       ? await StoreProduct.findOne({
           _id: new Types.ObjectId(reference),

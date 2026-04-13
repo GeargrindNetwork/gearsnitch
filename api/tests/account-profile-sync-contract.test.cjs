@@ -23,10 +23,17 @@ describe('account profile sync regression sweep', () => {
     expect(permissionsUtil).toContain('normalizePermissionsState');
     expect(userRoutes).toContain('permissionsState: z.object({');
     expect(userRoutes).toContain('pinnedDeviceId:');
+    expect(userRoutes).toContain('function serializeProfileDeviceSummary');
+    expect(userRoutes).toContain('bluetoothIdentifier: device.identifier');
+    expect(userRoutes).toContain('isMonitoring: device.monitoringEnabled === true');
+    expect(userRoutes).toContain('lastSeenAt: toIsoString(device.lastSeenAt)');
+    expect(userRoutes).toContain('exportVersion: 2');
     expect(userRoutes).toContain('gyms: gyms.map(serializeGymSummary)');
     expect(userRoutes).toContain('defaultGym:');
     expect(userRoutes).toContain('onboarding: {');
     expect(authRoutes).toContain('permissionsState: normalizePermissionsState(user.permissionsState)');
+    expect(authRoutes).toContain('subscriptionTier:');
+    expect(authRoutes).toContain('subscription: buildSubscriptionSummary(subscription)');
   });
 
   test('iOS auth and onboarding sync server-backed account state', () => {
@@ -43,7 +50,12 @@ describe('account profile sync regression sweep', () => {
   test('web account page is typed for the richer synced profile', () => {
     expect(accountPage).toContain("subscriptionTier: 'monthly' | 'annual' | 'lifetime' | 'free';");
     expect(accountPage).toContain('permissionsState?: {');
+    expect(accountPage).toContain('purchaseDate?: string | null;');
     expect(accountPage).toContain('pinnedDeviceId?: string | null;');
+    expect(accountPage).toContain('name: string;');
+    expect(accountPage).toContain('type: string;');
+    expect(accountPage).toContain('lastSeenAt?: string | null;');
+    expect(accountPage).toContain('device.nickname || device.name');
     expect(accountPage).toContain('gyms?: Array<{');
     expect(accountPage).toContain('App Permissions');
     expect(accountPage).toContain('Gyms');

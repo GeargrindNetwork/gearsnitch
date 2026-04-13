@@ -24,7 +24,7 @@ const ReferralSchema = new Schema<IReferral>(
       enum: ['pending', 'qualified', 'rewarded', 'rejected'],
       default: 'pending',
     },
-    rewardDays: { type: Number, default: 90 },
+    rewardDays: { type: Number, default: 28 },
     qualifiedAt: { type: Date },
     rewardedAt: { type: Date },
     reason: { type: String },

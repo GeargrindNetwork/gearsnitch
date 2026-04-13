@@ -136,6 +136,8 @@ final class GymSessionManager: ObservableObject {
             persistSessionToAppGroup(session)
             startElapsedTimer()
 
+            BLEManager.shared.armDisconnectProtection(gymId: gymId)
+
             // Start BLE monitoring for gym devices
             BLEManager.shared.startScanning()
 
@@ -181,6 +183,7 @@ final class GymSessionManager: ObservableObject {
             stopElapsedTimer()
 
             // Stop BLE scanning
+            BLEManager.shared.disarmDisconnectProtection(reason: "session ended")
             BLEManager.shared.stopScanning()
             BLEManager.shared.disconnectAll()
 
@@ -194,6 +197,10 @@ final class GymSessionManager: ObservableObject {
                     "duration": ended.duration ?? 0,
                 ]
             )
+
+            Task {
+                await CalendarSyncService.shared.syncSessionToCalendar(ended)
+            }
         } catch {
             self.error = error.localizedDescription
             logger.error("Failed to end gym session: \(error.localizedDescription)")
@@ -231,8 +238,22 @@ final class GymSessionManager: ObservableObject {
                 guard let self, !self.isSessionActive else { return }
                 guard let gymId = notification.userInfo?["gymId"] as? String else { return }
 
+                BLEManager.shared.armDisconnectProtection(gymId: gymId)
                 self.logger.info("Gym entry detected while no session active: \(gymId)")
                 self.promptSessionStart(gymId: gymId)
+            }
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: GeofenceManager.gymExitNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let gymId = notification.userInfo?["gymId"] as? String
+                BLEManager.shared.disarmDisconnectProtection(reason: gymId.map { "left gym \($0)" } ?? "left monitored gym")
+                self.logger.info("Gym exit detected: \(gymId ?? "unknown")")
             }
         }
     }

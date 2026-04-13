@@ -122,7 +122,8 @@ struct SignInView: View {
     // MARK: - Apple Sign-In Button
 
     private var appleSignInButton: some View {
-        SignInWithAppleButtonRepresentable(
+        SignInWithAppleButton(
+            .signIn,
             onRequest: { request in
                 request.requestedScopes = [.fullName, .email]
             },
@@ -130,66 +131,10 @@ struct SignInView: View {
                 viewModel.handleAppleSignIn(result: result)
             }
         )
+        .signInWithAppleButtonStyle(.white)
         .frame(maxWidth: authButtonMaxWidth)
         .frame(height: 54)
         .cornerRadius(14)
-    }
-}
-
-// MARK: - Apple Sign In Button (UIViewRepresentable)
-
-struct SignInWithAppleButtonRepresentable: UIViewRepresentable {
-    let onRequest: (ASAuthorizationAppleIDRequest) -> Void
-    let onCompletion: (Result<ASAuthorization, Error>) -> Void
-
-    func makeUIView(context: Context) -> ASAuthorizationAppleIDButton {
-        let button = ASAuthorizationAppleIDButton(type: .signIn, style: .white)
-        button.cornerRadius = 14
-        button.addTarget(context.coordinator, action: #selector(Coordinator.handleTap), for: .touchUpInside)
-        return button
-    }
-
-    func updateUIView(_ uiView: ASAuthorizationAppleIDButton, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onRequest: onRequest, onCompletion: onCompletion)
-    }
-
-    class Coordinator: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
-        let onRequest: (ASAuthorizationAppleIDRequest) -> Void
-        let onCompletion: (Result<ASAuthorization, Error>) -> Void
-
-        init(onRequest: @escaping (ASAuthorizationAppleIDRequest) -> Void,
-             onCompletion: @escaping (Result<ASAuthorization, Error>) -> Void) {
-            self.onRequest = onRequest
-            self.onCompletion = onCompletion
-        }
-
-        @objc func handleTap() {
-            let request = ASAuthorizationAppleIDProvider().createRequest()
-            onRequest(request)
-
-            let controller = ASAuthorizationController(authorizationRequests: [request])
-            controller.delegate = self
-            controller.presentationContextProvider = self
-            controller.performRequests()
-        }
-
-        func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-            onCompletion(.success(authorization))
-        }
-
-        func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-            onCompletion(.failure(error))
-        }
-
-        func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-            guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                  let window = scene.windows.first else {
-                return UIWindow()
-            }
-            return window
-        }
     }
 }
 

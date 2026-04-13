@@ -5,6 +5,8 @@ export const EVENT_TYPES = [
   'session_end',
   'device_connect',
   'device_disconnect',
+  'gym_entry',
+  'gym_exit',
   'alarm_triggered',
   'purchase',
   'meal_logged',

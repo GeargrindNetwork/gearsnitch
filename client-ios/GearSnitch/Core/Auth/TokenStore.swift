@@ -22,15 +22,24 @@ final class TokenStore {
 
     var refreshToken: String? {
         keychain.loadString(forKey: KeychainStore.Key.refreshToken.rawValue)
+            ?? cookieRefreshToken
     }
 
     // MARK: - Persistence
 
-    /// Save both tokens atomically to the Keychain.
-    func save(accessToken: String, refreshToken: String) {
+    /// Save the latest tokens to the Keychain, falling back to shared cookie storage
+    /// when the backend omits the refresh token from the JSON body.
+    func save(accessToken: String, refreshToken: String?) {
         do {
             try keychain.save(accessToken, forKey: KeychainStore.Key.accessToken.rawValue)
-            try keychain.save(refreshToken, forKey: KeychainStore.Key.refreshToken.rawValue)
+            if let refreshToken, !refreshToken.isEmpty {
+                try keychain.save(refreshToken, forKey: KeychainStore.Key.refreshToken.rawValue)
+            } else if let cookieRefreshToken, !cookieRefreshToken.isEmpty {
+                try keychain.save(cookieRefreshToken, forKey: KeychainStore.Key.refreshToken.rawValue)
+                logger.debug("Refresh token recovered from shared cookie storage")
+            } else {
+                logger.warning("Saved access token without refresh token fallback")
+            }
             logger.debug("Tokens saved successfully")
         } catch {
             logger.error("Failed to save tokens: \(error.localizedDescription)")
@@ -53,6 +62,26 @@ final class TokenStore {
     /// Whether valid-looking tokens are stored (does NOT validate JWT signature/expiry).
     var hasTokens: Bool {
         accessToken != nil && refreshToken != nil
+    }
+
+    private var cookieRefreshToken: String? {
+        let host = URL(string: AppConfig.apiBaseURL)?.host?.lowercased()
+
+        return HTTPCookieStorage.shared.cookies?
+            .first(where: { cookie in
+                guard cookie.name == "refreshToken", !cookie.value.isEmpty else {
+                    return false
+                }
+
+                guard let host else {
+                    return true
+                }
+
+                let domain = cookie.domain.lowercased()
+                let normalizedDomain = domain.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+                return normalizedDomain == host || host.hasSuffix(".\(normalizedDomain)")
+            })?
+            .value
     }
 
     /// Decode the JWT payload without verification to check expiry client-side.

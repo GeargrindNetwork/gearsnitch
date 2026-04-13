@@ -23,6 +23,8 @@ import sessionsRoutes from '../modules/sessions/routes.js';
 import calendarRoutes from '../modules/calendar/routes.js';
 import eventsRoutes from '../modules/events/routes.js';
 import dosingRoutes from '../modules/dosing/routes.js';
+import cyclesRoutes from '../modules/cycles/routes.js';
+import medicationsRoutes from '../modules/medications/routes.js';
 
 const router = Router();
 
@@ -72,6 +74,7 @@ router.use('/gyms', gymsRoutes);
 router.use('/alerts', alertsRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/health-data', healthRoutes);
+router.use('/health', healthRoutes);
 router.use('/calories', caloriesRoutes);
 router.use('/workouts', workoutsRoutes);
 router.use('/runs', runsRoutes);
@@ -84,5 +87,7 @@ router.use('/sessions', sessionsRoutes);
 router.use('/calendar', calendarRoutes);
 router.use('/events', eventsRoutes);
 router.use('/dosing', dosingRoutes);
+router.use('/cycles', cyclesRoutes);
+router.use('/medications', medicationsRoutes);
 
 export default router;
