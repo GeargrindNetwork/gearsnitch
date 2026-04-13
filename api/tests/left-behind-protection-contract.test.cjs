@@ -14,40 +14,48 @@ function readFromRepo(relativePath) {
 
 describe('left-behind protection contract', () => {
   const alertRoutes = readFromApi('src/modules/alerts/routes.ts');
+  const notificationRoutes = readFromApi('src/modules/notifications/routes.ts');
   const apiEndpoints = readFromRepo('client-ios/GearSnitch/Core/Network/APIEndpoint.swift');
   const notificationPreferencesView = readFromRepo(
     'client-ios/GearSnitch/Features/Settings/NotificationPreferencesView.swift',
   );
   const bleManager = readFromRepo('client-ios/GearSnitch/Core/BLE/BLEManager.swift');
-  const bleSignalMonitor = readFromRepo('client-ios/GearSnitch/Core/BLE/BLESignalMonitor.swift');
   const panicAlarmManager = readFromRepo('client-ios/GearSnitch/Core/BLE/PanicAlarmManager.swift');
   const pushNotificationHandler = readFromRepo(
     'client-ios/GearSnitch/Core/Notifications/PushNotificationHandler.swift',
   );
-  const rootView = readFromRepo('client-ios/GearSnitch/App/RootView.swift');
 
-  test('backend exposes a distinct panic alarm route and queues alert fanout jobs', () => {
-    expect(alertRoutes).toContain("router.post('/panic-alarm'");
-    expect(alertRoutes).toContain("type: 'panic_alarm'");
-    expect(alertRoutes).toContain('enqueueAlertFanout(');
+  test('backend exposes disconnect alert ingestion and persisted notification preference routes', () => {
+    expect(alertRoutes).toContain("router.post('/device-disconnected'");
     expect(alertRoutes).toContain("type: 'device_disconnected'");
+    expect(alertRoutes).toContain("type: { $in: ['disconnect_warning', 'device_disconnected'] }");
+    expect(notificationRoutes).toContain("router.get('/preferences', isAuthenticated");
+    expect(notificationRoutes).toContain("router.patch('/preferences', isAuthenticated");
+    expect(notificationRoutes).toContain('panicAlertsEnabled: z.boolean().optional(),');
+    expect(notificationRoutes).toContain('disconnectAlertsEnabled: z.boolean().optional(),');
   });
 
-  test('iOS exposes protection preference APIs and in-app controls', () => {
-    expect(apiEndpoints).toContain('static var preferences: APIEndpoint');
-    expect(apiEndpoints).toContain('static func updatePreferences(');
-    expect(notificationPreferencesView).toContain('Left-Behind Protection');
-    expect(notificationPreferencesView).toContain('Disconnect Haptics');
-    expect(notificationPreferencesView).toContain('Disconnect Sound');
-    expect(notificationPreferencesView).toContain('Flash Screen');
+  test('iOS exposes disconnect alert endpoints and notification controls', () => {
+    expect(apiEndpoints).toContain('static func deviceDisconnected(_ body: DeviceDisconnectedBody) -> APIEndpoint');
+    expect(apiEndpoints).toContain('path: "/api/v1/alerts/device-disconnected"');
+    expect(notificationPreferencesView).toContain('.navigationTitle("Notifications")');
+    expect(notificationPreferencesView).toContain('notifToggle("Device Disconnected"');
+    expect(notificationPreferencesView).toContain('notifToggle("Left Safe Zone"');
+    expect(notificationPreferencesView).toContain('notifToggle("Low Battery"');
+    expect(notificationPreferencesView).toContain('UpdateUserBody(preferences: prefs)');
+    expect(notificationPreferencesView).toContain('APIEndpoint.Users.updateMe(body)');
   });
 
-  test('disconnect and panic paths wire local feedback and flash presentation', () => {
-    expect(pushNotificationHandler).toContain('func scheduleLocalDisconnectAlert(');
-    expect(pushNotificationHandler).toContain('func scheduleLocalPanicAlert(');
-    expect(bleManager).toContain('scheduleLocalDisconnectAlert');
-    expect(bleSignalMonitor).toContain('ProtectionPreferencesStore.shared');
-    expect(panicAlarmManager).toContain('APIEndpoint.Alerts.panicAlarm');
-    expect(rootView).toContain('PanicAlarmOverlay');
+  test('disconnect and panic paths wire local feedback, push categories, and backend fanout', () => {
+    expect(pushNotificationHandler).toContain('case deviceDisconnect = "DEVICE_DISCONNECT"');
+    expect(pushNotificationHandler).toContain('case viewDevice = "VIEW_DEVICE"');
+    expect(pushNotificationHandler).toContain('postDeepLink(.device(id: deviceId))');
+    expect(bleManager).toContain('triggerDisconnectHaptic()');
+    expect(bleManager).toContain('scheduleProtectedDisconnectAlert(for: device)');
+    expect(bleManager).toContain('content.categoryIdentifier = NotificationCategory.deviceDisconnect.rawValue');
+    expect(bleManager).toContain('APIEndpoint.Alerts.deviceDisconnected(body)');
+    expect(panicAlarmManager).toContain('func triggerPanic(device: BLEDevice)');
+    expect(panicAlarmManager).toContain('APIEndpoint.Alerts.deviceDisconnected(body)');
+    expect(panicAlarmManager).toContain('sendWatchAlarm(deviceName: device.displayName)');
   });
 });
