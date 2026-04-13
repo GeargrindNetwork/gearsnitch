@@ -71,6 +71,7 @@ router.use('/devices', devicesRoutes);
 router.use('/gyms', gymsRoutes);
 router.use('/alerts', alertsRoutes);
 router.use('/notifications', notificationsRoutes);
+router.use('/health', healthRoutes);
 router.use('/health-data', healthRoutes);
 router.use('/calories', caloriesRoutes);
 router.use('/workouts', workoutsRoutes);
