@@ -85,7 +85,7 @@ final class NotificationPermissionManager: ObservableObject {
         let center = UNUserNotificationCenter.current()
 
         let granted = try await center.requestAuthorization(
-            options: [.alert, .badge, .sound, .criticalAlert]
+            options: [.alert, .badge, .sound]
         )
 
         await refreshPermissionState()

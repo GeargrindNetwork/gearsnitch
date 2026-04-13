@@ -54,7 +54,6 @@ targets:
         com.apple.developer.applesignin:
           - Default
         com.apple.developer.healthkit: true
-        com.apple.developer.usernotifications.critical-alerts: true
     dependencies:
       - package: GoogleSignIn
     scheme:
