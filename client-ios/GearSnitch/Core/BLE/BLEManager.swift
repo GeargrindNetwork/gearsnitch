@@ -147,6 +147,7 @@ final class BLEManager: NSObject, ObservableObject {
         device.status = .disconnected
 
         connectedDevices.removeAll { $0.identifier == device.identifier }
+        syncWidgetSnapshot()
         logger.info("Disconnected from \(device.name)")
     }
 
@@ -165,11 +166,13 @@ final class BLEManager: NSObject, ObservableObject {
             }
         )
         syncKnownDeviceMetadata()
+        syncWidgetSnapshot()
     }
 
     func upsertPersistedMetadata(_ metadata: PersistedBLEDeviceMetadata) {
         persistedMetadataByIdentifier[Self.normalizedIdentifier(metadata.bluetoothIdentifier)] = metadata
         syncKnownDeviceMetadata()
+        syncWidgetSnapshot()
     }
 
     func dismissPendingDisconnectPrompt() {
@@ -377,6 +380,7 @@ extension BLEManager: CBCentralManagerDelegate {
                 self.discoveredDevices.removeAll { $0.identifier == device.identifier }
                 self.applyPersistedMetadataIfAvailable(to: device)
                 self.sortKnownDevices()
+                self.syncWidgetSnapshot()
 
                 // Start signal monitoring when first device connects
                 if self.connectedDevices.count == 1 {
@@ -426,6 +430,8 @@ extension BLEManager: CBCentralManagerDelegate {
                     device.status = .disconnected
                     self.sortKnownDevices()
                 }
+
+                self.syncWidgetSnapshot()
             }
         }
     }
@@ -454,6 +460,7 @@ extension BLEManager: CBCentralManagerDelegate {
                 }
 
                 self.sortKnownDevices()
+                self.syncWidgetSnapshot()
             }
         }
     }
@@ -579,6 +586,14 @@ private extension BLEManager {
     func sortKnownDevices() {
         connectedDevices.sort(by: deviceSort)
         discoveredDevices.sort(by: deviceSort)
+    }
+
+    func syncWidgetSnapshot() {
+        let totalCount = max(persistedMetadataByIdentifier.count, connectedDevices.count)
+        WidgetSyncStore.shared.storeDeviceSnapshot(
+            connectedCount: connectedDevices.count,
+            totalCount: totalCount
+        )
     }
 
     func deviceSort(_ lhs: BLEDevice, _ rhs: BLEDevice) -> Bool {

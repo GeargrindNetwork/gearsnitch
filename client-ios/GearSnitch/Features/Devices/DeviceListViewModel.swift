@@ -84,6 +84,10 @@ final class DeviceListViewModel: ObservableObject {
             }
             devices = sorted
             BLEManager.shared.replacePersistedMetadata(sorted.map(\.priorityMetadata))
+            WidgetSyncStore.shared.storeDeviceSnapshot(
+                connectedCount: sorted.filter(\.isConnected).count,
+                totalCount: sorted.count
+            )
         } catch {
             self.error = error.localizedDescription
         }

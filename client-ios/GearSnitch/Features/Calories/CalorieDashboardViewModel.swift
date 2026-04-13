@@ -70,6 +70,10 @@ final class CalorieDashboardViewModel: ObservableObject {
         do {
             let fetched: DailySummaryDTO = try await apiClient.request(APIEndpoint.Calories.daily)
             summary = fetched
+            WidgetSyncStore.shared.storeCalories(
+                consumed: fetched.totalCalories,
+                goal: fetched.targetCalories
+            )
         } catch {
             self.error = error.localizedDescription
         }

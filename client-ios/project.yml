@@ -54,10 +54,35 @@ targets:
         com.apple.developer.applesignin:
           - Default
         com.apple.developer.healthkit: true
+        com.apple.security.application-groups:
+          - group.com.gearsnitch.app
     dependencies:
       - package: GoogleSignIn
+      - target: GearSnitchWidgets
+        embed: true
     scheme:
       storeKitConfiguration: GearSnitch/Configuration/GearSnitch.storekit
+
+  GearSnitchWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: GearSnitch/Features/Widgets
+      - path: GearSnitch/Shared/Extensions/Color+GearSnitch.swift
+      - path: GearSnitch/Shared/Widgets
+    settings:
+      base:
+        INFOPLIST_FILE: GearSnitchWidgetExtension/Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.gearsnitch.app.widgets
+        PRODUCT_NAME: GearSnitchWidgets
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    entitlements:
+      path: GearSnitchWidgetExtension/GearSnitchWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.gearsnitch.app
 
   GearSnitchTests:
     type: bundle.unit-test

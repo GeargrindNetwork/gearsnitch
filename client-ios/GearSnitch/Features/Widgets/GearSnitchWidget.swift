@@ -1,11 +1,7 @@
-import WidgetKit
 import SwiftUI
-
-// MARK: - App Group
+import WidgetKit
 
 private let appGroupId = "group.com.gearsnitch.app"
-
-// MARK: - Shared Data Keys
 
 private enum WidgetDataKey {
     static let activeSession = "activeGymSession"
@@ -15,8 +11,6 @@ private enum WidgetDataKey {
     static let calorieGoal = "dailyCalorieGoal"
 }
 
-// MARK: - Session Widget
-
 struct SessionWidgetEntry: TimelineEntry {
     let date: Date
     let isAtGym: Bool
@@ -25,23 +19,19 @@ struct SessionWidgetEntry: TimelineEntry {
 }
 
 struct SessionWidgetProvider: TimelineProvider {
-    typealias Entry = SessionWidgetEntry
-    
-
     func placeholder(in context: Context) -> SessionWidgetEntry {
         SessionWidgetEntry(date: .now, isAtGym: true, gymName: "Iron Temple", sessionStart: .now)
     }
 
-    func snapshot(for configuration: Intent, in context: Context) async -> SessionWidgetEntry {
-        readSessionEntry()
+    func getSnapshot(in context: Context, completion: @escaping (SessionWidgetEntry) -> Void) {
+        completion(readSessionEntry())
     }
 
-    func timeline(for configuration: Intent, in context: Context) async -> Timeline<SessionWidgetEntry> {
+    func getTimeline(in context: Context, completion: @escaping (Timeline<SessionWidgetEntry>) -> Void) {
         let entry = readSessionEntry()
-        // Refresh every 5 minutes when at gym, 15 minutes otherwise
         let interval: TimeInterval = entry.isAtGym ? 300 : 900
-        let nextUpdate = Calendar.current.date(byAdding: .second, value: Int(interval), to: .now)!
-        return Timeline(entries: [entry], policy: .after(nextUpdate))
+        let nextUpdate = Date().addingTimeInterval(interval)
+        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
     }
 
     private func readSessionEntry() -> SessionWidgetEntry {
@@ -50,6 +40,7 @@ struct SessionWidgetProvider: TimelineProvider {
               let session = try? JSONDecoder().decode(WidgetSessionData.self, from: data) else {
             return SessionWidgetEntry(date: .now, isAtGym: false, gymName: nil, sessionStart: nil)
         }
+
         return SessionWidgetEntry(
             date: .now,
             isAtGym: true,
@@ -59,11 +50,8 @@ struct SessionWidgetProvider: TimelineProvider {
     }
 }
 
-    static var title: LocalizedStringResource = "Gym Session"
-}
-
 struct SessionWidgetView: View {
-    var entry: SessionWidgetEntry
+    let entry: SessionWidgetEntry
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -103,8 +91,6 @@ struct SessionWidgetView: View {
     }
 }
 
-// MARK: - Device Status Widget
-
 struct DeviceStatusEntry: TimelineEntry {
     let date: Date
     let connectedCount: Int
@@ -112,21 +98,18 @@ struct DeviceStatusEntry: TimelineEntry {
 }
 
 struct DeviceStatusProvider: TimelineProvider {
-    typealias Entry = DeviceStatusEntry
-    
-
     func placeholder(in context: Context) -> DeviceStatusEntry {
         DeviceStatusEntry(date: .now, connectedCount: 2, totalCount: 3)
     }
 
-    func snapshot(for configuration: Intent, in context: Context) async -> DeviceStatusEntry {
-        readDeviceEntry()
+    func getSnapshot(in context: Context, completion: @escaping (DeviceStatusEntry) -> Void) {
+        completion(readDeviceEntry())
     }
 
-    func timeline(for configuration: Intent, in context: Context) async -> Timeline<DeviceStatusEntry> {
+    func getTimeline(in context: Context, completion: @escaping (Timeline<DeviceStatusEntry>) -> Void) {
         let entry = readDeviceEntry()
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 10, to: .now)!
-        return Timeline(entries: [entry], policy: .after(nextUpdate))
+        let nextUpdate = Date().addingTimeInterval(600)
+        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
     }
 
     private func readDeviceEntry() -> DeviceStatusEntry {
@@ -137,11 +120,8 @@ struct DeviceStatusProvider: TimelineProvider {
     }
 }
 
-    static var title: LocalizedStringResource = "Device Status"
-}
-
 struct DeviceStatusWidgetView: View {
-    var entry: DeviceStatusEntry
+    let entry: DeviceStatusEntry
 
     private var statusColor: Color {
         if entry.totalCount == 0 { return .gsTextSecondary }
@@ -173,8 +153,6 @@ struct DeviceStatusWidgetView: View {
     }
 }
 
-// MARK: - Calories Widget
-
 struct CaloriesEntry: TimelineEntry {
     let date: Date
     let consumed: Double
@@ -187,21 +165,18 @@ struct CaloriesEntry: TimelineEntry {
 }
 
 struct CaloriesProvider: TimelineProvider {
-    typealias Entry = CaloriesEntry
-    
-
     func placeholder(in context: Context) -> CaloriesEntry {
         CaloriesEntry(date: .now, consumed: 1450, goal: 2200)
     }
 
-    func snapshot(for configuration: Intent, in context: Context) async -> CaloriesEntry {
-        readCaloriesEntry()
+    func getSnapshot(in context: Context, completion: @escaping (CaloriesEntry) -> Void) {
+        completion(readCaloriesEntry())
     }
 
-    func timeline(for configuration: Intent, in context: Context) async -> Timeline<CaloriesEntry> {
+    func getTimeline(in context: Context, completion: @escaping (Timeline<CaloriesEntry>) -> Void) {
         let entry = readCaloriesEntry()
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: .now)!
-        return Timeline(entries: [entry], policy: .after(nextUpdate))
+        let nextUpdate = Date().addingTimeInterval(900)
+        completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
     }
 
     private func readCaloriesEntry() -> CaloriesEntry {
@@ -212,11 +187,8 @@ struct CaloriesProvider: TimelineProvider {
     }
 }
 
-    static var title: LocalizedStringResource = "Daily Calories"
-}
-
 struct CaloriesWidgetView: View {
-    var entry: CaloriesEntry
+    let entry: CaloriesEntry
 
     var body: some View {
         VStack(spacing: 4) {
@@ -228,7 +200,6 @@ struct CaloriesWidgetView: View {
                     .trim(from: 0, to: entry.progress)
                     .stroke(Color.gsEmerald, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.5), value: entry.progress)
 
                 VStack(spacing: 0) {
                     Text("\(Int(entry.consumed))")
@@ -251,13 +222,13 @@ struct CaloriesWidgetView: View {
     }
 }
 
-// MARK: - Widget Bundle
-
+@main
 struct GearSnitchWidgetBundle: WidgetBundle {
     var body: some Widget {
         GearSnitchSessionWidget()
         GearSnitchDeviceStatusWidget()
         GearSnitchCaloriesWidget()
+        GymSessionLiveActivityWidget()
     }
 }
 
@@ -265,14 +236,11 @@ struct GearSnitchSessionWidget: Widget {
     let kind = "GearSnitchSessionWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(
-            kind: kind,
-            provider: SessionWidgetProvider()
-        ) { entry in
+        StaticConfiguration(kind: kind, provider: SessionWidgetProvider()) { entry in
             SessionWidgetView(entry: entry)
         }
         .configurationDisplayName("Gym Session")
-        .description("Shows whether you're currently at the gym.")
+        .description("Shows whether a gym session is active.")
         .supportedFamilies([.systemSmall])
     }
 }
@@ -281,15 +249,11 @@ struct GearSnitchDeviceStatusWidget: Widget {
     let kind = "GearSnitchDeviceStatusWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(
-            kind: kind,
-            
-            provider: DeviceStatusProvider()
-        ) { entry in
+        StaticConfiguration(kind: kind, provider: DeviceStatusProvider()) { entry in
             DeviceStatusWidgetView(entry: entry)
         }
         .configurationDisplayName("Device Status")
-        .description("Shows connected device count.")
+        .description("Shows how many devices are connected.")
         .supportedFamilies([.systemSmall])
     }
 }
@@ -298,20 +262,14 @@ struct GearSnitchCaloriesWidget: Widget {
     let kind = "GearSnitchCaloriesWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(
-            kind: kind,
-            
-            provider: CaloriesProvider()
-        ) { entry in
+        StaticConfiguration(kind: kind, provider: CaloriesProvider()) { entry in
             CaloriesWidgetView(entry: entry)
         }
         .configurationDisplayName("Daily Calories")
-        .description("Shows daily calorie ring progress.")
+        .description("Shows calorie goal progress for today.")
         .supportedFamilies([.systemSmall])
     }
 }
-
-// MARK: - Shared Data Model
 
 private struct WidgetSessionData: Decodable {
     let gymName: String
