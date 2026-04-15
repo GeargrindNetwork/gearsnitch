@@ -5,7 +5,7 @@ export interface IDevice extends Document {
   userId: Types.ObjectId;
   name: string;
   nickname?: string | null;
-  type: 'earbuds' | 'tracker' | 'belt' | 'bag' | 'other';
+  type: 'earbuds' | 'tracker' | 'belt' | 'bag' | 'watch' | 'other';
   identifier: string;
   hardwareModel?: string;
   firmwareVersion?: string;
@@ -60,7 +60,7 @@ const DeviceSchema = new Schema<IDevice>(
     nickname: { type: String, default: null },
     type: {
       type: String,
-      enum: ['earbuds', 'tracker', 'belt', 'bag', 'other'],
+      enum: ['earbuds', 'tracker', 'belt', 'bag', 'watch', 'other'],
       required: true,
     },
     identifier: { type: String, required: true },

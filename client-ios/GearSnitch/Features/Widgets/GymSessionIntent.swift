@@ -55,6 +55,26 @@ struct StopGymSessionIntent: AppIntent {
     }
 }
 
+// MARK: - Disarm Disconnect Protection Intent
+
+struct DisarmProtectionIntent: AppIntent {
+    static var title: LocalizedStringResource = "Disarm Protection"
+    static var description: IntentDescription = "Disarms the Bluetooth disconnect protection system."
+    static var openAppWhenRun: Bool = true
+
+    func perform() async throws -> some IntentResult {
+        let defaults = UserDefaults(suiteName: appGroupId)
+
+        let actionData: [String: Any] = [
+            "pendingAction": "disarmProtection",
+            "requestedAt": Date().timeIntervalSince1970,
+        ]
+        defaults?.set(actionData, forKey: "pendingSessionAction")
+
+        return .result()
+    }
+}
+
 // MARK: - App Intent Shortcuts Provider
 
 struct GearSnitchShortcutsProvider: AppShortcutsProvider {

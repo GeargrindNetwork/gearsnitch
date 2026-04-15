@@ -11,6 +11,26 @@ struct SettingsView: View {
         List {
             Section {
                 NavigationLink {
+                    LostItemScannerView()
+                } label: {
+                    Label("Lost Item Scanner", systemImage: "location.viewfinder")
+                        .foregroundColor(.gsDanger)
+                }
+            } header: {
+                Text("Find My Gear")
+                    .foregroundColor(.gsTextSecondary)
+            }
+            .listRowBackground(Color.gsSurface)
+
+            Section {
+                NavigationLink {
+                    GymListView()
+                } label: {
+                    Label("Manage Gyms", systemImage: "building.2")
+                        .foregroundColor(.gsText)
+                }
+
+                NavigationLink {
                     NotificationPreferencesView()
                 } label: {
                     Label("Notification Preferences", systemImage: "bell.badge")

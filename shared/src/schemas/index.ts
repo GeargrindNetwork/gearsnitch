@@ -48,7 +48,7 @@ export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 export const createDeviceSchema = z.object({
   name: z.string().min(1).max(100),
   nickname: z.string().trim().min(1).max(100).nullable().optional(),
-  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'other']),
+  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'watch', 'other']),
   bluetoothIdentifier: z.string().min(1).max(255),
   isFavorite: z.boolean().optional(),
   hardwareModel: z.string().max(100).optional(),
@@ -60,7 +60,7 @@ export type CreateDeviceInput = z.infer<typeof createDeviceSchema>;
 export const updateDeviceSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   nickname: z.string().trim().min(1).max(100).nullable().optional(),
-  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'other']).optional(),
+  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'watch', 'other']).optional(),
   hardwareModel: z.string().max(100).optional(),
   firmwareVersion: z.string().max(50).optional(),
   isFavorite: z.boolean().optional(),
@@ -698,3 +698,151 @@ export const medicationYearGraphResponseSchema = z.object({
 export type MedicationYearGraphResponsePayload = z.infer<
   typeof medicationYearGraphResponseSchema
 >;
+
+// ─── Heart Rate ─────────────────────────────────────────────────────────────
+
+/** Single heart rate sample from AirPods Pro 3 or other HealthKit source */
+export const heartRateSampleSchema = z.object({
+  bpm: z.number().int().min(30).max(250),
+  recordedAt: z.string().datetime(),
+  source: z.string().max(120).optional().default('airpods_pro'),
+});
+export type HeartRateSampleInput = z.infer<typeof heartRateSampleSchema>;
+
+/** Batch heart rate ingestion request */
+export const heartRateBatchSchema = z.object({
+  samples: z.array(heartRateSampleSchema).min(1).max(500),
+  sessionId: z.string().optional(),
+});
+export type HeartRateBatchInput = z.infer<typeof heartRateBatchSchema>;
+
+/** Heart rate zone distribution as percentages (0-100) */
+export const heartRateZoneDistributionSchema = z.object({
+  rest: z.number().min(0).max(100),
+  light: z.number().min(0).max(100),
+  fatBurn: z.number().min(0).max(100),
+  cardio: z.number().min(0).max(100),
+  peak: z.number().min(0).max(100),
+});
+export type HeartRateZoneDistribution = z.infer<typeof heartRateZoneDistributionSchema>;
+
+/** Session heart rate summary with min/max/avg and zone breakdown */
+export const heartRateSessionSummarySchema = z.object({
+  sessionId: z.string().nullable().optional(),
+  from: z.string().datetime(),
+  to: z.string().datetime(),
+  sampleCount: z.number().int().min(0),
+  minBPM: z.number().int().min(0),
+  maxBPM: z.number().int().min(0),
+  avgBPM: z.number().min(0),
+  zoneDistribution: heartRateZoneDistributionSchema,
+});
+export type HeartRateSessionSummary = z.infer<typeof heartRateSessionSummarySchema>;
+
+// ─── Health Dashboard ──────────────────────────────────────────────────────
+
+/** Latest heart rate reading */
+export const healthDashboardLatestHRSchema = z.object({
+  bpm: z.number().int().min(0),
+  recordedAt: z.string().datetime(),
+  source: z.string(),
+});
+export type HealthDashboardLatestHR = z.infer<typeof healthDashboardLatestHRSchema>;
+
+/** Today's heart rate aggregate */
+export const healthDashboardTodayHRSchema = z.object({
+  sampleCount: z.number().int().min(0),
+  minBPM: z.number().int().min(0),
+  maxBPM: z.number().int().min(0),
+  avgBPM: z.number().min(0),
+  zoneDistribution: heartRateZoneDistributionSchema,
+});
+export type HealthDashboardTodayHR = z.infer<typeof healthDashboardTodayHRSchema>;
+
+/** Session entry in health dashboard */
+export const healthDashboardSessionSchema = z.object({
+  _id: z.string(),
+  gymName: z.string(),
+  startedAt: z.string().datetime(),
+  endedAt: z.string().datetime().nullable(),
+  durationMinutes: z.number().nullable(),
+  heartRateSummary: heartRateSessionSummarySchema.nullable(),
+});
+export type HealthDashboardSession = z.infer<typeof healthDashboardSessionSchema>;
+
+/** Device entry in health dashboard */
+export const healthDashboardDeviceSchema = z.object({
+  _id: z.string(),
+  name: z.string(),
+  nickname: z.string().nullable(),
+  type: z.string(),
+  status: z.string(),
+  isFavorite: z.boolean(),
+  lastSeenAt: z.string().datetime().nullable(),
+  healthCapable: z.boolean(),
+});
+export type HealthDashboardDevice = z.infer<typeof healthDashboardDeviceSchema>;
+
+/** Health data source attribution */
+export const healthDashboardSourceSchema = z.object({
+  name: z.string(),
+  type: z.enum(['airpods_pro', 'apple_watch', 'apple_health', 'manual']),
+  lastDataAt: z.string().datetime().nullable(),
+  sampleCountToday: z.number().int().min(0),
+});
+export type HealthDashboardSource = z.infer<typeof healthDashboardSourceSchema>;
+
+/** Full health dashboard response */
+export const healthDashboardResponseSchema = z.object({
+  heartRate: z.object({
+    latest: healthDashboardLatestHRSchema.nullable(),
+    today: healthDashboardTodayHRSchema.nullable(),
+  }),
+  sessions: z.object({
+    today: z.array(healthDashboardSessionSchema),
+    activeSession: z.object({
+      _id: z.string(),
+      gymName: z.string(),
+      startedAt: z.string().datetime(),
+    }).nullable(),
+  }),
+  devices: z.array(healthDashboardDeviceSchema),
+  sources: z.array(healthDashboardSourceSchema),
+});
+export type HealthDashboardResponse = z.infer<typeof healthDashboardResponseSchema>;
+
+// ─── Health Trends ─────────────────────────────────────────────────────────
+
+export const healthTrendsHRPointSchema = z.object({
+  date: z.string().datetime(),
+  bpm: z.number().int(),
+  zone: z.string(),
+});
+
+export const healthTrendsDailyPointSchema = z.object({
+  date: z.string().datetime(),
+  value: z.number(),
+});
+
+export const healthTrendsWeightPointSchema = z.object({
+  date: z.string().datetime(),
+  value: z.number(),
+  unit: z.string(),
+});
+
+export const healthTrendsWorkoutPointSchema = z.object({
+  date: z.string().datetime(),
+  count: z.number().int(),
+  durationMinutes: z.number(),
+});
+
+export const healthTrendsResponseSchema = z.object({
+  days: z.number().int(),
+  since: z.string().datetime(),
+  heartRateScatter: z.array(healthTrendsHRPointSchema),
+  restingHeartRate: z.array(healthTrendsDailyPointSchema),
+  weightTrend: z.array(healthTrendsWeightPointSchema),
+  caloriesTrend: z.array(healthTrendsDailyPointSchema),
+  workoutTrend: z.array(healthTrendsWorkoutPointSchema),
+});
+export type HealthTrendsResponse = z.infer<typeof healthTrendsResponseSchema>;

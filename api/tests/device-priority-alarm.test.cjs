@@ -69,10 +69,11 @@ describe('device priority and disconnect UX regression sweep', () => {
     expect(bleManager).not.toContain('triggering panic');
   });
 
-  test('disconnect UX and BLE calibration are explicitly updated', () => {
-    expect(dashboardView).toContain('Button("End Session")');
-    expect(dashboardView).toContain('Button("Lost Gear", role: .destructive)');
-    expect(dashboardView).toContain('Button("Keep Monitoring", role: .cancel)');
+  test('disconnect UX uses overlay with silence/track/disregard flow', () => {
+    expect(dashboardView).toContain('DisconnectAlertOverlay');
+    expect(dashboardView).toContain('onTrackItem');
+    expect(dashboardView).toContain('onDisregard');
+    expect(dashboardView).toContain('onDismissed');
     expect(gymSessionManager).toContain('BLEManager.shared.disconnectAll()');
     expect(bleSignalMonitor).toContain('case -67 ... 0:      return .strong');
     expect(bleSignalMonitor).toContain('case -76 ..< -67:    return .moderate');

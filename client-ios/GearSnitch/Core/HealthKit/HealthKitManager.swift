@@ -43,6 +43,12 @@ final class HealthKitManager {
         if let restingHR = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) {
             types.insert(restingHR)
         }
+        if let heartRate = HKQuantityType.quantityType(forIdentifier: .heartRate) {
+            types.insert(heartRate)
+        }
+        if let hrv = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) {
+            types.insert(hrv)
+        }
         if let workoutType = HKObjectType.workoutType() as HKObjectType? {
             types.insert(workoutType)
         }

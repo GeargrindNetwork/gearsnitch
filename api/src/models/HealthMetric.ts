@@ -10,10 +10,11 @@ export interface IHealthMetric extends Document {
     | 'active_calories'
     | 'steps'
     | 'resting_heart_rate'
-    | 'workout_session';
+    | 'workout_session'
+    | 'heart_rate';
   value: number;
   unit: 'kg' | 'lb' | 'cm' | 'in' | 'bmi' | 'kcal' | 'steps' | 'bpm';
-  source: 'manual' | 'apple_health';
+  source: 'manual' | 'apple_health' | 'airpods_pro';
   recordedAt: Date;
   createdAt: Date;
 }
@@ -31,6 +32,7 @@ const HealthMetricSchema = new Schema<IHealthMetric>(
         'steps',
         'resting_heart_rate',
         'workout_session',
+        'heart_rate',
       ],
       required: true,
     },
@@ -42,7 +44,7 @@ const HealthMetricSchema = new Schema<IHealthMetric>(
     },
     source: {
       type: String,
-      enum: ['manual', 'apple_health'],
+      enum: ['manual', 'apple_health', 'airpods_pro'],
       required: true,
     },
     recordedAt: { type: Date, required: true },
@@ -51,6 +53,7 @@ const HealthMetricSchema = new Schema<IHealthMetric>(
 );
 
 HealthMetricSchema.index({ userId: 1, metricType: 1, recordedAt: -1 });
+HealthMetricSchema.index({ userId: 1, metricType: 1, recordedAt: 1 });
 
 export const HealthMetric = mongoose.model<IHealthMetric>(
   'HealthMetric',

@@ -23,7 +23,7 @@ export interface IEventLog extends Document {
   userId: Types.ObjectId;
   eventType: EventType;
   metadata?: unknown;
-  source: 'ios' | 'web' | 'system' | 'widget';
+  source: 'ios' | 'web' | 'system' | 'widget' | 'watchos';
   timestamp: Date;
 }
 
@@ -38,7 +38,7 @@ const EventLogSchema = new Schema<IEventLog>(
     metadata: { type: Schema.Types.Mixed },
     source: {
       type: String,
-      enum: ['ios', 'web', 'system', 'widget'],
+      enum: ['ios', 'web', 'system', 'widget', 'watchos'],
       default: 'ios',
     },
     timestamp: { type: Date, default: Date.now },

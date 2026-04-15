@@ -7,6 +7,17 @@ import os
 
 // MARK: - Profile DTO
 
+struct ProfileDeviceDTO: Decodable, Identifiable {
+    let _id: String
+    let name: String
+    let nickname: String?
+    let type: String
+    let status: String?
+    let isFavorite: Bool?
+
+    var id: String { _id }
+}
+
 struct ProfileDTO: Decodable {
     let id: String
     let email: String?
@@ -23,12 +34,13 @@ struct ProfileDTO: Decodable {
     let heightInches: Double?
     let weightLbs: Double?
     let orderCount: Int?
+    let devices: [ProfileDeviceDTO]?
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
         case email, displayName, firstName, lastName, avatarURL, role
         case referralCode, subscriptionTier, linkedAccounts, createdAt
-        case dateOfBirth, heightInches, weightLbs, orderCount
+        case dateOfBirth, heightInches, weightLbs, orderCount, devices
     }
 }
 

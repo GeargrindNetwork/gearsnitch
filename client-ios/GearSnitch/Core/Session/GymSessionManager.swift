@@ -140,6 +140,9 @@ final class GymSessionManager: ObservableObject {
             // Start BLE monitoring for gym devices
             BLEManager.shared.startScanning()
 
+            // Start heart rate monitoring from AirPods Pro 3 / HealthKit
+            HeartRateMonitor.shared.startMonitoring()
+
             logger.info("Gym session started: \(session.id) at \(gymName)")
 
             NotificationCenter.default.post(
@@ -181,8 +184,11 @@ final class GymSessionManager: ObservableObject {
             WidgetSyncStore.shared.clearSession()
             stopElapsedTimer()
 
-            // Stop BLE scanning
-            BLEManager.shared.disarmDisconnectProtection(reason: "session ended")
+            // Stop heart rate monitoring
+            HeartRateMonitor.shared.stopMonitoring()
+
+            // Stop BLE scanning but keep disconnect protection armed —
+            // protection stays on until the user manually disarms or leaves the geofence
             BLEManager.shared.stopScanning()
             BLEManager.shared.disconnectAll()
             await LiveActivityManager.shared.endLiveActivity(
@@ -237,6 +243,10 @@ final class GymSessionManager: ObservableObject {
             }
 
             await endSession()
+
+        case .disarmProtection:
+            BLEManager.shared.disarmDisconnectProtection(reason: "manual disarm from widget")
+            logger.info("Disconnect protection disarmed via widget intent")
         }
     }
 

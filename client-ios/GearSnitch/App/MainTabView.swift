@@ -2,74 +2,96 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject private var coordinator: AppCoordinator
+    @State private var menuExpanded = false
+    @State private var showHospitals = false
+    @State private var showLabs = false
 
     var body: some View {
-        TabView(selection: $coordinator.selectedTab) {
-            NavigationStack(path: coordinator.path(for: .dashboard)) {
-                DashboardView()
-                    .navigationDestination(for: AppDestination.self) { destination in
-                        destinationView(for: destination)
+        ZStack {
+            // Active tab content
+            Group {
+                switch coordinator.selectedTab {
+                case .dashboard:
+                    NavigationStack(path: coordinator.path(for: .dashboard)) {
+                        DashboardView()
+                            .navigationDestination(for: AppDestination.self) { destination in
+                                destinationView(for: destination)
+                            }
                     }
-            }
-            .tabItem {
-                Label("Dashboard", systemImage: "house.fill")
-            }
-            .tag(Tab.dashboard)
 
-            NavigationStack(path: coordinator.path(for: .workouts)) {
-                WorkoutListView()
-                    .navigationDestination(for: AppDestination.self) { destination in
-                        destinationView(for: destination)
+                case .workouts:
+                    NavigationStack(path: coordinator.path(for: .workouts)) {
+                        WorkoutListView()
+                            .navigationDestination(for: AppDestination.self) { destination in
+                                destinationView(for: destination)
+                            }
                     }
-            }
-            .tabItem {
-                Label("Workouts", systemImage: "figure.run")
-            }
-            .tag(Tab.workouts)
 
-            NavigationStack(path: coordinator.path(for: .health)) {
-                HealthDashboardView()
-                    .navigationDestination(for: AppDestination.self) { destination in
-                        destinationView(for: destination)
+                case .health:
+                    NavigationStack(path: coordinator.path(for: .health)) {
+                        HealthDashboardView()
+                            .navigationDestination(for: AppDestination.self) { destination in
+                                destinationView(for: destination)
+                            }
                     }
-            }
-            .tabItem {
-                Label("Health", systemImage: "heart.text.clipboard")
-            }
-            .tag(Tab.health)
 
-            NavigationStack(path: coordinator.path(for: .store)) {
-                StoreHomeView()
-                    .navigationDestination(for: AppDestination.self) { destination in
-                        destinationView(for: destination)
+                case .store:
+                    NavigationStack(path: coordinator.path(for: .store)) {
+                        StoreHomeView()
+                            .navigationDestination(for: AppDestination.self) { destination in
+                                destinationView(for: destination)
+                            }
                     }
-            }
-            .tabItem {
-                Label("Store", systemImage: "bag.fill")
-            }
-            .tag(Tab.store)
 
-            NavigationStack(path: coordinator.path(for: .profile)) {
-                ProfileView()
-                    .navigationDestination(for: AppDestination.self) { destination in
-                        destinationView(for: destination)
+                case .profile:
+                    NavigationStack(path: coordinator.path(for: .profile)) {
+                        ProfileView()
+                            .navigationDestination(for: AppDestination.self) { destination in
+                                destinationView(for: destination)
+                            }
+                    }
+                }
+            }
+
+            // Dim overlay when menu is expanded
+            if menuExpanded {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            menuExpanded = false
+                        }
                     }
             }
-            .tabItem {
-                Label("Profile", systemImage: "person.crop.circle.fill")
-            }
-            .tag(Tab.profile)
+
+            // Floating hamburger menu
+            FloatingMenuView(
+                selectedTab: $coordinator.selectedTab,
+                isExpanded: $menuExpanded,
+                onHospitals: { showHospitals = true },
+                onLabs: { showLabs = true }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
-        .tint(.gsEmerald)
         .sheet(item: $coordinator.activeSheet) { sheet in
             sheetView(for: sheet)
+        }
+        .fullScreenCover(isPresented: $showHospitals) {
+            NavigationStack {
+                NearestHospitalsView()
+            }
+        }
+        .fullScreenCover(isPresented: $showLabs) {
+            NavigationStack {
+                ScheduleLabsView()
+            }
         }
     }
 
     @ViewBuilder
     private func destinationView(for destination: AppDestination) -> some View {
         switch destination {
-        case .referral:
+        case .referral(_):
             ReferralView()
         case .product(let reference):
             ProductDestinationView(productReference: reference)
