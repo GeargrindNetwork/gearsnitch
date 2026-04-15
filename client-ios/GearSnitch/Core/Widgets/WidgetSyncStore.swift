@@ -4,6 +4,7 @@ import WidgetKit
 enum PendingSessionActionKind: String {
     case startSession
     case endSession
+    case disarmProtection
 }
 
 struct PendingSessionAction {

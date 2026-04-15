@@ -53,7 +53,7 @@ final class BLEManager: NSObject, ObservableObject {
     // MARK: - Constants
 
     private static let restorationIdentifier = "com.gearsnitch.ble.central"
-    private static let reconnectionTimeout: TimeInterval = 30
+    private static let reconnectionTimeout: TimeInterval = 20
     private static let reconnectionTimerInterval: TimeInterval = 1
     private static let protectedDisconnectNotificationPrefix = "protected-disconnect-"
 
@@ -217,6 +217,9 @@ final class BLEManager: NSObject, ObservableObject {
         isDisconnectProtectionArmed = true
         armedGymId = gymId
         logger.info("Disconnect protection armed\(gymId.map { " for gym \($0)" } ?? "")")
+
+        // Show protection indicator in Dynamic Island
+        DisconnectProtectionActivityManager.shared.startActivity(gymName: nil)
     }
 
     func disarmDisconnectProtection(reason: String? = nil) {
@@ -228,6 +231,11 @@ final class BLEManager: NSObject, ObservableObject {
             logger.info("Disconnect protection disarmed (\(reason))")
         } else {
             logger.info("Disconnect protection disarmed")
+        }
+
+        // Remove protection indicator from Dynamic Island
+        Task {
+            await DisconnectProtectionActivityManager.shared.endActivity()
         }
     }
 

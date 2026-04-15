@@ -16,6 +16,13 @@ struct HealthDashboardView: View {
                     metricsGrid
                 }
 
+                // Trends card
+                NavigationLink {
+                    TrendsView()
+                } label: {
+                    trendsCard
+                }
+
                 // Quick links
                 VStack(spacing: 12) {
                     NavigationLink {
@@ -170,6 +177,73 @@ struct HealthDashboardView: View {
                 .foregroundColor(.gsTextSecondary)
         }
         .cardStyle()
+    }
+
+    // MARK: - Trends Card
+
+    private var trendsCard: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.gsDanger.opacity(0.2), Color.gsCyan.opacity(0.2)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: "chart.xyaxis.line")
+                        .font(.title3)
+                        .foregroundColor(.gsCyan)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Trends")
+                        .font(.headline)
+                        .foregroundColor(.gsText)
+
+                    Text("Heart rate, HRV, workouts, weight & more")
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+            }
+
+            // Mini preview bars
+            HStack(spacing: 3) {
+                ForEach(0..<12, id: \.self) { i in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.gsDanger.opacity(0.6), Color.gsCyan.opacity(0.6)],
+                                startPoint: .bottom, endPoint: .top
+                            )
+                        )
+                        .frame(height: CGFloat([18, 24, 20, 30, 26, 22, 28, 32, 24, 20, 26, 30][i]))
+                }
+            }
+            .frame(height: 32, alignment: .bottom)
+        }
+        .padding(16)
+        .background(Color.gsSurface)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.gsDanger.opacity(0.3), Color.gsCyan.opacity(0.3)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
     }
 
     // MARK: - Empty

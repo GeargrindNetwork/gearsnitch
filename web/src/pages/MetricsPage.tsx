@@ -6,10 +6,14 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import MedicationYearGraphCard from '@/components/metrics/MedicationYearGraphCard';
 import CycleSummaryCard from '@/components/metrics/CycleSummaryCard';
+import HeartRateSummaryCard from '@/components/metrics/HeartRateSummaryCard';
+import ConnectedDevicesCard from '@/components/metrics/ConnectedDevicesCard';
+import HealthSourcesCard from '@/components/metrics/HealthSourcesCard';
+import HealthTrendsSection from '@/components/metrics/HealthTrendsSection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { api, getMedicationYearGraph } from '@/lib/api';
+import { api, getMedicationYearGraph, getHealthDashboard } from '@/lib/api';
 
 interface DistributionPoint {
   label: string;
@@ -372,6 +376,11 @@ export default function MetricsPage() {
     queryFn: () => getMedicationYearGraph(currentYear),
     staleTime: 60_000,
   });
+  const healthDashboardQuery = useQuery({
+    queryKey: ['health-dashboard'],
+    queryFn: getHealthDashboard,
+    staleTime: 30_000,
+  });
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -459,6 +468,18 @@ export default function MetricsPage() {
                 value={`${data.deviceSummary.monitoring}/${data.deviceSummary.totalDevices}`}
                 accent="text-sky-300"
               />
+            </section>
+
+            {healthDashboardQuery.data && (
+              <section className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <HeartRateSummaryCard data={healthDashboardQuery.data.heartRate} />
+                <ConnectedDevicesCard devices={healthDashboardQuery.data.devices} />
+                <HealthSourcesCard sources={healthDashboardQuery.data.sources} />
+              </section>
+            )}
+
+            <section className="mt-6">
+              <HealthTrendsSection />
             </section>
 
             <section className="mt-4">

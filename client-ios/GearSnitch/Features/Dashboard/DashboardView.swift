@@ -4,6 +4,11 @@ struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
     @ObservedObject private var sessionManager = GymSessionManager.shared
     @ObservedObject private var bleManager = BLEManager.shared
+    @ObservedObject private var heartRateMonitor = HeartRateMonitor.shared
+    @State private var showDisconnectOverlay = false
+    @State private var disconnectDevice: DisconnectDecisionPrompt?
+    @State private var navigateToScanner = false
+    @State private var scannerTargetDevice: BLEDevice?
 
     var body: some View {
         ScrollView {
@@ -11,22 +16,12 @@ struct DashboardView: View {
                 // Gym session status
                 gymSessionStatusCard
 
+                // Heart rate monitor with pulsing animation
+                HeartRateMonitorCard()
+
                 // Active alerts banner
                 if viewModel.hasActiveAlerts {
                     alertsBanner
-                }
-
-                // Device status cards
-                deviceStatusSection
-
-                // Signal strength indicator
-                if !bleManager.connectedDevices.isEmpty {
-                    signalStrengthSection
-                }
-
-                // Gym status
-                if let gym = viewModel.defaultGym {
-                    gymStatusCard(gym)
                 }
 
                 // Activity calendar link
@@ -43,6 +38,27 @@ struct DashboardView: View {
         .navigationTitle("Dashboard")
         .navigationBarTitleDisplayMode(.large)
         .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if bleManager.isDisconnectProtectionArmed {
+                    Button {
+                        bleManager.disarmDisconnectProtection(reason: "manual disarm from dashboard")
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "lock.open.fill")
+                                .font(.caption)
+                            Text("Disarm")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.red.opacity(0.85))
+                        .cornerRadius(8)
+                    }
+                }
+            }
+        }
         .refreshable {
             await viewModel.loadDashboard()
         }
@@ -51,73 +67,32 @@ struct DashboardView: View {
                 LoadingView(message: "Loading dashboard...")
             }
         }
-        .alert(
-            bleManager.pendingDisconnectPrompt?.deviceName ?? "Device disconnected",
-            isPresented: Binding(
-                get: { bleManager.pendingDisconnectPrompt != nil },
-                set: { isPresented in
-                    if !isPresented {
+        .overlay {
+            if let prompt = bleManager.pendingDisconnectPrompt {
+                DisconnectAlertOverlay(
+                    deviceName: prompt.deviceName,
+                    deviceIdentifier: prompt.deviceIdentifier,
+                    onTrackItem: {
+                        // Find the BLE device and navigate to scanner
+                        let allDevices = bleManager.discoveredDevices + bleManager.connectedDevices
+                        scannerTargetDevice = allDevices.first { $0.identifier == prompt.deviceIdentifier }
+                        bleManager.dismissPendingDisconnectPrompt()
+                        navigateToScanner = true
+                    },
+                    onDisregard: {
+                        bleManager.dismissPendingDisconnectPrompt()
+                    },
+                    onDismissed: {
+                        // Auto-cleared because device reconnected
                         bleManager.dismissPendingDisconnectPrompt()
                     }
-                }
-            )
-        ) {
-            Button("End Session") {
-                bleManager.resolvePendingDisconnectAsEndedSession()
-                if sessionManager.isSessionActive {
-                    Task {
-                        await sessionManager.endSession()
-                    }
-                }
-            }
-
-            Button("Lost Gear", role: .destructive) {
-                bleManager.resolvePendingDisconnectAsLostGear()
-            }
-
-            Button("Keep Monitoring", role: .cancel) {
-                bleManager.dismissPendingDisconnectPrompt()
-            }
-        } message: {
-            if let prompt = bleManager.pendingDisconnectPrompt {
-                Text(
-                    "We lost the connection to \(prompt.deviceName). End this gym session if you are done, or escalate to Lost Gear if the item is missing."
                 )
+                .transition(.opacity)
             }
         }
-        .alert(
-            bleManager.pendingDisconnectPrompt?.deviceName ?? "Device disconnected",
-            isPresented: Binding(
-                get: { bleManager.pendingDisconnectPrompt != nil },
-                set: { isPresented in
-                    if !isPresented {
-                        bleManager.dismissPendingDisconnectPrompt()
-                    }
-                }
-            )
-        ) {
-            Button("End Session") {
-                bleManager.resolvePendingDisconnectAsEndedSession()
-                if sessionManager.isSessionActive {
-                    Task {
-                        await sessionManager.endSession()
-                    }
-                }
-            }
-
-            Button("Lost Gear", role: .destructive) {
-                bleManager.resolvePendingDisconnectAsLostGear()
-            }
-
-            Button("Keep Monitoring", role: .cancel) {
-                bleManager.dismissPendingDisconnectPrompt()
-            }
-        } message: {
-            if let prompt = bleManager.pendingDisconnectPrompt {
-                Text(
-                    "We lost the connection to \(prompt.deviceName). End this gym session if you are done, or escalate to Lost Gear if the item is missing."
-                )
-            }
+        .animation(.easeInOut(duration: 0.3), value: bleManager.pendingDisconnectPrompt != nil)
+        .navigationDestination(isPresented: $navigateToScanner) {
+            LostItemScannerView(device: scannerTargetDevice)
         }
         .task {
             await viewModel.loadDashboard()

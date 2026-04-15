@@ -249,6 +249,25 @@ extension APIEndpoint {
                 body: HealthSyncBody(metrics: metrics)
             )
         }
+
+        static func heartRateBatch(body: HeartRateBatchBody) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/health/heart-rate/batch",
+                method: .POST,
+                body: body
+            )
+        }
+
+        static func heartRateSessionSummary(from: String, to: String, sessionId: String? = nil) -> APIEndpoint {
+            var queryItems = [
+                URLQueryItem(name: "from", value: from),
+                URLQueryItem(name: "to", value: to),
+            ]
+            if let sessionId {
+                queryItems.append(URLQueryItem(name: "sessionId", value: sessionId))
+            }
+            return APIEndpoint(path: "/api/v1/health/heart-rate/session-summary", queryItems: queryItems)
+        }
     }
 }
 

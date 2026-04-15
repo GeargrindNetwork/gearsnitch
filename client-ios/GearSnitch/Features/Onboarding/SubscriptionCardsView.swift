@@ -96,6 +96,14 @@ enum SubscriptionTier: String, CaseIterable, Identifiable {
         }
     }
 
+    var upgradeOrder: Int {
+        switch self {
+        case .hustle: return 0
+        case .hwmf: return 1
+        case .babyMomma: return 2
+        }
+    }
+
     static func tier(forProductID productID: String) -> SubscriptionTier? {
         switch productID {
         case "com.gearsnitch.app.monthly", "com.geargrind.gearsnitch.monthly":
@@ -163,11 +171,10 @@ struct SubscriptionCardsView: View {
                 .padding(.bottom, 12)
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(SubscriptionTier.allCases) { tier in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 14) {
+                    ForEach([SubscriptionTier.hustle, .hwmf, .babyMomma], id: \.self) { tier in
                         subscriptionCard(tier)
-                            .frame(width: 260)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -196,18 +203,31 @@ struct SubscriptionCardsView: View {
     @ViewBuilder
     private func subscriptionCard(_ tier: SubscriptionTier) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let badge = tier.badge {
-                Text(badge)
-                    .font(.caption.bold())
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(badgeColor(for: tier))
-                    .cornerRadius(6)
-                    .padding(.bottom, 12)
-            } else {
-                Spacer().frame(height: 26)
+            HStack {
+                if let badge = tier.badge {
+                    Text(badge)
+                        .font(.caption.bold())
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(badgeColor(for: tier))
+                        .cornerRadius(6)
+                }
+
+                if storeKit.currentTier == tier {
+                    Text("Current Plan")
+                        .font(.caption.bold())
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.gsSuccess)
+                        .cornerRadius(6)
+                }
+
+                Spacer()
             }
+            .frame(minHeight: 26)
+            .padding(.bottom, 12)
 
             Text(tier.displayName)
                 .font(.headline)
@@ -326,15 +346,34 @@ struct SubscriptionCardsView: View {
     }
 
     private func buttonTitle(for tier: SubscriptionTier) -> String {
+        if let current = storeKit.currentTier {
+            if tier == current {
+                return "Current Plan"
+            }
+            if tier.upgradeOrder > current.upgradeOrder {
+                return "Upgrade"
+            }
+            return tier.buttonTitle
+        }
         return tier.buttonTitle
     }
 
-    private func isButtonDisabled(for _: SubscriptionTier) -> Bool {
+    private func isButtonDisabled(for tier: SubscriptionTier) -> Bool {
         if storeKit.isPurchasing {
             return true
         }
-
-        return storeKit.isLoadingProducts
+        if storeKit.isLoadingProducts {
+            return true
+        }
+        // Disable if this is the current plan
+        if let current = storeKit.currentTier, tier == current {
+            return true
+        }
+        // Disable downgrade (lower tier than current)
+        if let current = storeKit.currentTier, tier.upgradeOrder < current.upgradeOrder {
+            return true
+        }
+        return false
     }
 
     @ViewBuilder

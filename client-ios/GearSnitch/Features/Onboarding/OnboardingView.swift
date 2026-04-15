@@ -427,6 +427,8 @@ struct OnboardingAddGymView: View {
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var isSaving = false
     @State private var error: String?
+    @State private var savedGyms: [GymDTO] = []
+    @State private var isLoadingSavedGyms = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -459,7 +461,7 @@ struct OnboardingAddGymView: View {
 
                 Spacer()
 
-                // Selected gym confirmation / instructions
+                // Selected gym confirmation / saved gyms / instructions
                 if let selected = selectedResult, let name = selected.name {
                     selectedGymCard(name: name, coordinate: selected.placemark.coordinate)
                 } else if selectedCoordinate != nil && !gymName.isEmpty {
@@ -467,9 +469,18 @@ struct OnboardingAddGymView: View {
                         latitude: selectedCoordinate!.latitude,
                         longitude: selectedCoordinate!.longitude
                     ))
+                } else if !savedGyms.isEmpty {
+                    savedGymsCard
                 } else {
                     instructionCard
                 }
+            }
+        }
+        .task {
+            do {
+                savedGyms = try await APIClient.shared.request(APIEndpoint.Gyms.list)
+            } catch {
+                savedGyms = []
             }
         }
         .onChange(of: selectedResult) { _, newValue in
@@ -632,6 +643,70 @@ struct OnboardingAddGymView: View {
         .padding(.bottom, 32)
     }
 
+    // MARK: - Saved Gyms Card
+
+    private var savedGymsCard: some View {
+        VStack(spacing: 10) {
+            Text("Your Saved Gyms")
+                .font(.headline)
+                .foregroundColor(.gsText)
+
+            Text("Tap a gym to continue, or search for a new one above.")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+                .multilineTextAlignment(.center)
+
+            ForEach(savedGyms, id: \.id) { gym in
+                Button {
+                    onGymAdded(gym.name, gym.latitude, gym.longitude)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "building.2.fill")
+                            .font(.title3)
+                            .foregroundColor(.gsEmerald)
+                            .frame(width: 40, height: 40)
+                            .background(Color.gsEmerald.opacity(0.15))
+                            .cornerRadius(8)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(gym.name)
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.gsText)
+                            if gym.isDefault {
+                                Text("Default Gym")
+                                    .font(.caption2)
+                                    .foregroundColor(.gsEmerald)
+                            }
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.gsTextSecondary)
+                    }
+                    .padding(12)
+                    .background(Color.gsSurface)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gsBorder, lineWidth: 1)
+                    )
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(Color.gsSurface)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gsEmerald.opacity(0.3), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 32)
+    }
+
     // MARK: - Instruction Card
 
     private var instructionCard: some View {
@@ -666,6 +741,27 @@ struct OnboardingAddGymView: View {
     private func saveGym(name: String, coordinate: CLLocationCoordinate2D) async {
         isSaving = true
         error = nil
+
+        // Check for duplicate gym at same location
+        do {
+            let existingGyms: [GymDTO] = try await APIClient.shared.request(APIEndpoint.Gyms.list)
+            let duplicateThresholdMeters: Double = 200
+            for gym in existingGyms {
+                let gymLat = gym.latitude
+                let gymLng = gym.longitude
+                let latDiff = abs(gymLat - coordinate.latitude) * 111_000
+                let lngDiff = abs(gymLng - coordinate.longitude) * 111_000 * cos(coordinate.latitude * .pi / 180)
+                let distance = sqrt(latDiff * latDiff + lngDiff * lngDiff)
+                if distance < duplicateThresholdMeters || gym.name.lowercased() == name.lowercased() {
+                    // Gym already exists — use it and advance
+                    onGymAdded(gym.name, gymLat, gymLng)
+                    isSaving = false
+                    return
+                }
+            }
+        } catch {
+            // If we can't check for duplicates, proceed with creation
+        }
 
         let body = CreateGymBody(
             name: name,

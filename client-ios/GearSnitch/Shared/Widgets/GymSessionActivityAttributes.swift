@@ -8,5 +8,7 @@ struct GymSessionAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         let isActive: Bool
         let elapsedSeconds: Int
+        let heartRateBPM: Int?
+        let heartRateZone: String?
     }
 }

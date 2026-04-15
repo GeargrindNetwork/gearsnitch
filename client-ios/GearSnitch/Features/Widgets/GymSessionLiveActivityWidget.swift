@@ -29,23 +29,29 @@ struct GymSessionLiveActivityWidget: Widget {
                 }
 
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack(spacing: 16) {
-                        Label(context.state.isActive ? "Active" : "Completed", systemImage: "circle.fill")
-                            .font(.caption2)
-                            .foregroundColor(context.state.isActive ? .green : .secondary)
+                    VStack(spacing: 8) {
+                        if let bpm = context.state.heartRateBPM {
+                            heartRateRow(bpm: bpm, zone: context.state.heartRateZone)
+                        }
 
-                        Spacer()
+                        HStack(spacing: 16) {
+                            Label(context.state.isActive ? "Active" : "Completed", systemImage: "circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(context.state.isActive ? .green : .secondary)
 
-                        if context.state.isActive {
-                            Button(intent: StopGymSessionIntent()) {
-                                Text("End Session")
-                                    .font(.caption.weight(.semibold))
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.red.opacity(0.8))
-                                    .cornerRadius(8)
+                            Spacer()
+
+                            if context.state.isActive {
+                                Button(intent: StopGymSessionIntent()) {
+                                    Text("End Session")
+                                        .font(.caption.weight(.semibold))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(Color.red.opacity(0.8))
+                                        .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -53,13 +59,66 @@ struct GymSessionLiveActivityWidget: Widget {
                 Image(systemName: "figure.strengthtraining.traditional")
                     .foregroundColor(.green)
             } compactTrailing: {
-                compactTimerText(for: context)
+                if let bpm = context.state.heartRateBPM {
+                    HStack(spacing: 2) {
+                        Image(systemName: "heart.fill")
+                            .font(.caption2)
+                            .foregroundColor(zoneColor(context.state.heartRateZone))
+                        Text("\(bpm)")
+                            .monospacedDigit()
+                            .font(.caption)
+                            .foregroundColor(.white)
+                    }
+                } else {
+                    compactTimerText(for: context)
+                }
             } minimal: {
-                Image(systemName: "figure.strengthtraining.traditional")
-                    .foregroundColor(.green)
+                if context.state.heartRateBPM != nil {
+                    Image(systemName: "heart.fill")
+                        .foregroundColor(zoneColor(context.state.heartRateZone))
+                } else {
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .foregroundColor(.green)
+                }
             }
         }
     }
+
+    // MARK: - Heart Rate Row (Expanded Island)
+
+    @ViewBuilder
+    private func heartRateRow(bpm: Int, zone: String?) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "heart.fill")
+                .font(.caption)
+                .foregroundColor(zoneColor(zone))
+
+            Text("\(bpm)")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .foregroundColor(.white)
+
+            Text("BPM")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+            Spacer()
+
+            if let zone, let label = zoneLabelText(zone) {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(zoneColor(zone))
+                        .frame(width: 6, height: 6)
+                    Text(label)
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(zoneColor(zone))
+                }
+            }
+        }
+        .padding(.horizontal, 4)
+    }
+
+    // MARK: - Lock Screen View
 
     @ViewBuilder
     private func lockScreenView(context: ActivityViewContext<GymSessionAttributes>) -> some View {
@@ -83,11 +142,30 @@ struct GymSessionLiveActivityWidget: Widget {
 
             Spacer()
 
-            timerText(for: context)
+            if let bpm = context.state.heartRateBPM {
+                VStack(spacing: 2) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                            .font(.caption)
+                            .foregroundColor(zoneColor(context.state.heartRateZone))
+                        Text("\(bpm)")
+                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundColor(.white)
+                    }
+                    Text("BPM")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                timerText(for: context)
+            }
         }
         .padding(16)
         .background(Color.black)
     }
+
+    // MARK: - Timer
 
     @ViewBuilder
     private func timerText(for context: ActivityViewContext<GymSessionAttributes>) -> some View {
@@ -119,6 +197,8 @@ struct GymSessionLiveActivityWidget: Widget {
         }
     }
 
+    // MARK: - Helpers
+
     private func formattedDuration(_ seconds: Int) -> String {
         let hours = seconds / 3600
         let minutes = (seconds % 3600) / 60
@@ -129,5 +209,27 @@ struct GymSessionLiveActivityWidget: Widget {
         }
 
         return String(format: "%02d:%02d", minutes, remainingSeconds)
+    }
+
+    private func zoneColor(_ zone: String?) -> Color {
+        switch zone {
+        case "rest": return .gray
+        case "light": return .blue
+        case "fatBurn": return .green
+        case "cardio": return .orange
+        case "peak": return .red
+        default: return .red
+        }
+    }
+
+    private func zoneLabelText(_ zone: String) -> String? {
+        switch zone {
+        case "rest": return "Rest"
+        case "light": return "Light"
+        case "fatBurn": return "Fat Burn"
+        case "cardio": return "Cardio"
+        case "peak": return "Peak"
+        default: return nil
+        }
     }
 }

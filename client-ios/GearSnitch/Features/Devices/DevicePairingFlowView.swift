@@ -12,6 +12,7 @@ struct DevicePairingFlowView: View {
     @State private var error: String?
     @State private var nickname = ""
     @State private var pinDevice = false
+    @State private var savedDevices: [DeviceDTO] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,6 +52,13 @@ struct DevicePairingFlowView: View {
         .onAppear {
             if bleManager.bluetoothState == .poweredOn {
                 bleManager.startScanning(mode: .discovery)
+            }
+        }
+        .task {
+            do {
+                savedDevices = try await APIClient.shared.request(APIEndpoint.Devices.list)
+            } catch {
+                savedDevices = []
             }
         }
         .onChange(of: bleManager.bluetoothState) { _, newState in
@@ -114,6 +122,26 @@ struct DevicePairingFlowView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 10) {
+                        // Previously saved devices pinned at top
+                        if !savedDevices.isEmpty {
+                            Text("Previously Saved")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.gsEmerald)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 4)
+
+                            ForEach(savedDevices, id: \.id) { device in
+                                savedDeviceCard(device)
+                            }
+
+                            Text("Nearby Devices")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(.gsTextSecondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 4)
+                                .padding(.top, 8)
+                        }
+
                         ForEach(bleManager.discoveredDevices) { device in
                             deviceCard(device)
                         }
@@ -308,6 +336,44 @@ struct DevicePairingFlowView: View {
         }
     }
 
+    private func savedDeviceCard(_ device: DeviceDTO) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title2)
+                .foregroundColor(.gsEmerald)
+                .frame(width: 44, height: 44)
+                .background(Color.gsEmerald.opacity(0.12))
+                .cornerRadius(10)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(device.displayName)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.gsText)
+
+                Text("Saved to account")
+                    .font(.caption)
+                    .foregroundColor(.gsEmerald)
+            }
+
+            Spacer()
+
+            if device.isFavorite {
+                Image(systemName: "pin.fill")
+                    .font(.caption)
+                    .foregroundColor(.gsWarning)
+            }
+
+            Text("Saved")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.gsSuccess)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.gsSuccess.opacity(0.12))
+                .cornerRadius(6)
+        }
+        .cardStyle()
+    }
+
     private func signalBars(rssi: Int) -> some View {
         HStack(spacing: 2) {
             ForEach(0..<4, id: \.self) { index in
@@ -324,6 +390,24 @@ struct DevicePairingFlowView: View {
     }
 
     private func pairDevice(_ device: BLEDevice) {
+        // Check for duplicate — device already saved to account
+        if device.persistedId != nil {
+            error = "\(device.displayName) is already saved to your account."
+            return
+        }
+
+        // Also check by bluetooth identifier against persisted metadata
+        let identifier = device.identifier.uuidString
+        let alreadySaved = bleManager.connectedDevices.contains { d in
+            d.identifier != device.identifier && d.persistedId != nil
+        } || bleManager.discoveredDevices.contains { d in
+            d.identifier == device.identifier && d.persistedId != nil
+        }
+        if alreadySaved {
+            error = "\(device.displayName) is already saved to your account."
+            return
+        }
+
         isConnecting = true
         isSaving = false
         pairingDevice = device

@@ -1,0 +1,40 @@
+{
+  "version": 3,
+  "track_id": "airpods_pro3_heart_rate_20260415",
+  "name": "AirPods Pro 3 Heart Rate Integration",
+  "type": "feature",
+  "status": "in_progress",
+  "priority": "P1",
+  "created_at": "2026-04-15T00:00:00Z",
+  "updated_at": "2026-04-15T00:00:00Z",
+  "superpower_enhanced": true,
+  "dependencies": [],
+  "summary": "Integrate AirPods Pro 3 real-time heart rate into Dynamic Island, lock screen Live Activity, and in-app dashboard with backend persistence.",
+  "loop_state": {
+    "current_step": "EXECUTE",
+    "step_status": "IN_PROGRESS",
+    "fix_cycle_count": 0,
+    "max_fix_cycles": 3,
+    "checkpoints": {
+      "PLAN": {
+        "status": "PASSED",
+        "started_at": "2026-04-15T00:00:00Z",
+        "completed_at": "2026-04-15T00:00:00Z",
+        "agent": "research-agents+manual-synthesis",
+        "plan_version": 1
+      },
+      "EVALUATE_PLAN": { "status": "NOT_STARTED" },
+      "EXECUTE": { "status": "IN_PROGRESS" },
+      "EVALUATE_EXECUTION": { "status": "NOT_STARTED" },
+      "FIX": { "status": "NOT_STARTED" },
+      "ENRICH": { "status": "NOT_STARTED" }
+    }
+  },
+  "lead_consultations": [],
+  "discovered_work": [
+    "conductor/tracks/airpods_pro3_heart_rate_20260415/prd.md",
+    "conductor/tracks/airpods_pro3_heart_rate_20260415/spec.md",
+    "conductor/tracks/airpods_pro3_heart_rate_20260415/plan.md"
+  ],
+  "blockers": []
+}

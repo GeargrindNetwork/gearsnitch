@@ -614,3 +614,77 @@ export async function deleteMedicationDose(id: string): Promise<void> {
     throw new Error(response.error?.message || 'Failed to delete medication dose');
   }
 }
+
+// ─── Health Dashboard ─────────────────────────────────────────────────────────
+
+export interface HealthDashboardResponse {
+  heartRate: {
+    latest: { bpm: number; recordedAt: string; source: string } | null;
+    today: {
+      sampleCount: number;
+      minBPM: number;
+      maxBPM: number;
+      avgBPM: number;
+      zoneDistribution: {
+        rest: number;
+        light: number;
+        fatBurn: number;
+        cardio: number;
+        peak: number;
+      };
+    } | null;
+  };
+  sessions: {
+    today: Array<{
+      _id: string;
+      gymName: string;
+      startedAt: string;
+      endedAt: string | null;
+      durationMinutes: number | null;
+      heartRateSummary: unknown;
+    }>;
+    activeSession: { _id: string; gymName: string; startedAt: string } | null;
+  };
+  devices: Array<{
+    _id: string;
+    name: string;
+    nickname: string | null;
+    type: string;
+    status: string;
+    isFavorite: boolean;
+    lastSeenAt: string | null;
+    healthCapable: boolean;
+  }>;
+  sources: Array<{
+    name: string;
+    type: string;
+    lastDataAt: string | null;
+    sampleCountToday: number;
+  }>;
+}
+
+export interface HealthTrendsResponse {
+  days: number;
+  since: string;
+  heartRateScatter: Array<{ date: string; bpm: number; zone: string }>;
+  restingHeartRate: Array<{ date: string; value: number }>;
+  weightTrend: Array<{ date: string; value: number; unit: string }>;
+  caloriesTrend: Array<{ date: string; value: number }>;
+  workoutTrend: Array<{ date: string; count: number; durationMinutes: number }>;
+}
+
+export async function getHealthTrends(days: number = 30): Promise<HealthTrendsResponse> {
+  const response = await api.get<HealthTrendsResponse>(`/health/trends?days=${days}`);
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to load health trends');
+  }
+  return response.data;
+}
+
+export async function getHealthDashboard(): Promise<HealthDashboardResponse> {
+  const response = await api.get<HealthDashboardResponse>('/health/dashboard');
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to load health dashboard');
+  }
+  return response.data;
+}

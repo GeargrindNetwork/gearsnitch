@@ -21,6 +21,9 @@ struct ProfileView: View {
                 // Import from Apple Health
                 healthImportButton
 
+                // Devices section (moved from dashboard)
+                devicesSectionView
+
                 // Subscription card
                 subscriptionCard
 
@@ -63,6 +66,10 @@ struct ProfileView: View {
         }
         .task {
             await viewModel.loadProfile()
+            // Auto-import Apple Health data on profile load
+            if !viewModel.isImportingHealth {
+                await viewModel.importFromHealthKit()
+            }
         }
         .onChange(of: viewModel.selectedPhoto) { _, newValue in
             if newValue != nil {
@@ -336,6 +343,102 @@ struct ProfileView: View {
             .cardStyle()
         }
         .disabled(viewModel.isImportingHealth)
+    }
+
+    // MARK: - Devices Section
+
+    private var devicesSectionView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Devices")
+                    .font(.headline)
+                    .foregroundColor(.gsText)
+                Spacer()
+                NavigationLink {
+                    DeviceListView()
+                } label: {
+                    Text("See All")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(.gsEmerald)
+                }
+            }
+
+            if let profile = viewModel.profile {
+                let devices = profile.devices ?? []
+                if devices.isEmpty {
+                    HStack(spacing: 12) {
+                        Image(systemName: "antenna.radiowaves.left.and.right.slash")
+                            .font(.title2)
+                            .foregroundColor(.gsTextSecondary)
+
+                        Text("No devices paired yet")
+                            .font(.subheadline)
+                            .foregroundColor(.gsTextSecondary)
+
+                        Spacer()
+                    }
+                    .cardStyle()
+                } else {
+                    ForEach(devices.prefix(3)) { device in
+                        NavigationLink {
+                            DeviceDetailView(deviceId: device._id)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: deviceIconName(device.type))
+                                    .font(.title3)
+                                    .foregroundColor(deviceStatusColor(device.status ?? "registered"))
+                                    .frame(width: 40, height: 40)
+                                    .background(deviceStatusColor(device.status ?? "registered").opacity(0.12))
+                                    .cornerRadius(8)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack(spacing: 4) {
+                                        Text(device.nickname ?? device.name)
+                                            .font(.subheadline.weight(.medium))
+                                            .foregroundColor(.gsText)
+                                        if device.isFavorite ?? false {
+                                            Image(systemName: "pin.fill")
+                                                .font(.caption2)
+                                                .foregroundColor(.gsWarning)
+                                        }
+                                    }
+                                    Text(device.status?.capitalized ?? "Registered")
+                                        .font(.caption)
+                                        .foregroundColor(.gsTextSecondary)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.gsTextSecondary)
+                            }
+                            .cardStyle()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func deviceIconName(_ type: String) -> String {
+        switch type {
+        case "earbuds": return "airpodspro"
+        case "watch": return "applewatch"
+        case "tracker": return "sensor.tag.radiowaves.forward"
+        case "belt": return "figure.strengthtraining.traditional"
+        case "bag": return "bag"
+        default: return "sensor.tag.radiowaves.forward"
+        }
+    }
+
+    private func deviceStatusColor(_ status: String) -> Color {
+        switch status {
+        case "connected", "monitoring", "reconnected", "active": return .gsSuccess
+        case "lost": return .gsDanger
+        case "disconnected", "inactive": return .gsWarning
+        default: return .gsTextSecondary
+        }
     }
 
     // MARK: - Subscription

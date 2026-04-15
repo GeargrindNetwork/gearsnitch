@@ -25,6 +25,7 @@ import eventsRoutes from '../modules/events/routes.js';
 import dosingRoutes from '../modules/dosing/routes.js';
 import cyclesRoutes from '../modules/cycles/routes.js';
 import medicationsRoutes from '../modules/medications/routes.js';
+import labsRoutes from '../modules/labs/routes.js';
 
 const router = Router();
 
@@ -90,5 +91,6 @@ router.use('/events', eventsRoutes);
 router.use('/dosing', dosingRoutes);
 router.use('/cycles', cyclesRoutes);
 router.use('/medications', medicationsRoutes);
+router.use('/labs', labsRoutes);
 
 export default router;
