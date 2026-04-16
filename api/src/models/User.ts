@@ -97,5 +97,8 @@ UserSchema.index({ googleId: 1 }, { unique: true, sparse: true });
 UserSchema.index({ appleId: 1 }, { unique: true, sparse: true });
 UserSchema.index({ roles: 1 });
 UserSchema.index({ createdAt: 1 });
+UserSchema.index({ email: 1 });
+UserSchema.index({ status: 1 });
+UserSchema.index({ deletedAt: 1 });
 
 export const User = mongoose.model<IUser>('User', UserSchema);

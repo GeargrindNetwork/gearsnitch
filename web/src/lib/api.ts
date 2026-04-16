@@ -16,6 +16,7 @@ class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
   private refreshHandler: RefreshHandler | null = null;
+  private inFlightRefresh: Promise<string | null> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -50,6 +51,25 @@ class ApiClient {
 
   private canRetryWithRefresh(path: string): boolean {
     return path !== '/auth/refresh' && !path.startsWith('/auth/oauth/');
+  }
+
+  /**
+   * Coalesces concurrent refresh requests into a single in-flight promise.
+   * If multiple parallel API calls hit 401 simultaneously, only one refresh
+   * is performed and all callers await the same result.
+   */
+  private async coalescedRefresh(): Promise<string | null> {
+    if (this.inFlightRefresh) {
+      return this.inFlightRefresh;
+    }
+    if (!this.refreshHandler) {
+      return null;
+    }
+    const handler = this.refreshHandler;
+    this.inFlightRefresh = handler().finally(() => {
+      this.inFlightRefresh = null;
+    });
+    return this.inFlightRefresh;
   }
 
   private async request<T>(
@@ -99,7 +119,7 @@ class ApiClient {
         path,
         requestId,
       });
-      const refreshedToken = await this.refreshHandler();
+      const refreshedToken = await this.coalescedRefresh();
       if (refreshedToken) {
         return this.request<T>(method, path, body, false);
       }

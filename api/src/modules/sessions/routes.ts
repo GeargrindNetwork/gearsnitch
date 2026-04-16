@@ -24,6 +24,26 @@ const endSessionSchema = z.object({
   endedAt: z.string().datetime().optional(),
 });
 
+function serializeSession(session: Record<string, any>) {
+  return {
+    _id: String(session._id),
+    userId: String(session.userId),
+    gymId: String(session.gymId),
+    gymName: session.gymName ?? null,
+    startedAt: session.startedAt?.toISOString?.() ?? session.startedAt,
+    endedAt: session.endedAt?.toISOString?.() ?? session.endedAt ?? null,
+    durationMinutes: session.durationMinutes ?? 0,
+    source: session.source ?? 'manual',
+    events: (session.events ?? []).map((ev: any) => ({
+      type: ev.type,
+      timestamp: ev.timestamp?.toISOString?.() ?? ev.timestamp,
+      metadata: ev.metadata,
+    })),
+    createdAt: session.createdAt?.toISOString?.() ?? session.createdAt,
+    updatedAt: session.updatedAt?.toISOString?.() ?? session.updatedAt,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // POST /sessions — Start a gym session
 // ---------------------------------------------------------------------------
@@ -37,11 +57,16 @@ router.post(
       const user = req.user as JwtPayload;
       const { gymId, gymName, source, startedAt } = req.body as z.infer<typeof startSessionSchema>;
 
+      if (!Types.ObjectId.isValid(gymId)) {
+        errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid gymId');
+        return;
+      }
+
       // Check for already-active session
       const active = await GymSession.findOne({
         userId: new Types.ObjectId(user.sub),
         endedAt: null,
-      });
+      }).lean();
 
       if (active) {
         errorResponse(
@@ -62,7 +87,7 @@ router.post(
         events: [{ type: 'session_start', timestamp: new Date() }],
       });
 
-      successResponse(res, session, StatusCodes.CREATED);
+      successResponse(res, serializeSession(session.toObject()), StatusCodes.CREATED);
     } catch (err) {
       errorResponse(
         res,
@@ -86,6 +111,12 @@ router.patch(
     try {
       const user = req.user as JwtPayload;
       const id = req.params.id as string;
+
+      if (!Types.ObjectId.isValid(id)) {
+        errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid session id');
+        return;
+      }
+
       const { endedAt } = req.body as z.infer<typeof endSessionSchema>;
 
       const session = await GymSession.findOne({
@@ -112,7 +143,7 @@ router.patch(
       session.events.push({ type: 'session_end', timestamp: endTime });
       await session.save();
 
-      successResponse(res, session);
+      successResponse(res, serializeSession(session.toObject()));
     } catch (err) {
       errorResponse(
         res,
@@ -142,7 +173,7 @@ router.get('/', isAuthenticated, async (req: Request, res: Response) => {
       GymSession.countDocuments(filter),
     ]);
 
-    successResponse(res, sessions, StatusCodes.OK, {
+    successResponse(res, sessions.map(serializeSession), StatusCodes.OK, {
       page,
       limit,
       total,
@@ -173,7 +204,7 @@ router.get('/active', isAuthenticated, async (req: Request, res: Response) => {
       .sort({ startedAt: -1 })
       .lean();
 
-    successResponse(res, session);
+    successResponse(res, session ? serializeSession(session) : null);
   } catch (err) {
     errorResponse(
       res,
@@ -193,6 +224,11 @@ router.get('/:id', isAuthenticated, async (req: Request, res: Response) => {
     const user = req.user as JwtPayload;
     const id = req.params.id as string;
 
+    if (!Types.ObjectId.isValid(id)) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid session id');
+      return;
+    }
+
     const session = await GymSession.findOne({
       _id: new Types.ObjectId(id),
       userId: new Types.ObjectId(user.sub),
@@ -203,7 +239,7 @@ router.get('/:id', isAuthenticated, async (req: Request, res: Response) => {
       return;
     }
 
-    successResponse(res, session);
+    successResponse(res, serializeSession(session));
   } catch (err) {
     errorResponse(
       res,

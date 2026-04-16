@@ -37,6 +37,7 @@ const NotificationLogSchema = new Schema<INotificationLog>(
 
 NotificationLogSchema.index({ userId: 1, sentAt: -1 });
 NotificationLogSchema.index({ notificationType: 1 });
+NotificationLogSchema.index({ userId: 1, openedAt: 1 });
 
 export const NotificationLog = mongoose.model<INotificationLog>(
   'NotificationLog',
