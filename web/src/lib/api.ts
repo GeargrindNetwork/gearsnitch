@@ -847,6 +847,40 @@ export async function completeRun(id: string, input: CompleteRunInput): Promise<
   return response.data;
 }
 
+// ─── Subscriptions ────────────────────────────────────────────────────────
+
+export interface SubscriptionStatus {
+  status: string;
+  tier: string;
+  plan: string | null;
+  purchaseDate: string | null;
+  expiresAt: string | null;
+  extensionDays: number;
+  autoRenew: boolean;
+  platform: string | null;
+}
+
+export async function getSubscription(): Promise<SubscriptionStatus> {
+  const res = await api.get<SubscriptionStatus>('/subscriptions');
+  if (!res.success || !res.data) throw new Error(res.error?.message || 'Failed to load subscription');
+  return res.data;
+}
+
+export async function createSubscription(tier: string): Promise<{ checkoutUrl: string; tier: string; price: number }> {
+  const res = await api.post<{ checkoutUrl: string; tier: string; price: number }>('/subscriptions', {
+    tier,
+    successUrl: `${window.location.origin}/account?subscribed=true`,
+    cancelUrl: `${window.location.origin}/account`,
+  });
+  if (!res.success || !res.data) throw new Error(res.error?.message || 'Failed to create subscription');
+  return res.data;
+}
+
+export async function cancelSubscription(): Promise<void> {
+  const res = await api.delete<unknown>('/subscriptions');
+  if (!res.success) throw new Error(res.error?.message || 'Failed to cancel');
+}
+
 // ─── Emergency Contacts ───────────────────────────────────────────────────
 
 export interface EmergencyContact {

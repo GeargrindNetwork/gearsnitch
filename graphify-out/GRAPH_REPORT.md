@@ -1,7 +1,7 @@
 # Graph Report - .  (2026-04-15)
 
 ## Corpus Check
-- 328 files · ~352,018 words
+- 328 files · ~352,112 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -139,8 +139,8 @@
   web/src/pages/LabsPage.tsx → /Users/shawn/Documents/folder/gearsnitch/api/src/modules/users/routes.ts
 - `resetForm()` --calls--> `toIsoString()`  [INFERRED]
   web/src/components/metrics/LogRunDialog.tsx → /Users/shawn/Documents/folder/gearsnitch/api/src/modules/users/routes.ts
-- `hashDedupeKey()` --calls--> `update()`  [INFERRED]
-  /Users/shawn/Documents/folder/gearsnitch/worker/src/utils/jobRuntime.ts → web/src/components/account/NotificationPreferencesPanel.tsx
+- `update()` --calls--> `hashDedupeKey()`  [INFERRED]
+  web/src/components/account/NotificationPreferencesPanel.tsx → /Users/shawn/Documents/folder/gearsnitch/worker/src/utils/jobRuntime.ts
 - `successResponse()` --calls--> `handleGetBloodworkProduct()`  [INFERRED]
   /Users/shawn/Documents/folder/gearsnitch/api/src/utils/response.ts → api/src/modules/labs/routes.ts
 - `serializeAppointment()` --calls--> `toIsoString()`  [INFERRED]
@@ -728,11 +728,11 @@ Nodes (0):
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Date` connect `Community 4` to `Community 0`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 16`, `Community 18`, `Community 21`, `Community 23`, `Community 24`?**
-  _High betweenness centrality (0.041) - this node is a cross-community bridge._
-- **Why does `BLEManager` connect `Community 4` to `Community 3`, `Community 5`, `Community 6`, `Community 7`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
-- **Why does `OnboardingViewModel` connect `Community 5` to `Community 3`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
+- **Why does `CodingKeys` connect `Community 17` to `Community 1`, `Community 2`, `Community 21`?**
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Why does `CodingKeys` connect `Community 13` to `Community 1`, `Community 2`?**
+  _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **Are the 76 inferred relationships involving `String` (e.g. with `.utcDateKeys()` and `.startScanning()`) actually correct?**
   _`String` has 76 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `controllerCreationFailed`, `presentationFailed`, `cancelled` to the rest of the system?**

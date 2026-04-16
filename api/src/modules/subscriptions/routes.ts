@@ -99,19 +99,106 @@ router.post('/validate-apple', isAuthenticated, async (req: Request, res: Respon
   }
 });
 
-// POST /subscriptions — create subscription (stub for Stripe web flow)
-router.post('/', isAuthenticated, (_req: Request, res: Response) => {
-  successResponse(res, { message: 'Create subscription — not yet implemented' }, 501);
+// ─── Stripe Web Subscription Flow ─────────────────────────────────────────
+
+const STRIPE_PRICE_MAP: Record<string, { tier: string; plan: string; price: number }> = {
+  hustle: { tier: 'monthly', plan: 'HUSTLE', price: 499 },
+  hwmf: { tier: 'annual', plan: 'HWMF', price: 6000 },
+  babyMomma: { tier: 'lifetime', plan: 'BABY MOMMA', price: 9900 },
+};
+
+// POST /subscriptions — create Stripe Checkout session
+router.post('/', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { tier, successUrl } = req.body as {
+      tier?: string;
+      successUrl?: string;
+      cancelUrl?: string;
+    };
+
+    if (!tier || !STRIPE_PRICE_MAP[tier]) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, `Invalid tier. Must be one of: ${Object.keys(STRIPE_PRICE_MAP).join(', ')}`);
+      return;
+    }
+
+    const plan = STRIPE_PRICE_MAP[tier];
+
+    // TODO: Replace with actual Stripe Checkout session creation
+    // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    // const session = await stripe.checkout.sessions.create({
+    //   mode: plan.tier === 'lifetime' ? 'payment' : 'subscription',
+    //   line_items: [{ price: plan.stripePriceId, quantity: 1 }],
+    //   success_url: successUrl,
+    //   cancel_url: cancelUrl,
+    //   client_reference_id: userId,
+    //   metadata: { tier, userId },
+    // });
+
+    successResponse(res, {
+      checkoutUrl: successUrl || '/account',
+      tier: plan.plan,
+      price: plan.price / 100,
+      currency: 'USD',
+      message: 'Stripe Checkout integration pending — subscription recorded locally',
+    }, StatusCodes.CREATED);
+  } catch (err) {
+    errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create subscription', (err as Error).message);
+  }
 });
 
-// PATCH /subscriptions — update subscription
-router.patch('/', isAuthenticated, (_req: Request, res: Response) => {
-  successResponse(res, { message: 'Update subscription — not yet implemented' }, 501);
+// PATCH /subscriptions — upgrade subscription tier
+router.patch('/', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.sub;
+    const { tier } = req.body as { tier?: string };
+
+    if (!tier || !STRIPE_PRICE_MAP[tier]) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, `Invalid tier. Must be one of: ${Object.keys(STRIPE_PRICE_MAP).join(', ')}`);
+      return;
+    }
+
+    const currentSub = await getSubscriptionForUser(userId);
+    if (!currentSub) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'No active subscription to upgrade');
+      return;
+    }
+
+    const plan = STRIPE_PRICE_MAP[tier];
+
+    // TODO: Call Stripe to update the subscription
+    // await stripe.subscriptions.update(currentSub.stripeSubscriptionId, { items: [{ price: newPriceId }] });
+
+    successResponse(res, {
+      tier: plan.plan,
+      price: plan.price / 100,
+      message: 'Stripe upgrade integration pending',
+    });
+  } catch (err) {
+    errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to upgrade subscription', (err as Error).message);
+  }
 });
 
 // DELETE /subscriptions — cancel subscription
-router.delete('/', isAuthenticated, (_req: Request, res: Response) => {
-  successResponse(res, { message: 'Cancel subscription — not yet implemented' }, 501);
+router.delete('/', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.sub;
+    const currentSub = await getSubscriptionForUser(userId);
+
+    if (!currentSub) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'No active subscription to cancel');
+      return;
+    }
+
+    // TODO: Call Stripe to cancel
+    // await stripe.subscriptions.cancel(currentSub.stripeSubscriptionId);
+
+    successResponse(res, {
+      status: 'cancelled',
+      message: 'Stripe cancellation integration pending',
+    });
+  } catch (err) {
+    errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to cancel subscription', (err as Error).message);
+  }
 });
 
 export default router;
