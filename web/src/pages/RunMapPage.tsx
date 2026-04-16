@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import LogRunDialog from '@/components/metrics/LogRunDialog';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
@@ -163,6 +164,7 @@ function SummaryCard({
 
 export default function RunMapPage() {
   const [preferredRunId, setPreferredRunId] = useState<string | null>(null);
+  const [showLogRun, setShowLogRun] = useState(false);
 
   const {
     data: runs = [],
@@ -258,7 +260,15 @@ export default function RunMapPage() {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-6 flex justify-end">
+          <Button className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => setShowLogRun(true)}>
+            + Log a Run
+          </Button>
+        </div>
+
+        <LogRunDialog open={showLogRun} onOpenChange={setShowLogRun} />
+
+        <section className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
             label="Active Session"
             value={activeRun ? 'Live' : 'None'}

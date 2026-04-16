@@ -71,7 +71,11 @@ struct MainTabView: View {
                 onHospitals: { showHospitals = true },
                 onLabs: { showLabs = true }
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            .frame(
+                maxWidth: .infinity,
+                maxHeight: .infinity,
+                alignment: HandPreferenceManager.shared.isMenuOnLeft ? .bottomLeading : .bottomTrailing
+            )
         }
         .sheet(item: $coordinator.activeSheet) { sheet in
             sheetView(for: sheet)

@@ -18,6 +18,8 @@ import SupportPage from './pages/SupportPage';
 import DeleteAccountPage from './pages/DeleteAccountPage';
 import NotFoundPage from './pages/NotFoundPage';
 import RunMapPage from './pages/RunMapPage';
+import DeviceDetailPage from './pages/DeviceDetailPage';
+import LabsPage from './pages/LabsPage';
 
 const queryClient = new QueryClient();
 
@@ -69,6 +71,22 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <RunMapPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/devices/:id"
+                element={(
+                  <ProtectedAppRoute>
+                    <DeviceDetailPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/labs"
+                element={(
+                  <ProtectedAppRoute>
+                    <LabsPage />
                   </ProtectedAppRoute>
                 )}
               />

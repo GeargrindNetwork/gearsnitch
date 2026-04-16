@@ -39,6 +39,9 @@ struct OnboardingView: View {
                             onSkip: { viewModel.skipSubscription() }
                         )
 
+                    case .handPreference:
+                        handPreferenceStep
+
                     case .bluetoothPrePrompt:
                         bluetoothStep
 
@@ -52,7 +55,7 @@ struct OnboardingView: View {
                         notificationsStep
 
                     case .healthKit:
-                        healthKitStep
+                        healthKitAutoPromptStep
 
                     case .addGym:
                         addGymStep
@@ -113,6 +116,98 @@ struct OnboardingView: View {
                           : Color.gsBorder)
                     .frame(height: 3)
             }
+        }
+    }
+
+    // MARK: - Hand Preference Step
+
+    private var handPreferenceStep: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            Text("Which hand do you prefer?")
+                .font(.title2.bold())
+                .foregroundColor(.gsText)
+                .padding(.bottom, 8)
+
+            Text("This sets which side of the screen your menu appears on.")
+                .font(.subheadline)
+                .foregroundColor(.gsTextSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+                .padding(.bottom, 40)
+
+            HStack(spacing: 24) {
+                // Left hand — menu on left
+                Button {
+                    HandPreferenceManager.shared.menuSide = .left
+                    viewModel.advance()
+                } label: {
+                    VStack(spacing: 16) {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.title)
+                            .foregroundColor(.gsEmerald)
+                            .frame(width: 80, height: 80)
+                            .background(
+                                HandPreferenceManager.shared.menuSide == .left
+                                    ? Color.gsEmerald.opacity(0.15)
+                                    : Color.gsSurface
+                            )
+                            .cornerRadius(20)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        HandPreferenceManager.shared.menuSide == .left
+                                            ? Color.gsEmerald
+                                            : Color.gsBorder,
+                                        lineWidth: 2
+                                    )
+                            )
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text("Left Hand")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.gsText)
+                    }
+                }
+
+                // Right hand — menu on right
+                Button {
+                    HandPreferenceManager.shared.menuSide = .right
+                    viewModel.advance()
+                } label: {
+                    VStack(spacing: 16) {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.title)
+                            .foregroundColor(.gsEmerald)
+                            .frame(width: 80, height: 80)
+                            .background(
+                                HandPreferenceManager.shared.menuSide == .right
+                                    ? Color.gsEmerald.opacity(0.15)
+                                    : Color.gsSurface
+                            )
+                            .cornerRadius(20)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        HandPreferenceManager.shared.menuSide == .right
+                                            ? Color.gsEmerald
+                                            : Color.gsBorder,
+                                        lineWidth: 2
+                                    )
+                            )
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+
+                        Text("Right Hand")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.gsText)
+                    }
+                }
+            }
+            .padding(.horizontal, 40)
+
+            Spacer()
+            Spacer()
         }
     }
 
@@ -243,6 +338,51 @@ struct OnboardingView: View {
             action: { viewModel.requestHealthKitAuthorization() },
             onSkip: { viewModel.skipStep() }
         )
+    }
+
+    // MARK: - HealthKit Auto-Prompt Step
+
+    private var healthKitAutoPromptStep: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(Color.red.opacity(0.15))
+                    .frame(width: 120, height: 120)
+
+                Image(systemName: "heart.text.square")
+                    .font(.system(size: 48))
+                    .foregroundColor(.red)
+            }
+
+            Text("Apple Health")
+                .font(.title2.bold())
+                .foregroundColor(.gsText)
+
+            Text("Connecting to Apple Health...")
+                .font(.subheadline)
+                .foregroundColor(.gsTextSecondary)
+
+            ProgressView()
+                .tint(.gsEmerald)
+
+            Spacer()
+
+            Button(action: { viewModel.skipStep() }) {
+                Text("Skip")
+                    .font(.subheadline)
+                    .foregroundColor(.gsTextSecondary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
+        }
+        .onAppear {
+            // Directly trigger the Apple Health authorization popup
+            viewModel.requestHealthKitAuthorization()
+        }
     }
 
     // MARK: - Add Gym Step (Full Screen Map)
@@ -476,11 +616,13 @@ struct OnboardingAddGymView: View {
                 }
             }
         }
-        .task {
-            do {
-                savedGyms = try await APIClient.shared.request(APIEndpoint.Gyms.list)
-            } catch {
-                savedGyms = []
+        .onAppear {
+            Task {
+                do {
+                    savedGyms = try await APIClient.shared.request(APIEndpoint.Gyms.list)
+                } catch {
+                    savedGyms = []
+                }
             }
         }
         .onChange(of: selectedResult) { _, newValue in

@@ -397,9 +397,9 @@ struct TrendsView: View {
 
 // MARK: - Chart Modifier
 
-extension Chart {
-    func standardAxes() -> some View {
-        self
+struct StandardAxesModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
             .chartXAxis {
                 AxisMarks(values: .automatic(desiredCount: 5)) { _ in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 1, dash: [2, 4]))
@@ -416,6 +416,12 @@ extension Chart {
                         .foregroundStyle(Color.gsTextSecondary)
                 }
             }
+    }
+}
+
+extension View {
+    func standardAxes() -> some View {
+        modifier(StandardAxesModifier())
     }
 }
 

@@ -18,6 +18,7 @@
   },
   "testTargets" : [
     {
+      "parallelizable" : true,
       "target" : {
         "containerPath" : "container:GearSnitch.xcodeproj",
         "identifier" : "86AC59BA8F8019D810326896",

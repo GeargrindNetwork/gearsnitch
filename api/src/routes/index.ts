@@ -26,6 +26,7 @@ import dosingRoutes from '../modules/dosing/routes.js';
 import cyclesRoutes from '../modules/cycles/routes.js';
 import medicationsRoutes from '../modules/medications/routes.js';
 import labsRoutes from '../modules/labs/routes.js';
+import emergencyContactsRoutes from '../modules/emergency-contacts/routes.js';
 
 const router = Router();
 
@@ -92,5 +93,6 @@ router.use('/dosing', dosingRoutes);
 router.use('/cycles', cyclesRoutes);
 router.use('/medications', medicationsRoutes);
 router.use('/labs', labsRoutes);
+router.use('/emergency-contacts', emergencyContactsRoutes);
 
 export default router;

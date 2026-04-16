@@ -681,6 +681,203 @@ export async function getHealthTrends(days: number = 30): Promise<HealthTrendsRe
   return response.data;
 }
 
+// ─── Notification Preferences ─────────────────────────────────────────────
+
+export interface NotificationPreferences {
+  pushEnabled: boolean;
+  panicAlertsEnabled: boolean;
+  disconnectAlertsEnabled: boolean;
+  custom: Record<string, string>;
+}
+
+export interface NotificationPreferencesResponse {
+  permissionsState: Record<string, string>;
+  preferences: NotificationPreferences;
+}
+
+export async function getNotificationPreferences(): Promise<NotificationPreferencesResponse> {
+  const response = await api.get<NotificationPreferencesResponse>('/notifications/preferences');
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to load notification preferences');
+  }
+  return response.data;
+}
+
+export async function updateNotificationPreferences(prefs: Partial<NotificationPreferences>): Promise<NotificationPreferencesResponse> {
+  const response = await api.patch<NotificationPreferencesResponse>('/notifications/preferences', prefs);
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to update notification preferences');
+  }
+  return response.data;
+}
+
+// ─── Device Detail ────────────────────────────────────────────────────────
+
+export interface DeviceDetail {
+  _id: string;
+  name: string;
+  nickname: string | null;
+  type: string;
+  bluetoothIdentifier: string;
+  status: string;
+  isFavorite: boolean;
+  isMonitoring: boolean;
+  firmwareVersion: string | null;
+  signalStrength: number | null;
+  lastSeenAt: string | null;
+  sharedWith: string[];
+  createdAt: string;
+}
+
+export interface DeviceEvent {
+  action: string;
+  occurredAt: string;
+  source: string;
+  signalStrength: number | null;
+}
+
+export async function getDeviceDetail(id: string): Promise<DeviceDetail> {
+  const response = await api.get<DeviceDetail>(`/devices/${id}`);
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to load device');
+  }
+  return response.data;
+}
+
+export async function updateDevice(id: string, body: { nickname?: string; isFavorite?: boolean }): Promise<DeviceDetail> {
+  const response = await api.patch<DeviceDetail>(`/devices/${id}`, body);
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to update device');
+  }
+  return response.data;
+}
+
+export async function deleteDevice(id: string): Promise<void> {
+  const response = await api.delete<unknown>(`/devices/${id}`);
+  if (!response.success) {
+    throw new Error(response.error?.message || 'Failed to delete device');
+  }
+}
+
+export async function getDeviceEvents(id: string): Promise<DeviceEvent[]> {
+  const response = await api.get<DeviceEvent[]>(`/devices/${id}/events`);
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to load device events');
+  }
+  return response.data;
+}
+
+export interface DeviceShareEntry {
+  _id: string;
+  email: string;
+  displayName: string | null;
+  canReceiveAlerts: boolean;
+  createdAt: string;
+}
+
+export async function getDeviceShares(id: string): Promise<DeviceShareEntry[]> {
+  const response = await api.get<DeviceShareEntry[]>(`/devices/${id}/shares`);
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to load shares');
+  }
+  return response.data;
+}
+
+export async function shareDevice(id: string, email: string): Promise<DeviceShareEntry> {
+  const response = await api.post<DeviceShareEntry>(`/devices/${id}/shares`, { email });
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to share device');
+  }
+  return response.data;
+}
+
+export async function removeDeviceShare(deviceId: string, shareId: string): Promise<void> {
+  const response = await api.delete<unknown>(`/devices/${deviceId}/shares/${shareId}`);
+  if (!response.success) {
+    throw new Error(response.error?.message || 'Failed to remove share');
+  }
+}
+
+export async function updateDeviceStatus(id: string, status: string): Promise<void> {
+  const response = await api.patch<unknown>(`/devices/${id}/status`, { status });
+  if (!response.success) {
+    throw new Error(response.error?.message || 'Failed to update device status');
+  }
+}
+
+// ─── Run Creation ─────────────────────────────────────────────────────────
+
+export interface CreateRunInput {
+  startedAt: string;
+  notes?: string;
+}
+
+export interface CompleteRunInput {
+  endedAt: string;
+  distanceMeters?: number;
+  durationSeconds?: number;
+  notes?: string;
+}
+
+export interface RunDetail {
+  _id: string;
+  startedAt: string;
+  endedAt: string | null;
+  status: string;
+  distanceMeters: number;
+  durationSeconds: number;
+  averagePaceSecondsPerKm: number | null;
+  notes: string | null;
+  source: string;
+}
+
+export async function createRun(input: CreateRunInput): Promise<RunDetail> {
+  const response = await api.post<RunDetail>('/runs', input);
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to create run');
+  }
+  return response.data;
+}
+
+export async function completeRun(id: string, input: CompleteRunInput): Promise<RunDetail> {
+  const response = await api.post<RunDetail>(`/runs/${id}/complete`, input);
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to complete run');
+  }
+  return response.data;
+}
+
+// ─── Emergency Contacts ───────────────────────────────────────────────────
+
+export interface EmergencyContact {
+  _id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  notifyOnPanic: boolean;
+  notifyOnDisconnect: boolean;
+  createdAt: string;
+}
+
+export async function getEmergencyContacts(): Promise<EmergencyContact[]> {
+  const response = await api.get<EmergencyContact[]>('/emergency-contacts');
+  if (!response.success || !response.data) throw new Error(response.error?.message || 'Failed to load emergency contacts');
+  return response.data;
+}
+
+export async function createEmergencyContact(body: { name: string; phone: string; email?: string; notifyOnPanic?: boolean; notifyOnDisconnect?: boolean }): Promise<EmergencyContact> {
+  const response = await api.post<EmergencyContact>('/emergency-contacts', body);
+  if (!response.success || !response.data) throw new Error(response.error?.message || 'Failed to create contact');
+  return response.data;
+}
+
+export async function deleteEmergencyContact(id: string): Promise<void> {
+  const response = await api.delete<unknown>(`/emergency-contacts/${id}`);
+  if (!response.success) throw new Error(response.error?.message || 'Failed to delete contact');
+}
+
+// ─── Health Dashboard ─────────────────────────────────────────────────────
+
 export async function getHealthDashboard(): Promise<HealthDashboardResponse> {
   const response = await api.get<HealthDashboardResponse>('/health/dashboard');
   if (!response.success || !response.data) {

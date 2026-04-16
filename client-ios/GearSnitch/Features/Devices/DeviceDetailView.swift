@@ -1,7 +1,9 @@
+import MapKit
 import SwiftUI
 
 struct DeviceDetailView: View {
     @StateObject private var viewModel: DeviceDetailViewModel
+    @ObservedObject private var bleManager = BLEManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var shareEmail = ""
     @State private var showShareSheet = false
@@ -27,6 +29,7 @@ struct DeviceDetailView: View {
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle(viewModel.device?.displayName ?? "Device")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .alert("Delete Device", isPresented: $viewModel.showDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 Task { await viewModel.deleteDevice() }
@@ -53,15 +56,21 @@ struct DeviceDetailView: View {
 
     private func deviceContent(_ device: DeviceDetailDTO) -> some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 // Status header
                 statusHeader(device)
 
-                // Info rows
+                // Bluetooth info
+                bluetoothInfoSection(device)
+
+                // Device info
                 infoSection(device)
 
-                // Favorite and nickname controls
-                prioritySection(device)
+                // Last known location
+                locationSection(device)
+
+                // Controls
+                controlsSection(device)
 
                 // Monitoring toggle
                 monitoringSection(device)
@@ -73,6 +82,8 @@ struct DeviceDetailView: View {
             .padding(.vertical, 12)
         }
     }
+
+    // MARK: - Status Header
 
     private func statusHeader(_ device: DeviceDetailDTO) -> some View {
         VStack(spacing: 12) {
@@ -103,9 +114,14 @@ struct DeviceDetailView: View {
                 }
             }
 
-            Text(device.status.capitalized)
-                .font(.headline)
-                .foregroundColor(device.isConnected ? .gsSuccess : .gsTextSecondary)
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(device.isConnected ? Color.gsSuccess : Color.gsDanger)
+                    .frame(width: 10, height: 10)
+                Text(device.status.capitalized)
+                    .font(.headline)
+                    .foregroundColor(device.isConnected ? .gsSuccess : .gsDanger)
+            }
 
             if let lastSeen = device.lastSeenAt {
                 Text("Last seen \(lastSeen.relativeTimeString())")
@@ -117,36 +133,122 @@ struct DeviceDetailView: View {
         .cardStyle()
     }
 
-    private func infoSection(_ device: DeviceDetailDTO) -> some View {
-        VStack(spacing: 0) {
-            infoRow(label: "Name", value: device.displayName)
-            if let nickname = device.nickname,
-               !nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+    // MARK: - Bluetooth Info
+
+    private func bluetoothInfoSection(_ device: DeviceDetailDTO) -> some View {
+        let bleDevice = bleManager.connectedDevices.first(where: {
+            $0.persistedId == device.id || $0.identifier.uuidString == device.bluetoothIdentifier
+        }) ?? bleManager.discoveredDevices.first(where: {
+            $0.persistedId == device.id || $0.identifier.uuidString == device.bluetoothIdentifier
+        })
+
+        return VStack(alignment: .leading, spacing: 10) {
+            Label("Bluetooth", systemImage: "antenna.radiowaves.left.and.right")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.gsText)
+
+            VStack(spacing: 0) {
+                infoRow(label: "Bluetooth ID", value: device.bluetoothIdentifier)
                 Divider().background(Color.gsBorder)
-                infoRow(label: "Hardware Name", value: device.name)
-            }
-            Divider().background(Color.gsBorder)
-            infoRow(label: "Type", value: device.type.capitalized)
-            Divider().background(Color.gsBorder)
-            infoRow(label: "Firmware", value: device.firmwareVersion ?? "Unknown")
-            Divider().background(Color.gsBorder)
-            infoRow(label: "Signal", value: signalLabel(device.signalStrength))
-            if let created = device.createdAt {
+                infoRow(label: "Status", value: bleDevice?.status.rawValue.capitalized ?? device.status.capitalized)
                 Divider().background(Color.gsBorder)
-                infoRow(label: "Added", value: created.shortDateString())
+                infoRow(label: "Signal Strength", value: signalLabel(bleDevice?.rssi ?? device.signalStrength))
+                Divider().background(Color.gsBorder)
+                infoRow(label: "Connection", value: bleDevice != nil ? "In Range" : "Out of Range")
             }
+            .background(Color.gsSurface)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.gsBorder, lineWidth: 1)
+            )
         }
-        .cardStyle(padding: 0)
     }
 
-    private func prioritySection(_ device: DeviceDetailDTO) -> some View {
-        VStack(spacing: 14) {
+    // MARK: - Device Info
+
+    private func infoSection(_ device: DeviceDetailDTO) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Device Info", systemImage: "info.circle")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.gsText)
+
+            VStack(spacing: 0) {
+                infoRow(label: "Name", value: device.name)
+                if let nickname = device.nickname,
+                   !nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Divider().background(Color.gsBorder)
+                    infoRow(label: "Nickname", value: nickname)
+                }
+                Divider().background(Color.gsBorder)
+                infoRow(label: "Type", value: device.type.capitalized)
+                Divider().background(Color.gsBorder)
+                infoRow(label: "Firmware", value: device.firmwareVersion ?? "Unknown")
+                if let created = device.createdAt {
+                    Divider().background(Color.gsBorder)
+                    infoRow(label: "Added", value: created.shortDateString())
+                }
+            }
+            .background(Color.gsSurface)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.gsBorder, lineWidth: 1)
+            )
+        }
+    }
+
+    // MARK: - Last Known Location
+
+    private func locationSection(_ device: DeviceDetailDTO) -> some View {
+        // Find the BLE device to get its last known coordinate
+        let bleDevice = bleManager.connectedDevices.first(where: {
+            $0.persistedId == device.id || $0.identifier.uuidString == device.bluetoothIdentifier
+        }) ?? bleManager.discoveredDevices.first(where: {
+            $0.persistedId == device.id || $0.identifier.uuidString == device.bluetoothIdentifier
+        })
+        let coordinate: CLLocationCoordinate2D? = bleDevice.flatMap {
+            DeviceEventSyncService.shared.lastKnownCoordinate(for: $0)
+        }
+
+        return Group {
+            if let coord = coordinate {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Last Known Location", systemImage: "location.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.gsText)
+
+                    Map(initialPosition: .region(MKCoordinateRegion(
+                        center: coord,
+                        latitudinalMeters: 300,
+                        longitudinalMeters: 300
+                    ))) {
+                        Marker(device.displayName, coordinate: coord)
+                            .tint(.red)
+                    }
+                    .frame(height: 160)
+                    .cornerRadius(12)
+                    .allowsHitTesting(false)
+
+                    Text(String(format: "%.5f, %.5f", coord.latitude, coord.longitude))
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                }
+            }
+        }
+    }
+
+    // MARK: - Controls (Pin / Nickname / Disconnect)
+
+    private func controlsSection(_ device: DeviceDetailDTO) -> some View {
+        VStack(spacing: 12) {
+            // Pin toggle
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pinned Device")
                         .font(.subheadline.weight(.medium))
                         .foregroundColor(.gsText)
-                    Text("Pinned devices stay at the top and are checked first while monitoring.")
+                    Text("Pinned devices appear in your profile and are monitored first.")
                         .font(.caption)
                         .foregroundColor(.gsTextSecondary)
                 }
@@ -167,7 +269,9 @@ struct DeviceDetailView: View {
                 .tint(.gsEmerald)
                 .labelsHidden()
             }
+            .cardStyle()
 
+            // Rename button
             Button {
                 draftNickname = device.nickname ?? ""
                 showRenameSheet = true
@@ -182,40 +286,39 @@ struct DeviceDetailView: View {
 
                     Spacer()
 
-                    Text(device.nickname ?? "Use a friendlier label")
+                    Text(device.nickname ?? "Set a label")
                         .font(.caption)
                         .foregroundColor(.gsTextSecondary)
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundColor(.gsTextSecondary)
                 }
-                .frame(maxWidth: .infinity)
+                .cardStyle()
             }
-            .buttonStyle(.plain)
+
+            // Disconnect button (if connected)
+            if device.isConnected {
+                Button {
+                    let bleDevice = bleManager.connectedDevices.first(where: {
+                        $0.persistedId == device.id || $0.identifier.uuidString == device.bluetoothIdentifier
+                    })
+                    if let bleDevice {
+                        bleManager.disconnect(from: bleDevice)
+                    }
+                    Task { await viewModel.loadDevice() }
+                } label: {
+                    Label("Disconnect", systemImage: "antenna.radiowaves.left.and.right.slash")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(.gsWarning)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Color.gsWarning.opacity(0.1))
+                        .cornerRadius(12)
+                }
+            }
         }
-        .cardStyle()
         .disabled(viewModel.isUpdating)
-    }
-
-    private func infoRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label)
-                .font(.subheadline)
-                .foregroundColor(.gsTextSecondary)
-            Spacer()
-            Text(value)
-                .font(.subheadline.weight(.medium))
-                .foregroundColor(.gsText)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-
-    private func signalLabel(_ rssi: Int?) -> String {
-        guard let rssi else { return "N/A" }
-        switch rssi {
-        case -50...0: return "Excellent (\(rssi) dBm)"
-        case -70 ..< -50: return "Good (\(rssi) dBm)"
-        case -90 ..< -70: return "Fair (\(rssi) dBm)"
-        default: return "Weak (\(rssi) dBm)"
-        }
     }
 
     // MARK: - Monitoring
@@ -271,6 +374,33 @@ struct DeviceDetailView: View {
                     .background(Color.gsDanger.opacity(0.1))
                     .cornerRadius(12)
             }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func infoRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(.gsTextSecondary)
+            Spacer()
+            Text(value)
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.gsText)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    private func signalLabel(_ rssi: Int?) -> String {
+        guard let rssi else { return "N/A" }
+        switch rssi {
+        case -50...0: return "Excellent (\(rssi) dBm)"
+        case -70 ..< -50: return "Good (\(rssi) dBm)"
+        case -90 ..< -70: return "Fair (\(rssi) dBm)"
+        default: return "Weak (\(rssi) dBm)"
         }
     }
 

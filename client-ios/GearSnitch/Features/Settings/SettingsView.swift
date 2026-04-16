@@ -104,7 +104,9 @@ struct SettingsView: View {
                         .foregroundColor(.gsText)
                 }
 
-                Link(destination: URL(string: AppConfig.termsURL)!) {
+                NavigationLink {
+                    TermsOfServiceView()
+                } label: {
                     Label("Terms of Service", systemImage: "doc.text")
                         .foregroundColor(.gsText)
                 }

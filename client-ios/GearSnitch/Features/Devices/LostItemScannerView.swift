@@ -322,7 +322,7 @@ final class LostItemScannerViewModel: NSObject, ObservableObject {
     // MARK: - Nearby Interaction (UWB)
 
     private func startNearbyInteraction() {
-        guard NISession.isSupported else {
+        guard NISession.deviceCapabilities.supportsDirectionMeasurement else {
             directionHint = nil
             return
         }
