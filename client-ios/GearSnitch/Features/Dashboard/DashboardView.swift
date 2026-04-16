@@ -164,7 +164,7 @@ struct DashboardView: View {
 
                         Spacer()
 
-                        Text(session.formattedDuration)
+                        Text(session.startedAt, style: .timer)
                             .font(.system(size: 22, weight: .bold, design: .rounded))
                             .foregroundColor(.gsText)
                             .monospacedDigit()

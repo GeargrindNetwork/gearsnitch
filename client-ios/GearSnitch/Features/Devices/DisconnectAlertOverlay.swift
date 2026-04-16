@@ -62,6 +62,7 @@ struct DisconnectAlertOverlay: View {
             // Auto-clear if device reconnects
             if connected.contains(deviceIdentifier) {
                 countdownTask?.cancel()
+                DisconnectProtectionActivityManager.shared.clearCountdown()
                 onDismissed()
             }
         }
@@ -212,17 +213,20 @@ struct DisconnectAlertOverlay: View {
         countdownTask = Task { @MainActor in
             for second in stride(from: 20, through: 1, by: -1) {
                 guard !Task.isCancelled else { return }
-                countdownSeconds = second
                 phase = .countdown(secondsRemaining: second)
 
                 // Update Dynamic Island countdown
-                DisconnectProtectionActivityManager.shared.updateDeviceCount()
+                DisconnectProtectionActivityManager.shared.updateCountdown(
+                    seconds: second,
+                    deviceName: deviceName
+                )
 
                 try? await Task.sleep(for: .seconds(1))
             }
 
-            // Countdown finished — trigger alarm and show silence button
+            // Countdown finished — clear island countdown, trigger alarm, show silence button
             guard !Task.isCancelled else { return }
+            DisconnectProtectionActivityManager.shared.clearCountdown()
             withAnimation(.easeInOut(duration: 0.3)) {
                 phase = .silencePrompt
             }

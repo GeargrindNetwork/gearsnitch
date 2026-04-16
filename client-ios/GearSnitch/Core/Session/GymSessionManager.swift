@@ -250,25 +250,15 @@ final class GymSessionManager: ObservableObject {
     }
 
     // MARK: - Elapsed Timer
+    //
+    // The dashboard uses SwiftUI's built-in `Text(session.startedAt, style: .timer)`
+    // which auto-updates every frame without requiring manual ObservableObject
+    // ticks. These start/stop functions are kept as no-ops so existing call sites
+    // (startSession, endSession, restoreSessionFromAppGroup) remain unchanged.
 
-    private var elapsedTimerTask: Task<Void, Never>?
+    private func startElapsedTimer() {}
 
-    private func startElapsedTimer() {
-        stopElapsedTimer()
-        // Use a Task-based timer on MainActor to ensure SwiftUI picks up changes
-        elapsedTimerTask = Task { @MainActor [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(1))
-                guard !Task.isCancelled else { break }
-                self?.objectWillChange.send()
-            }
-        }
-    }
-
-    private func stopElapsedTimer() {
-        elapsedTimerTask?.cancel()
-        elapsedTimerTask = nil
-    }
+    private func stopElapsedTimer() {}
 
     // MARK: - Geofence Integration
 
