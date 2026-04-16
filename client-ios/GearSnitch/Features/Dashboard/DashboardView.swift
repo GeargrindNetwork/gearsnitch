@@ -5,8 +5,6 @@ struct DashboardView: View {
     @ObservedObject private var sessionManager = GymSessionManager.shared
     @ObservedObject private var bleManager = BLEManager.shared
     @ObservedObject private var heartRateMonitor = HeartRateMonitor.shared
-    @State private var showDisconnectOverlay = false
-    @State private var disconnectDevice: DisconnectDecisionPrompt?
     @State private var navigateToScanner = false
     @State private var scannerTargetDevice: BLEDevice?
 

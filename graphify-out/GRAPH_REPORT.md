@@ -1,12 +1,12 @@
 # Graph Report - .  (2026-04-15)
 
 ## Corpus Check
-- 330 files · ~353,633 words
+- 331 files · ~355,245 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2897 nodes · 5107 edges · 113 communities detected
-- Extraction: 80% EXTRACTED · 20% INFERRED · 0% AMBIGUOUS · INFERRED: 1010 edges (avg confidence: 0.8)
+- 2906 nodes · 5119 edges · 114 communities detected
+- Extraction: 80% EXTRACTED · 20% INFERRED · 0% AMBIGUOUS · INFERRED: 1014 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -123,6 +123,7 @@
 - [[_COMMUNITY_Community 110|Community 110]]
 - [[_COMMUNITY_Community 111|Community 111]]
 - [[_COMMUNITY_Community 112|Community 112]]
+- [[_COMMUNITY_Community 113|Community 113]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Date` - 57 edges
@@ -130,7 +131,7 @@
 3. `CodingKeys` - 52 edges
 4. `BLEManager` - 44 edges
 5. `CodingKeys` - 43 edges
-6. `toIsoString()` - 29 edges
+6. `toIsoString()` - 30 edges
 7. `OnboardingViewModel` - 28 edges
 8. `AnalyticsEvent` - 27 edges
 9. `CodingKeys` - 25 edges
@@ -145,157 +146,157 @@
   web/src/components/account/NotificationPreferencesPanel.tsx → /Users/shawn/Documents/folder/gearsnitch/worker/src/utils/jobRuntime.ts
 - `successResponse()` --calls--> `handleGetBloodworkProduct()`  [INFERRED]
   /Users/shawn/Documents/folder/gearsnitch/api/src/utils/response.ts → api/src/modules/labs/routes.ts
-- `errorResponse()` --calls--> `handleDeviceError()`  [INFERRED]
-  /Users/shawn/Documents/folder/gearsnitch/api/src/utils/response.ts → api/src/modules/devices/routes.ts
+- `entries` --calls--> `normalizeMonthDays()`  [INFERRED]
+  /Users/shawn/Documents/folder/gearsnitch/client-ios/GearSnitch/Features/Cycles/CycleTrackingView.swift → web/src/lib/api.ts
 
 ## Communities
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (78): ActiveRunView, AlertDetailView, AlertsView, BMICalculatorView, CalorieDashboardView, CartView, ContentView, DashboardView (+70 more)
+Nodes (73): ActiveRunView, AlertDetailView, AlertsView, CreateDeviceBody, BMICalculatorView, CalorieDashboardView, CartView, ContentView (+65 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.02
-Nodes (126): AlertDTO, Tab, dashboard, health, profile, workouts, DailySummaryDTO, MealDTO (+118 more)
+Nodes (126): buildCalendarDateKey(), HandPreferenceManager, HandSide, left, right, devicesCollection(), deviceSharesCollection(), emitDeviceSync() (+118 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.01
-Nodes (162): buildCalendarDateKey(), CodingKeys, acknowledged, acknowledgedAt, createdAt, deviceId, deviceName, id (+154 more)
+Cohesion: 0.02
+Nodes (119): AlertDTO, Tab, dashboard, health, profile, workouts, DailySummaryDTO, MealDTO (+111 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.03
-Nodes (110): devicesCollection(), deviceSharesCollection(), emitDeviceSync(), loadVisibleDevicesForUser(), publishRuntimeEvent(), resolveDeviceAudienceUserIds(), serializeDeviceState(), toObjectId() (+102 more)
+Cohesion: 0.02
+Nodes (61): AlertsViewModel, NoOpAnalyticsClient, ApiClient, ApplePayError, backendConfirmationFailed, cancelled, controllerCreationFailed, presentationFailed (+53 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.03
-Nodes (69): AddToCartBody, APIEndpoint, AppleLoginBody, Calendar, Calories, CompleteWorkoutBody, Config, CreateCycleBody (+61 more)
+Cohesion: 0.02
+Nodes (65): AddToCartBody, Alerts, APIEndpoint, AppleLoginBody, Auth, Calendar, Calories, CompleteWorkoutBody (+57 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.03
-Nodes (49): AuthService, AuthServiceError, getAppleJwksClient(), getGoogleClient(), hasConfiguredValue(), requireConfiguredValue(), applyDeviceSnapshot(), assertObjectId() (+41 more)
+Cohesion: 0.01
+Nodes (135): CodingKeys, acknowledged, acknowledgedAt, createdAt, deviceId, deviceName, id, latitude (+127 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.03
-Nodes (46): ActivityAttributes, trackPageView(), APIClient, DisconnectProtectionActivityManager, ContentState, DisconnectProtectionAttributes, ContentState, GymSessionAttributes (+38 more)
+Nodes (34): DeviceDisconnectedBody, AppIntent, AppShortcutsProvider, BLEAlarmSoundPlayer, BLEDevice, BLEManager, BLEScanMode, discovery (+26 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.03
-Nodes (36): AlertsViewModel, NoOpAnalyticsClient, ApiClient, Auth, clearLegacyAuthArtifacts(), AuthManager, CalorieDashboardViewModel, CartViewModel (+28 more)
+Nodes (44): ActivityAttributes, trackPageView(), DisconnectAlertOverlay, DisconnectAlertPhase, actionChoice, countdown, silencePrompt, DisconnectProtectionActivityManager (+36 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.03
-Nodes (43): Alerts, DeviceDisconnectedBody, AppIntent, AppShortcutsProvider, count, Date, DisarmProtectionIntent, GearSnitchShortcutsProvider (+35 more)
+Nodes (45): HTTPMethod, DELETE, GET, PATCH, POST, applyDeviceSnapshot(), assertObjectId(), DeviceService (+37 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.03
-Nodes (35): UpdateUserBody, BLEStateObserver, StateDelegate, CBCentralManagerDelegate, CLLocationManagerDelegate, BLEAuthorizationDelegate, OnboardingLocationDelegate, OnboardingStep (+27 more)
+Cohesion: 0.04
+Nodes (35): PermissionStateSyncBody, UpdateUserBody, Users, CBCentralManagerDelegate, CLLocationManagerDelegate, NotificationPreferencesView, NutritionGoalsView, BLEAuthorizationDelegate (+27 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.03
-Nodes (54): Users, ApplePayError, backendConfirmationFailed, cancelled, controllerCreationFailed, presentationFailed, ApplePayManager, PaymentError (+46 more)
-
-### Community 11 - "Community 11"
-Cohesion: 0.04
-Nodes (19): BLEAlarmSoundPlayer, BLEManager, BLEScanMode, discovery, monitoring, DisconnectDecisionPrompt, PersistedBLEDeviceMetadata, ReconnectionState (+11 more)
-
-### Community 12 - "Community 12"
 Cohesion: 0.04
 Nodes (32): store, CodingKeys, bluetoothIdentifier, createdAt, id, isDefault, isFavorite, lastSeenAt (+24 more)
 
-### Community 13 - "Community 13"
-Cohesion: 0.03
-Nodes (60): BLEDevice, BLEDeviceStatus, connected, connecting, disconnected, discovered, lost, monitoring (+52 more)
-
-### Community 14 - "Community 14"
+### Community 11 - "Community 11"
 Cohesion: 0.04
 Nodes (39): AddGymView, MKLocalSearchCompletion, PlaceAnnotation, Triangle, APIEndpoint, GeofenceManager, GymEventBody, GymEvents (+31 more)
 
-### Community 15 - "Community 15"
+### Community 12 - "Community 12"
 Cohesion: 0.04
-Nodes (30): ActiveWorkoutView, ActiveWorkoutViewModel, WorkoutExercise, WorkoutSet, CalendarSyncService, SessionActivitySummary, CalendarDayDetailResponse, EmergencyContact (+22 more)
+Nodes (30): createApp(), AuthService, AuthServiceError, getAppleJwksClient(), getGoogleClient(), hasConfiguredValue(), requireConfiguredValue(), AppError (+22 more)
 
-### Community 16 - "Community 16"
+### Community 13 - "Community 13"
+Cohesion: 0.03
+Nodes (48): BLEDeviceStatus, connected, connecting, disconnected, discovered, lost, monitoring, reconnecting (+40 more)
+
+### Community 14 - "Community 14"
+Cohesion: 0.04
+Nodes (31): APIClient, count, HealthDashboardViewModel, HealthMetric, HealthKitError, invalidType, notAvailable, queryFailed (+23 more)
+
+### Community 15 - "Community 15"
 Cohesion: 0.05
 Nodes (26): AppCoordinator, AppDestination, alert, deviceDetail, gymDetail, product, referral, settings (+18 more)
 
+### Community 16 - "Community 16"
+Cohesion: 0.03
+Nodes (19): formatDate(), formatLastSeen(), formatDate(), formatTime(), formatTime(), formatDate(), LabsPage(), formatDateTime() (+11 more)
+
 ### Community 17 - "Community 17"
+Cohesion: 0.05
+Nodes (38): asNullableString(), asNumber(), asNumberArray(), asString(), createCycle(), createMedicationDose(), getAdminUsers(), getCycleMonthSummary() (+30 more)
+
+### Community 18 - "Community 18"
 Cohesion: 0.04
 Nodes (51): HeatmapCalendarView, CodingKeys, activities, amountMl, calories, carbs, category, categoryDoseMg (+43 more)
 
-### Community 18 - "Community 18"
-Cohesion: 0.03
-Nodes (18): formatLastSeen(), formatDate(), formatTime(), formatTime(), formatDate(), LabsPage(), formatDateTime(), formatPace() (+10 more)
-
 ### Community 19 - "Community 19"
-Cohesion: 0.05
-Nodes (37): asNullableString(), asNumber(), asNumberArray(), asString(), createCycle(), createMedicationDose(), getCycleMonthSummary(), getCycles() (+29 more)
+Cohesion: 0.04
+Nodes (42): UpdateAvatarBody, AuthError, googleConfigurationMissing, missingAppleToken, missingGoogleToken, signInCancelled, AuthState, authenticated (+34 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.06
-Nodes (17): LocalDevice, LocalDeviceEvent, LocalGym, OfflineOperation, DeviceEventAction, connect, disconnect, DeviceEventSyncService (+9 more)
+Cohesion: 0.05
+Nodes (27): LocalDevice, LocalDeviceEvent, LocalGym, OfflineOperation, DeviceEventAction, connect, disconnect, DeviceEventSyncService (+19 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.06
-Nodes (24): ApplePayButton, Coordinator, NSObject, PKPaymentAuthorizationViewControllerDelegate, NotificationAction, acknowledge, viewDevice, NotificationCategory (+16 more)
+Cohesion: 0.05
+Nodes (27): ActiveWorkoutView, ActiveWorkoutViewModel, WorkoutExercise, WorkoutSet, CalendarSyncService, SessionActivitySummary, CalendarDayDetailResponse, EmergencyContact (+19 more)
 
 ### Community 22 - "Community 22"
 Cohesion: 0.07
 Nodes (22): BlinkingLockIcon, DisconnectProtectionLiveActivityWidget, CaloriesEntry, CaloriesProvider, CaloriesWidgetView, DeviceStatusEntry, DeviceStatusProvider, DeviceStatusWidgetView (+14 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.05
-Nodes (37): CodingKeys, activeCycleCount, activeCycles, activeDayCount, activeDays, actualDose, axis, compoundName (+29 more)
+Cohesion: 0.06
+Nodes (19): AppDelegate, RuntimeDiagnostics, ApplePayButton, Coordinator, HealthKitPermissions, HealthKitPermissionState, authorized, denied (+11 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.06
 Nodes (22): Color, LostItemScannerView, LostItemScannerViewModel, ProximityLevel, far, immediate, medium, near (+14 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.08
-Nodes (16): AppDelegate, RuntimeDiagnostics, HealthKitPermissions, HealthKitPermissionState, authorized, denied, notDetermined, unavailable (+8 more)
+Cohesion: 0.06
+Nodes (36): CodingKeys, activeCycleCount, activeCycles, activeDayCount, activeDays, actualDose, axis, compoundName (+28 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.11
 Nodes (21): processAlertFanout(), processDataExport(), enqueueJob(), getCollection(), getDb(), getQueue(), getRedisConnection(), hashDedupeKey() (+13 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.1
-Nodes (13): buildAlertMessage(), buildAlertResponse(), getRouteParam(), getUserId(), handleDeviceError(), handleGymError(), handleStoreError(), resolveAlertType() (+5 more)
-
-### Community 28 - "Community 28"
 Cohesion: 0.06
 Nodes (29): AnalyticsClient, AnalyticsClientProtocol, AnalyticsEvent, addedToCart, checkoutStarted, deviceDisconnectDetected, devicePaired, gymAdded (+21 more)
 
-### Community 29 - "Community 29"
-Cohesion: 0.11
-Nodes (11): createApp(), AppError, errorHandler(), parseEnvList(), connectMongoDB(), disconnectMongoDB(), createAuthRateLimiter(), createGlobalRateLimiter() (+3 more)
-
-### Community 30 - "Community 30"
+### Community 28 - "Community 28"
 Cohesion: 0.1
 Nodes (13): Key, accessToken, deviceSessionId, refreshToken, KeychainError, dataConversionFailed, deleteFailed, loadFailed (+5 more)
 
-### Community 31 - "Community 31"
+### Community 29 - "Community 29"
 Cohesion: 0.13
 Nodes (15): attachUserIfPresent(), authenticateToken(), AuthenticationFailureError, extractToken(), isAuthenticated(), enforceSupportedClientRelease(), compareSemanticVersions(), findReleasePolicyPath() (+7 more)
 
+### Community 30 - "Community 30"
+Cohesion: 0.12
+Nodes (14): NotificationAction, acknowledge, viewDevice, NotificationCategory, deviceDisconnect, panicAlarm, NotificationDeepLink, alert (+6 more)
+
+### Community 31 - "Community 31"
+Cohesion: 0.14
+Nodes (12): HeartRateBatchBody, HeartRateBatchPayload, HeartRateMonitor, HeartRateSample, HeartRateSessionSummary, HeartRateZone, cardio, fatBurn (+4 more)
+
 ### Community 32 - "Community 32"
+Cohesion: 0.22
+Nodes (5): assertObjectId(), buildComplianceWarnings(), serializeProduct(), StoreService, StoreServiceError
+
+### Community 33 - "Community 33"
 Cohesion: 0.13
 Nodes (7): StandardAxesModifier, TrendsView, View, CardStyleModifier, ShimmerModifier, View, ViewModifier
 
-### Community 33 - "Community 33"
+### Community 34 - "Community 34"
 Cohesion: 0.23
 Nodes (16): CGPath, deriveIconSizes(), drawBackground(), drawCenteredText(), drawEyeMark(), drawIcon(), drawRadialGlow(), fillPathWithGradient() (+8 more)
 
-### Community 34 - "Community 34"
-Cohesion: 0.25
-Nodes (0): 
-
 ### Community 35 - "Community 35"
-Cohesion: 0.33
-Nodes (0): 
+Cohesion: 0.19
+Nodes (8): CodingKeys, createdAt, currency, id, itemCount, status, total, OrderHistoryView
 
 ### Community 36 - "Community 36"
-Cohesion: 0.33
+Cohesion: 0.25
 Nodes (0): 
 
 ### Community 37 - "Community 37"
@@ -303,23 +304,23 @@ Cohesion: 0.33
 Nodes (0): 
 
 ### Community 38 - "Community 38"
-Cohesion: 0.4
-Nodes (3): App, GearSnitchApp, GearSnitchWatchApp
+Cohesion: 0.33
+Nodes (0): 
 
 ### Community 39 - "Community 39"
-Cohesion: 0.5
+Cohesion: 0.33
 Nodes (0): 
 
 ### Community 40 - "Community 40"
+Cohesion: 0.4
+Nodes (3): App, GearSnitchApp, GearSnitchWatchApp
+
+### Community 41 - "Community 41"
 Cohesion: 0.5
 Nodes (2): Badge(), cn()
 
-### Community 41 - "Community 41"
-Cohesion: 0.67
-Nodes (0): 
-
 ### Community 42 - "Community 42"
-Cohesion: 0.67
+Cohesion: 0.5
 Nodes (0): 
 
 ### Community 43 - "Community 43"
@@ -335,28 +336,28 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 46 - "Community 46"
-Cohesion: 1.0
-Nodes (2): authenticateSocketSession(), extractToken()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 47 - "Community 47"
 Cohesion: 0.67
 Nodes (0): 
 
 ### Community 48 - "Community 48"
+Cohesion: 1.0
+Nodes (2): authenticateSocketSession(), extractToken()
+
+### Community 49 - "Community 49"
 Cohesion: 0.67
 Nodes (0): 
 
-### Community 49 - "Community 49"
-Cohesion: 1.0
-Nodes (1): AppConfig
-
 ### Community 50 - "Community 50"
-Cohesion: 1.0
+Cohesion: 0.67
 Nodes (0): 
 
 ### Community 51 - "Community 51"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (1): AppConfig
 
 ### Community 52 - "Community 52"
 Cohesion: 1.0
@@ -602,149 +603,151 @@ Nodes (0):
 Cohesion: 1.0
 Nodes (0): 
 
+### Community 113 - "Community 113"
+Cohesion: 1.0
+Nodes (0): 
+
 ## Knowledge Gaps
 - **520 isolated node(s):** `controllerCreationFailed`, `presentationFailed`, `cancelled`, `none`, `active` (+515 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 49`** (2 nodes): `AppConfig`, `AppConfig.swift`
+- **Thin community `Community 51`** (2 nodes): `AppConfig`, `AppConfig.swift`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 50`** (2 nodes): `vite.config.ts`, `safeGitSha()`
+- **Thin community `Community 52`** (2 nodes): `vite.config.ts`, `safeGitSha()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 51`** (2 nodes): `CycleSummaryCard()`, `CycleSummaryCard.tsx`
+- **Thin community `Community 53`** (2 nodes): `CycleSummaryCard()`, `CycleSummaryCard.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 52`** (2 nodes): `cn()`, `tabs.tsx`
+- **Thin community `Community 54`** (2 nodes): `cn()`, `tabs.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 53`** (2 nodes): `cn()`, `label.tsx`
+- **Thin community `Community 55`** (2 nodes): `cn()`, `label.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 54`** (2 nodes): `cn()`, `separator.tsx`
+- **Thin community `Community 56`** (2 nodes): `cn()`, `separator.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 55`** (2 nodes): `cn()`, `button.tsx`
+- **Thin community `Community 57`** (2 nodes): `cn()`, `button.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 56`** (2 nodes): `Input()`, `input.tsx`
+- **Thin community `Community 58`** (2 nodes): `Input()`, `input.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 57`** (2 nodes): `Footer()`, `Footer.tsx`
+- **Thin community `Community 59`** (2 nodes): `Footer()`, `Footer.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 58`** (2 nodes): `ReleaseBlockedView()`, `ReleaseBlockedView.tsx`
+- **Thin community `Community 60`** (2 nodes): `ReleaseBlockedView()`, `ReleaseBlockedView.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 59`** (2 nodes): `useRelease()`, `release-context.ts`
+- **Thin community `Community 61`** (2 nodes): `useRelease()`, `release-context.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 60`** (2 nodes): `NotFoundPage()`, `NotFoundPage.tsx`
+- **Thin community `Community 62`** (2 nodes): `NotFoundPage()`, `NotFoundPage.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 61`** (1 nodes): `eslint.config.js`
+- **Thin community `Community 63`** (1 nodes): `eslint.config.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 62`** (1 nodes): `main.tsx`
+- **Thin community `Community 64`** (1 nodes): `main.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 63`** (1 nodes): `sonner.tsx`
+- **Thin community `Community 65`** (1 nodes): `sonner.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 64`** (1 nodes): `Header.tsx`
+- **Thin community `Community 66`** (1 nodes): `Header.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 65`** (1 nodes): `EmergencyContactsPanel.tsx`
+- **Thin community `Community 67`** (1 nodes): `EmergencyContactsPanel.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 66`** (1 nodes): `release-meta.ts`
+- **Thin community `Community 68`** (1 nodes): `release-meta.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 67`** (1 nodes): `release.tsx`
+- **Thin community `Community 69`** (1 nodes): `release.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 68`** (1 nodes): `PrivacyPolicyPage.tsx`
+- **Thin community `Community 70`** (1 nodes): `PrivacyPolicyPage.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 69`** (1 nodes): `TermsOfServicePage.tsx`
+- **Thin community `Community 71`** (1 nodes): `TermsOfServicePage.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 70`** (1 nodes): `LandingPage.tsx`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 71`** (1 nodes): `index.ts`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 72`** (1 nodes): `index.ts`
+- **Thin community `Community 72`** (1 nodes): `LandingPage.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 73`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 74`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 75`** (1 nodes): `logger.ts`
+- **Thin community `Community 75`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 76`** (1 nodes): `NotificationLog.ts`
+- **Thin community `Community 76`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 77`** (1 nodes): `Alert.ts`
+- **Thin community `Community 77`** (1 nodes): `logger.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 78`** (1 nodes): `Referral.ts`
+- **Thin community `Community 78`** (1 nodes): `NotificationLog.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 79`** (1 nodes): `StoreOrder.ts`
+- **Thin community `Community 79`** (1 nodes): `Alert.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 80`** (1 nodes): `StoreCategory.ts`
+- **Thin community `Community 80`** (1 nodes): `Referral.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 81`** (1 nodes): `StoreProduct.ts`
+- **Thin community `Community 81`** (1 nodes): `StoreOrder.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 82`** (1 nodes): `WaterLog.ts`
+- **Thin community `Community 82`** (1 nodes): `StoreCategory.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 83`** (1 nodes): `StoreCart.ts`
+- **Thin community `Community 83`** (1 nodes): `StoreProduct.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 84`** (1 nodes): `Content.ts`
+- **Thin community `Community 84`** (1 nodes): `WaterLog.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 85`** (1 nodes): `DeviceShare.ts`
+- **Thin community `Community 85`** (1 nodes): `StoreCart.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 86`** (1 nodes): `GymSession.ts`
+- **Thin community `Community 86`** (1 nodes): `Content.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 87`** (1 nodes): `HealthMetric.ts`
+- **Thin community `Community 87`** (1 nodes): `DeviceShare.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 88`** (1 nodes): `DosingHistory.ts`
+- **Thin community `Community 88`** (1 nodes): `GymSession.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 89`** (1 nodes): `Session.ts`
+- **Thin community `Community 89`** (1 nodes): `HealthMetric.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 90`** (1 nodes): `EventLog.ts`
+- **Thin community `Community 90`** (1 nodes): `DosingHistory.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 91`** (1 nodes): `Workout.ts`
+- **Thin community `Community 91`** (1 nodes): `Session.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 92`** (1 nodes): `Meal.ts`
+- **Thin community `Community 92`** (1 nodes): `EventLog.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 93`** (1 nodes): `Device.ts`
+- **Thin community `Community 93`** (1 nodes): `Workout.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 94`** (1 nodes): `NutritionGoal.ts`
+- **Thin community `Community 94`** (1 nodes): `Meal.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 95`** (1 nodes): `MedicationDose.ts`
+- **Thin community `Community 95`** (1 nodes): `Device.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 96`** (1 nodes): `EmergencyContact.ts`
+- **Thin community `Community 96`** (1 nodes): `NutritionGoal.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 97`** (1 nodes): `LabAppointment.ts`
+- **Thin community `Community 97`** (1 nodes): `MedicationDose.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 98`** (1 nodes): `index.ts`
+- **Thin community `Community 98`** (1 nodes): `EmergencyContact.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 99`** (1 nodes): `Subscription.ts`
+- **Thin community `Community 99`** (1 nodes): `LabAppointment.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 100`** (1 nodes): `DeviceEvent.ts`
+- **Thin community `Community 100`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 101`** (1 nodes): `CycleEntry.ts`
+- **Thin community `Community 101`** (1 nodes): `Subscription.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 102`** (1 nodes): `SupportTicket.ts`
+- **Thin community `Community 102`** (1 nodes): `DeviceEvent.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 103`** (1 nodes): `User.ts`
+- **Thin community `Community 103`** (1 nodes): `CycleEntry.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 104`** (1 nodes): `Cycle.ts`
+- **Thin community `Community 104`** (1 nodes): `SupportTicket.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 105`** (1 nodes): `Run.ts`
+- **Thin community `Community 105`** (1 nodes): `User.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 106`** (1 nodes): `Gym.ts`
+- **Thin community `Community 106`** (1 nodes): `Cycle.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 107`** (1 nodes): `routes.ts`
+- **Thin community `Community 107`** (1 nodes): `Run.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 108`** (1 nodes): `routes.ts`
+- **Thin community `Community 108`** (1 nodes): `Gym.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 109`** (1 nodes): `routes.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 110`** (1 nodes): `routes.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 111`** (1 nodes): `index.ts`
+- **Thin community `Community 111`** (1 nodes): `routes.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 112`** (1 nodes): `logger.ts`
+- **Thin community `Community 112`** (1 nodes): `index.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 113`** (1 nodes): `logger.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Date` connect `Community 8` to `Community 0`, `Community 4`, `Community 5`, `Community 6`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 15`, `Community 16`, `Community 20`, `Community 22`?**
-  _High betweenness centrality (0.047) - this node is a cross-community bridge._
-- **Why does `CodingKeys` connect `Community 17` to `Community 1`, `Community 2`, `Community 15`?**
-  _High betweenness centrality (0.036) - this node is a cross-community bridge._
-- **Why does `CodingKeys` connect `Community 23` to `Community 8`, `Community 1`, `Community 2`, `Community 19`?**
-  _High betweenness centrality (0.033) - this node is a cross-community bridge._
-- **Are the 76 inferred relationships involving `String` (e.g. with `.utcDateKeys()` and `.startScanning()`) actually correct?**
-  _`String` has 76 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `Date` connect `Community 6` to `Community 0`, `Community 1`, `Community 4`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 14`, `Community 15`, `Community 19`, `Community 20`, `Community 21`, `Community 22`, `Community 31`?**
+  _High betweenness centrality (0.053) - this node is a cross-community bridge._
+- **Why does `CodingKeys` connect `Community 25` to `Community 1`, `Community 2`, `Community 5`, `Community 14`, `Community 17`?**
+  _High betweenness centrality (0.044) - this node is a cross-community bridge._
+- **Why does `CodingKeys` connect `Community 18` to `Community 1`, `Community 2`, `Community 21`, `Community 5`?**
+  _High betweenness centrality (0.040) - this node is a cross-community bridge._
+- **Are the 78 inferred relationships involving `String` (e.g. with `.utcDateKeys()` and `.startScanning()`) actually correct?**
+  _`String` has 78 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `controllerCreationFailed`, `presentationFailed`, `cancelled` to the rest of the system?**
   _520 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**

@@ -90,6 +90,11 @@ export default function DeviceDetailPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['device-detail', id] }),
   });
 
+  const monitorMutation = useMutation({
+    mutationFn: (newStatus: string) => updateDeviceStatus(id!, newStatus),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['device-detail', id] }),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: () => deleteDevice(id!),
     onSuccess: () => {
@@ -160,6 +165,11 @@ export default function DeviceDetailPage() {
                 <p className="text-xs text-zinc-500">Pinned devices appear at the top</p>
               </div>
               <button
+                type="button"
+                role="switch"
+                aria-checked={device.isFavorite}
+                aria-label="Toggle pinned device"
+                disabled={updateMutation.isPending}
                 onClick={() => updateMutation.mutate({ isFavorite: !device.isFavorite })}
                 className={`relative inline-flex h-6 w-11 rounded-full border-2 border-transparent transition-colors ${device.isFavorite ? 'bg-emerald-500' : 'bg-zinc-700'}`}
               >
@@ -173,7 +183,12 @@ export default function DeviceDetailPage() {
                 <p className="text-xs text-zinc-500">Alert on disconnect</p>
               </div>
               <button
-                onClick={() => updateDeviceStatus(id!, device.isMonitoring ? 'connected' : 'monitoring').then(() => queryClient.invalidateQueries({ queryKey: ['device-detail', id] }))}
+                type="button"
+                role="switch"
+                aria-checked={device.isMonitoring}
+                aria-label="Toggle active monitoring"
+                disabled={monitorMutation.isPending}
+                onClick={() => monitorMutation.mutate(device.isMonitoring ? 'connected' : 'monitoring')}
                 className={`relative inline-flex h-6 w-11 rounded-full border-2 border-transparent transition-colors ${device.isMonitoring ? 'bg-emerald-500' : 'bg-zinc-700'}`}
               >
                 <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${device.isMonitoring ? 'translate-x-5' : 'translate-x-0'}`} />

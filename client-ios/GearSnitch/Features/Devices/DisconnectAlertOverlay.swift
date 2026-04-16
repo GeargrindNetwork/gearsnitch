@@ -19,7 +19,6 @@ struct DisconnectAlertOverlay: View {
 
     @ObservedObject private var bleManager = BLEManager.shared
     @State private var phase: DisconnectAlertPhase = .countdown(secondsRemaining: 20)
-    @State private var countdownSeconds = 20
     @State private var countdownTask: Task<Void, Never>?
 
     var body: some View {

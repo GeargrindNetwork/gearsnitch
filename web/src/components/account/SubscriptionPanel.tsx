@@ -6,11 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { getSubscription, createSubscription, cancelSubscription } from '@/lib/api';
 
-const TIERS = [
+const TIERS: Array<{ key: string; name: string; price: string; badge?: string; features: string[] }> = [
   { key: 'hustle', name: 'HUSTLE', price: '$4.99/mo', features: ['Real-time BLE monitoring', 'Disconnect alerts', '1 gym', '3 devices'] },
   { key: 'hwmf', name: 'HWMF', price: '$60/yr', badge: 'Recommended', features: ['Everything in HUSTLE', 'Unlimited gyms', '10 devices', 'Panic alarm', 'Health sync'] },
   { key: 'babyMomma', name: 'BABY MOMMA', price: '$99 once', badge: 'Best Value', features: ['Everything in HWMF', 'Unlimited devices', 'Mesh chat', 'Lifetime updates'] },
-] as const;
+];
 
 function tierColor(tier: string) {
   switch (tier) {

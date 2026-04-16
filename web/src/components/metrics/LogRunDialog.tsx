@@ -25,7 +25,13 @@ export default function LogRunDialog({ open, onOpenChange }: { open: boolean; on
       const distanceMeters = distanceKm ? parseFloat(distanceKm) * 1000 : undefined;
 
       const run = await createRun({ startedAt, notes: notes || undefined });
-      await completeRun(run._id, { endedAt, durationSeconds, distanceMeters });
+      try {
+        await completeRun(run._id, { endedAt, durationSeconds, distanceMeters });
+      } catch (completeErr) {
+        // Run was created but completion failed — still invalidate so the active run shows
+        queryClient.invalidateQueries({ queryKey: ['runs'] });
+        throw completeErr;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['runs'] });

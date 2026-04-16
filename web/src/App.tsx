@@ -4,7 +4,7 @@ import { useEffect, type ReactNode } from 'react';
 import { initGA, trackPageView } from './lib/analytics';
 import { useLocation } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
-import { AuthProvider, RequireAuth } from './lib/auth';
+import { AuthProvider, RequireAuth, RequireAdmin } from './lib/auth';
 import { ReleaseProvider, RequireSupportedRelease } from './lib/release';
 
 import LandingPage from './pages/LandingPage';
@@ -94,9 +94,9 @@ export default function App() {
               <Route
                 path="/admin"
                 element={(
-                  <ProtectedAppRoute>
+                  <RequireAdmin>
                     <AdminPage />
-                  </ProtectedAppRoute>
+                  </RequireAdmin>
                 )}
               />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />

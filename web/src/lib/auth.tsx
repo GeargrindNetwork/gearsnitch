@@ -197,3 +197,21 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
+
+export function RequireAdmin({ children }: { children: ReactNode }) {
+  const { user, status, isAuthenticated } = useAuth();
+
+  if (status === 'bootstrapping') {
+    return (
+      <div className="min-h-screen bg-zinc-950 px-6 py-24 text-zinc-100">
+        <div className="mx-auto max-w-2xl text-center text-zinc-400">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user || user.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}

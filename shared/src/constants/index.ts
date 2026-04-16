@@ -19,6 +19,7 @@ export const DEVICE_TYPES = [
   'tracker',
   'belt',
   'bag',
+  'watch',
   'other',
 ] as const;
 export type DeviceType = (typeof DEVICE_TYPES)[number];
@@ -29,6 +30,7 @@ export const DEVICE_STATUSES = [
   'active',
   'inactive',
   'connected',
+  'monitoring',
   'disconnected',
   'lost',
   'reconnected',

@@ -74,8 +74,8 @@ export default function LabsPage() {
   const [time, setTime] = useState('09:00');
   const [success, setSuccess] = useState(false);
 
-  const { data: product } = useQuery({ queryKey: ['labs-product'], queryFn: getProduct, staleTime: 300_000 });
-  const { data: appointments = [] } = useQuery({ queryKey: ['labs-appointments'], queryFn: getAppointments, staleTime: 30_000 });
+  const { data: product, error: productError } = useQuery({ queryKey: ['labs-product'], queryFn: getProduct, staleTime: 300_000 });
+  const { data: appointments = [], error: appointmentsError } = useQuery({ queryKey: ['labs-appointments'], queryFn: getAppointments, staleTime: 30_000 });
 
   const scheduleMutation = useMutation({
     mutationFn: () => {
@@ -113,6 +113,9 @@ export default function LabsPage() {
         </section>
 
         {/* What's included */}
+        {productError && <p className="text-sm text-red-400">Failed to load product details: {(productError as Error).message}</p>}
+        {appointmentsError && <p className="text-sm text-red-400">Failed to load appointments: {(appointmentsError as Error).message}</p>}
+
         {product && (
           <Card className="border-white/5 bg-zinc-900/70">
             <CardHeader className="pb-2"><CardTitle className="text-sm text-zinc-400">Panel Includes</CardTitle></CardHeader>

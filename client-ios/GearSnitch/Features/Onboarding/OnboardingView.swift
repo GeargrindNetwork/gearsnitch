@@ -324,22 +324,6 @@ struct OnboardingView: View {
         )
     }
 
-    // MARK: - HealthKit Step
-
-    private var healthKitStep: some View {
-        permissionStep(
-            icon: "heart.text.square",
-            iconColor: .red,
-            title: "Apple Health",
-            description: "Optionally sync your health metrics like weight, steps, and heart rate for a complete fitness picture.",
-            detail: nil,
-            buttonTitle: "Connect Health",
-            isRequired: false,
-            action: { viewModel.requestHealthKitAuthorization() },
-            onSkip: { viewModel.skipStep() }
-        )
-    }
-
     // MARK: - HealthKit Auto-Prompt Step
 
     private var healthKitAutoPromptStep: some View {

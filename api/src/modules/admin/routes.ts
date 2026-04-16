@@ -48,9 +48,11 @@ router.get('/users', async (req: Request, res: Response) => {
 
     const filter: Record<string, unknown> = {};
     if (search) {
+      // Escape regex special characters to prevent NoSQL injection
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { email: { $regex: search, $options: 'i' } },
-        { displayName: { $regex: search, $options: 'i' } },
+        { email: { $regex: escaped, $options: 'i' } },
+        { displayName: { $regex: escaped, $options: 'i' } },
       ];
     }
     if (status) {

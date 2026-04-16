@@ -96,7 +96,6 @@ final class GymSessionManager: ObservableObject {
     // MARK: - Private
 
     private let logger = Logger(subsystem: "com.gearsnitch", category: "GymSessionManager")
-    private var elapsedTimer: Timer?
 
     // MARK: - Init
 
@@ -252,19 +251,23 @@ final class GymSessionManager: ObservableObject {
 
     // MARK: - Elapsed Timer
 
+    private var elapsedTimerTask: Task<Void, Never>?
+
     private func startElapsedTimer() {
         stopElapsedTimer()
-        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                // Trigger a publish cycle so SwiftUI updates the elapsed time
+        // Use a Task-based timer on MainActor to ensure SwiftUI picks up changes
+        elapsedTimerTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { break }
                 self?.objectWillChange.send()
             }
         }
     }
 
     private func stopElapsedTimer() {
-        elapsedTimer?.invalidate()
-        elapsedTimer = nil
+        elapsedTimerTask?.cancel()
+        elapsedTimerTask = nil
     }
 
     // MARK: - Geofence Integration

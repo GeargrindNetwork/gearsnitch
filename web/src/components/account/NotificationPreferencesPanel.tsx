@@ -42,14 +42,13 @@ export default function NotificationPreferencesPanel() {
     custom: {},
   });
   const [dirty, setDirty] = useState(false);
-  const [lastDataId, setLastDataId] = useState<string | null>(null);
+  const [syncedDataRef, setSyncedDataRef] = useState<NotificationPreferences | null>(null);
 
   // Sync server state to local state when data changes
-  const dataKey = data ? JSON.stringify(data.preferences) : null;
-  if (dataKey && dataKey !== lastDataId) {
-    setPrefs(data!.preferences);
+  if (data?.preferences && data.preferences !== syncedDataRef) {
+    setPrefs(data.preferences);
     setDirty(false);
-    setLastDataId(dataKey);
+    setSyncedDataRef(data.preferences);
   }
 
   const mutation = useMutation({
