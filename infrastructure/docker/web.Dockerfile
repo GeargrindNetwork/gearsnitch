@@ -55,6 +55,13 @@ RUN echo 'server { \
         add_header Cache-Control "public, immutable"; \
     } \
     \
+    # Serve .well-known verification files as plain text, 404 if missing. \
+    # Never fall back to the SPA here — Apple/Google verifiers require a real 404 or real file, not HTML. \
+    location /.well-known/ { \
+        default_type text/plain; \
+        try_files $uri =404; \
+    } \
+    \
     location / { \
         try_files $uri $uri/ /index.html; \
         add_header Cache-Control "no-cache"; \
