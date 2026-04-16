@@ -4,8 +4,9 @@ import { useEffect, type ReactNode } from 'react';
 import { initGA, trackPageView } from './lib/analytics';
 import { useLocation } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
-import { AuthProvider, RequireAuth } from './lib/auth';
+import { AuthProvider, RequireAuth, RequireAdmin } from './lib/auth';
 import { ReleaseProvider, RequireSupportedRelease } from './lib/release';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import LandingPage from './pages/LandingPage';
 import StorePage from './pages/StorePage';
@@ -18,6 +19,9 @@ import SupportPage from './pages/SupportPage';
 import DeleteAccountPage from './pages/DeleteAccountPage';
 import NotFoundPage from './pages/NotFoundPage';
 import RunMapPage from './pages/RunMapPage';
+import DeviceDetailPage from './pages/DeviceDetailPage';
+import LabsPage from './pages/LabsPage';
+import AdminPage from './pages/AdminPage';
 
 const queryClient = new QueryClient();
 
@@ -39,12 +43,14 @@ export default function App() {
   useEffect(() => { initGA(); }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ReleaseProvider>
-          <BrowserRouter>
-            <PageTracker />
-            <Routes>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ReleaseProvider>
+            <BrowserRouter>
+              <PageTracker />
+              <ErrorBoundary>
+                <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/store/*" element={<StorePage />} />
               <Route path="/sign-in" element={<SignInPage />} />
@@ -72,16 +78,42 @@ export default function App() {
                   </ProtectedAppRoute>
                 )}
               />
+              <Route
+                path="/devices/:id"
+                element={(
+                  <ProtectedAppRoute>
+                    <DeviceDetailPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/labs"
+                element={(
+                  <ProtectedAppRoute>
+                    <LabsPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/admin"
+                element={(
+                  <RequireAdmin>
+                    <AdminPage />
+                  </RequireAdmin>
+                )}
+              />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/support" element={<SupportPage />} />
               <Route path="/delete-account" element={<DeleteAccountPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-            <Toaster />
-          </BrowserRouter>
-        </ReleaseProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+                  <Route path="*" element={<NotFoundPage />} />
+                </Routes>
+              </ErrorBoundary>
+              <Toaster />
+            </BrowserRouter>
+          </ReleaseProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

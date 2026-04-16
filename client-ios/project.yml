@@ -61,8 +61,6 @@ targets:
       - package: GoogleSignIn
       - target: GearSnitchWidgets
         embed: true
-      - target: GearSnitchWatch
-        embed: true
     scheme:
       testTargets:
         - GearSnitchTests
@@ -95,11 +93,7 @@ targets:
     platform: watchOS
     sources:
       - path: GearSnitchWatch
-      - path: GearSnitch/Shared/Models
-        group: Shared
       - path: GearSnitch/Shared/Extensions/Color+GearSnitch.swift
-        group: Shared
-      - path: GearSnitch/Shared/Widgets/GymSessionActivityAttributes.swift
         group: Shared
       - path: GearSnitch/Core/Watch/WatchSyncPayloads.swift
         group: Shared

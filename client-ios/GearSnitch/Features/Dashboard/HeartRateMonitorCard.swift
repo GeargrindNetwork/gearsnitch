@@ -4,12 +4,23 @@ struct HeartRateMonitorCard: View {
     @ObservedObject private var monitor = HeartRateMonitor.shared
     @State private var isPulsing = false
 
+    private var hasHRCapableDevice: Bool {
+        let ble = BLEManager.shared
+        let allDevices = ble.connectedDevices + ble.discoveredDevices
+        return allDevices.contains { device in
+            let name = device.name.lowercased()
+            return name.contains("airpods") || name.contains("watch")
+        }
+    }
+
     var body: some View {
         VStack(spacing: 16) {
             if let bpm = monitor.currentBPM, let zone = monitor.currentZone {
                 activeBPMView(bpm: bpm, zone: zone)
             } else if monitor.isMonitoring {
                 waitingView
+            } else if !hasHRCapableDevice {
+                unavailableView
             } else {
                 inactiveView
             }
@@ -31,30 +42,53 @@ struct HeartRateMonitorCard: View {
 
     // MARK: - Active BPM
 
+    /// Target heart rate based on standard formula: 220 - age
+    /// Uses a default of 185 if age is unknown (age ~35)
+    private var targetHeartRate: Int {
+        // TODO: Pull actual age from user profile when available
+        185
+    }
+
     private func activeBPMView(bpm: Int, zone: HeartRateZone) -> some View {
         VStack(spacing: 12) {
-            // Pulsing heart
-            ZStack {
-                Circle()
-                    .fill(zone.color.opacity(0.12))
-                    .frame(width: 80, height: 80)
-                    .scaleEffect(isPulsing ? 1.15 : 1.0)
+            // Current BPM | Heart Icon | Target HR
+            HStack(alignment: .center, spacing: 0) {
+                // Left — Current BPM
+                VStack(spacing: 2) {
+                    Text("\(bpm)")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(zone.color)
+                    Text("BPM")
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(.gsTextSecondary)
+                }
+                .frame(maxWidth: .infinity)
 
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 36))
-                    .foregroundColor(zone.color)
-                    .scaleEffect(isPulsing ? 1.1 : 0.95)
-            }
+                // Center — Pulsing heart
+                ZStack {
+                    Circle()
+                        .fill(zone.color.opacity(0.12))
+                        .frame(width: 80, height: 80)
+                        .scaleEffect(isPulsing ? 1.15 : 1.0)
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("\(bpm)")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundColor(.gsText)
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 36))
+                        .foregroundColor(zone.color)
+                        .scaleEffect(isPulsing ? 1.1 : 0.95)
+                }
 
-                Text("BPM")
-                    .font(.subheadline)
-                    .foregroundColor(.gsTextSecondary)
+                // Right — Target HR
+                VStack(spacing: 2) {
+                    Text("\(targetHeartRate)")
+                        .font(.system(size: 36, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(.gsTextSecondary.opacity(0.6))
+                    Text("TARGET")
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(.gsTextSecondary)
+                }
+                .frame(maxWidth: .infinity)
             }
 
             HStack(spacing: 6) {
@@ -109,6 +143,31 @@ struct HeartRateMonitorCard: View {
 
             ProgressView()
                 .tint(.gsEmerald)
+        }
+    }
+
+    // MARK: - Unavailable (no AirPods Pro or Apple Watch)
+
+    private var unavailableView: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.gsTextSecondary.opacity(0.08))
+                    .frame(width: 80, height: 80)
+
+                Image(systemName: "heart.slash.fill")
+                    .font(.system(size: 36))
+                    .foregroundColor(.gsTextSecondary.opacity(0.3))
+            }
+
+            Text("Unavailable")
+                .font(.headline)
+                .foregroundColor(.gsTextSecondary)
+
+            Text("Connect AirPods Pro 3 or Apple Watch to monitor heart rate")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary.opacity(0.7))
+                .multilineTextAlignment(.center)
         }
     }
 

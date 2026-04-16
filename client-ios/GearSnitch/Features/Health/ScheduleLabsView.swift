@@ -355,8 +355,8 @@ final class ScheduleLabsViewModel: NSObject, ObservableObject {
 extension ScheduleLabsViewModel: PKPaymentAuthorizationViewControllerDelegate {
 
     nonisolated func paymentAuthorizationViewControllerDidFinish(_ controller: PKPaymentAuthorizationViewController) {
-        controller.dismiss(animated: true)
         Task { @MainActor in
+            controller.dismiss(animated: true)
             if !isConfirmed {
                 isProcessing = false
             }

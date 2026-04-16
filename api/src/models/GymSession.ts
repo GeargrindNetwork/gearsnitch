@@ -49,5 +49,6 @@ const GymSessionSchema = new Schema<IGymSession>(
 
 GymSessionSchema.index({ userId: 1, startedAt: -1 });
 GymSessionSchema.index({ gymId: 1 });
+GymSessionSchema.index({ userId: 1, endedAt: 1 });
 
 export const GymSession = mongoose.model<IGymSession>('GymSession', GymSessionSchema);

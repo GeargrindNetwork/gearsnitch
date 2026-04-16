@@ -57,5 +57,6 @@ const AlertSchema = new Schema<IAlert>(
 
 AlertSchema.index({ userId: 1, status: 1 });
 AlertSchema.index({ deviceId: 1, triggeredAt: -1 });
+AlertSchema.index({ userId: 1, createdAt: -1 });
 
 export const Alert = mongoose.model<IAlert>('Alert', AlertSchema);

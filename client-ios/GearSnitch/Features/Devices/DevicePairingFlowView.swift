@@ -54,11 +54,13 @@ struct DevicePairingFlowView: View {
                 bleManager.startScanning(mode: .discovery)
             }
         }
-        .task {
-            do {
-                savedDevices = try await APIClient.shared.request(APIEndpoint.Devices.list)
-            } catch {
-                savedDevices = []
+        .onAppear {
+            Task {
+                do {
+                    savedDevices = try await APIClient.shared.request(APIEndpoint.Devices.list)
+                } catch {
+                    savedDevices = []
+                }
             }
         }
         .onChange(of: bleManager.bluetoothState) { _, newState in
@@ -131,7 +133,12 @@ struct DevicePairingFlowView: View {
                                 .padding(.horizontal, 4)
 
                             ForEach(savedDevices, id: \.id) { device in
-                                savedDeviceCard(device)
+                                Button {
+                                    onDeviceRegistered(device)
+                                } label: {
+                                    savedDeviceCard(device)
+                                }
+                                .buttonStyle(.plain)
                             }
 
                             Text("Nearby Devices")
@@ -397,7 +404,6 @@ struct DevicePairingFlowView: View {
         }
 
         // Also check by bluetooth identifier against persisted metadata
-        let identifier = device.identifier.uuidString
         let alreadySaved = bleManager.connectedDevices.contains { d in
             d.identifier != device.identifier && d.persistedId != nil
         } || bleManager.discoveredDevices.contains { d in

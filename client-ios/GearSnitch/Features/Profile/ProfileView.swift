@@ -364,14 +364,14 @@ struct ProfileView: View {
             }
 
             if let profile = viewModel.profile {
-                let devices = profile.devices ?? []
-                if devices.isEmpty {
+                let pinnedDevices = (profile.devices ?? []).filter { $0.isFavorite ?? false }
+                if pinnedDevices.isEmpty {
                     HStack(spacing: 12) {
                         Image(systemName: "antenna.radiowaves.left.and.right.slash")
                             .font(.title2)
                             .foregroundColor(.gsTextSecondary)
 
-                        Text("No devices paired yet")
+                        Text("No pinned devices")
                             .font(.subheadline)
                             .foregroundColor(.gsTextSecondary)
 
@@ -379,10 +379,8 @@ struct ProfileView: View {
                     }
                     .cardStyle()
                 } else {
-                    ForEach(devices.prefix(3)) { device in
-                        NavigationLink {
-                            DeviceDetailView(deviceId: device._id)
-                        } label: {
+                    ForEach(pinnedDevices) { device in
+                        NavigationLink(destination: DeviceDetailView(deviceId: device._id)) {
                             HStack(spacing: 12) {
                                 Image(systemName: deviceIconName(device.type))
                                     .font(.title3)
@@ -396,11 +394,10 @@ struct ProfileView: View {
                                         Text(device.nickname ?? device.name)
                                             .font(.subheadline.weight(.medium))
                                             .foregroundColor(.gsText)
-                                        if device.isFavorite ?? false {
-                                            Image(systemName: "pin.fill")
-                                                .font(.caption2)
-                                                .foregroundColor(.gsWarning)
-                                        }
+
+                                        Image(systemName: "pin.fill")
+                                            .font(.caption2)
+                                            .foregroundColor(.gsWarning)
                                     }
                                     Text(device.status?.capitalized ?? "Registered")
                                         .font(.caption)
@@ -413,8 +410,15 @@ struct ProfileView: View {
                                     .font(.caption)
                                     .foregroundColor(.gsTextSecondary)
                             }
-                            .cardStyle()
+                            .padding(14)
+                            .background(Color.gsSurface)
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.gsBorder, lineWidth: 1)
+                            )
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }

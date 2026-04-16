@@ -53,18 +53,26 @@ struct DeviceListView: View {
     // MARK: - Device List
 
     private var deviceList: some View {
-        List {
-            ForEach(viewModel.devices) { device in
-                NavigationLink {
-                    DeviceDetailView(deviceId: device.id)
-                } label: {
-                    deviceRow(device)
+        ScrollView {
+            LazyVStack(spacing: 10) {
+                ForEach(viewModel.devices) { device in
+                    NavigationLink(destination: DeviceDetailView(deviceId: device.id)) {
+                        deviceRow(device)
+                            .padding(14)
+                            .background(Color.gsSurface)
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.gsBorder, lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .listRowBackground(Color.gsSurface)
-                .listRowSeparatorTint(Color.gsBorder)
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 80)
         }
-        .listStyle(.plain)
         .refreshable {
             await viewModel.loadDevices()
         }

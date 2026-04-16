@@ -6,6 +6,9 @@ import { validateBody } from '../../middleware/validate.js';
 import logger from '../../utils/logger.js';
 import { errorResponse, successResponse } from '../../utils/response.js';
 import { DeviceService, DeviceServiceError } from './deviceService.js';
+import { DeviceShare } from '../../models/DeviceShare.js';
+import { Device } from '../../models/Device.js';
+import { User } from '../../models/User.js';
 
 const router = Router();
 const deviceService = new DeviceService();
@@ -21,7 +24,7 @@ const createDeviceSchema = z.object({
     return value;
   }, z.string().min(1).max(120).nullable()).optional(),
   bluetoothIdentifier: z.string().trim().min(1).max(255),
-  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'other']),
+  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'watch', 'other']),
   isFavorite: z.boolean().optional(),
 });
 
@@ -35,7 +38,7 @@ const updateDeviceSchema = z.object({
 
     return value;
   }, z.string().min(1).max(120).nullable()).optional(),
-  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'other']).optional(),
+  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'watch', 'other']).optional(),
   isFavorite: z.boolean().optional(),
 }).refine((body) =>
   body.name !== undefined
@@ -279,6 +282,133 @@ router.delete('/:id', isAuthenticated, async (req, res) => {
       operation: 'deleteDevice',
       deviceId: getRouteParam(req, 'id'),
     });
+  }
+});
+
+// ─── Device Sharing ───────────────────────────────────────────────────────
+
+const shareDeviceSchema = z.object({
+  email: z.string().email().min(1),
+  canReceiveAlerts: z.boolean().optional().default(true),
+});
+
+// GET /devices/:id/shares
+router.get('/:id/shares', isAuthenticated, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const deviceId = getRouteParam(req, 'id');
+
+    // Verify ownership
+    const device = await Device.findOne({ _id: deviceId, userId }).lean();
+    if (!device) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'Device not found');
+      return;
+    }
+
+    const shares = await DeviceShare.find({ deviceId })
+      .populate('sharedWithUserId', 'email displayName')
+      .lean();
+
+    const result = shares.map((s) => ({
+      _id: String(s._id),
+      email: (s.sharedWithUserId as any)?.email ?? 'Unknown',
+      displayName: (s.sharedWithUserId as any)?.displayName ?? null,
+      canReceiveAlerts: s.canReceiveAlerts,
+      createdAt: s.createdAt?.toISOString(),
+    }));
+
+    successResponse(res, result);
+  } catch (err) {
+    handleDeviceError(req, res, err, 'Failed to list shares', { operation: 'listShares' });
+  }
+});
+
+// POST /devices/:id/shares
+router.post('/:id/shares', isAuthenticated, validateBody(shareDeviceSchema), async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const deviceId = getRouteParam(req, 'id');
+    const { email, canReceiveAlerts } = req.body as z.infer<typeof shareDeviceSchema>;
+
+    // Verify ownership
+    const device = await Device.findOne({ _id: deviceId, userId }).lean();
+    if (!device) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'Device not found');
+      return;
+    }
+
+    // Find user by email
+    const targetUser = await User.findOne({ email: email.toLowerCase().trim() }).lean();
+    if (!targetUser) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'No user found with that email');
+      return;
+    }
+
+    if (String(targetUser._id) === userId) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'Cannot share a device with yourself');
+      return;
+    }
+
+    // Check for existing share
+    const existing = await DeviceShare.findOne({
+      deviceId,
+      sharedWithUserId: targetUser._id,
+    });
+    if (existing) {
+      errorResponse(res, StatusCodes.CONFLICT, 'Device is already shared with this user');
+      return;
+    }
+
+    const share = await DeviceShare.create({
+      deviceId,
+      ownerUserId: userId,
+      sharedWithUserId: targetUser._id,
+      canReceiveAlerts,
+    });
+
+    successResponse(
+      res,
+      {
+        _id: String(share._id),
+        email,
+        displayName: targetUser.displayName ?? null,
+        canReceiveAlerts: share.canReceiveAlerts,
+        createdAt: share.createdAt?.toISOString(),
+      },
+      StatusCodes.CREATED,
+    );
+  } catch (err) {
+    handleDeviceError(req, res, err, 'Failed to share device', { operation: 'shareDevice' });
+  }
+});
+
+// DELETE /devices/:id/shares/:shareId
+router.delete('/:id/shares/:shareId', isAuthenticated, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const deviceId = getRouteParam(req, 'id');
+    const shareId = req.params.shareId;
+
+    // Verify ownership
+    const device = await Device.findOne({ _id: deviceId, userId }).lean();
+    if (!device) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'Device not found');
+      return;
+    }
+
+    const result = await DeviceShare.findOneAndDelete({
+      _id: shareId,
+      deviceId,
+    });
+
+    if (!result) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'Share not found');
+      return;
+    }
+
+    successResponse(res, { deleted: true });
+  } catch (err) {
+    handleDeviceError(req, res, err, 'Failed to remove share', { operation: 'removeShare' });
   }
 });
 

@@ -34,6 +34,7 @@ struct FloatingMenuItem: Identifiable {
 struct FloatingMenuView: View {
     @Binding var selectedTab: Tab
     @Binding var isExpanded: Bool
+    @ObservedObject var handPreference = HandPreferenceManager.shared
     let onHospitals: () -> Void
     let onLabs: () -> Void
 
@@ -45,8 +46,12 @@ struct FloatingMenuView: View {
         FloatingMenuItem(tab: .profile, icon: "person.crop.circle.fill", label: "Profile"),
     ]
 
+    private var menuAlignment: HorizontalAlignment {
+        handPreference.isMenuOnLeft ? .leading : .trailing
+    }
+
     var body: some View {
-        VStack(alignment: .trailing, spacing: 0) {
+        VStack(alignment: menuAlignment, spacing: 0) {
             Spacer()
 
             // Expanded menu items
@@ -136,7 +141,7 @@ struct FloatingMenuView: View {
                 }
             }
         }
-        .padding(.trailing, 20)
+        .padding(handPreference.isMenuOnLeft ? .leading : .trailing, 20)
         .padding(.bottom, 24)
     }
 

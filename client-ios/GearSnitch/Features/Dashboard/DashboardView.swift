@@ -5,8 +5,6 @@ struct DashboardView: View {
     @ObservedObject private var sessionManager = GymSessionManager.shared
     @ObservedObject private var bleManager = BLEManager.shared
     @ObservedObject private var heartRateMonitor = HeartRateMonitor.shared
-    @State private var showDisconnectOverlay = false
-    @State private var disconnectDevice: DisconnectDecisionPrompt?
     @State private var navigateToScanner = false
     @State private var scannerTargetDevice: BLEDevice?
 
@@ -139,93 +137,6 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: - Device Status
-
-    private var deviceStatusSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Devices")
-                    .font(.headline)
-                    .foregroundColor(.gsText)
-                Spacer()
-                NavigationLink {
-                    DeviceListView()
-                } label: {
-                    Text("See All")
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(.gsEmerald)
-                }
-            }
-
-            HStack(spacing: 12) {
-                deviceCountCard(
-                    count: viewModel.connectedCount,
-                    label: "Connected",
-                    icon: "antenna.radiowaves.left.and.right",
-                    color: .gsSuccess
-                )
-
-                deviceCountCard(
-                    count: viewModel.disconnectedCount,
-                    label: "Offline",
-                    icon: "antenna.radiowaves.left.and.right.slash",
-                    color: .gsTextSecondary
-                )
-            }
-        }
-    }
-
-    private func deviceCountCard(count: Int, label: String, icon: String, color: Color) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(color)
-
-            Text("\(count)")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.gsText)
-
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.gsTextSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .cardStyle()
-    }
-
-    // MARK: - Gym Status
-
-    private func gymStatusCard(_ gym: GymSummary) -> some View {
-        NavigationLink {
-            GymListView()
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "building.2.fill")
-                    .font(.title2)
-                    .foregroundColor(.gsEmerald)
-                    .frame(width: 44, height: 44)
-                    .background(Color.gsEmerald.opacity(0.15))
-                    .cornerRadius(10)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Default Gym")
-                        .font(.caption)
-                        .foregroundColor(.gsTextSecondary)
-                    Text(gym.name)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(.gsText)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .cardStyle()
-        }
-    }
-
     // MARK: - Gym Session Status
 
     private var gymSessionStatusCard: some View {
@@ -253,7 +164,7 @@ struct DashboardView: View {
 
                         Spacer()
 
-                        Text(session.formattedDuration)
+                        Text(session.startedAt, style: .timer)
                             .font(.system(size: 22, weight: .bold, design: .rounded))
                             .foregroundColor(.gsText)
                             .monospacedDigit()
@@ -325,62 +236,6 @@ struct DashboardView: View {
                     }
                 }
                 .cardStyle()
-            }
-        }
-    }
-
-    // MARK: - Signal Strength
-
-    private var signalStrengthSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Signal Strength")
-                .font(.caption.weight(.medium))
-                .foregroundColor(.gsTextSecondary)
-
-            ForEach(bleManager.connectedDevices) { device in
-                HStack(spacing: 10) {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.caption)
-                        .foregroundColor(.gsSuccess)
-
-                    HStack(spacing: 4) {
-                        Text(device.displayName)
-                            .font(.caption)
-                            .foregroundColor(.gsText)
-                            .lineLimit(1)
-
-                        if device.isFavorite {
-                            Image(systemName: "pin.fill")
-                                .font(.caption2)
-                                .foregroundColor(.gsWarning)
-                        }
-                    }
-
-                    Spacer()
-
-                    signalBars(rssi: device.rssi)
-                }
-            }
-        }
-        .cardStyle()
-    }
-
-    private func signalBars(rssi: Int) -> some View {
-        let strength: Int = {
-            switch rssi {
-            case _ where rssi >= -50: return 4
-            case -70 ..< -50: return 3
-            case -85 ..< -70: return 2
-            case -100 ..< -85: return 1
-            default: return 0
-            }
-        }()
-
-        return HStack(spacing: 2) {
-            ForEach(0..<4, id: \.self) { bar in
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(bar < strength ? Color.gsEmerald : Color.gsSurfaceRaised)
-                    .frame(width: 4, height: CGFloat(6 + bar * 3))
             }
         }
     }

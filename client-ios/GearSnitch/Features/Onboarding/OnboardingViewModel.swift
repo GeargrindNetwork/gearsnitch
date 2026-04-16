@@ -12,6 +12,7 @@ enum OnboardingStep: Int, CaseIterable, Identifiable {
     case welcome = 0
     case signIn
     case subscription
+    case handPreference
     case bluetoothPrePrompt
     case locationWhenInUse
     case locationAlways
@@ -96,6 +97,8 @@ final class OnboardingViewModel: ObservableObject {
             return isSignedIn
         case .subscription:
             return true // can always skip
+        case .handPreference:
+            return true // can always proceed
         case .bluetoothPrePrompt:
             return bluetoothGranted
         case .locationWhenInUse:
@@ -128,11 +131,11 @@ final class OnboardingViewModel: ObservableObject {
             return
         }
 
-        let nextRawValue: Int
-        if currentStep == .welcome && isSignedIn {
+        var nextRawValue = currentStep.rawValue + 1
+
+        // Skip signIn step if already authenticated
+        if let nextStep = OnboardingStep(rawValue: nextRawValue), nextStep == .signIn && isSignedIn {
             nextRawValue = OnboardingStep.subscription.rawValue
-        } else {
-            nextRawValue = currentStep.rawValue + 1
         }
 
         guard let next = OnboardingStep(rawValue: nextRawValue) else { return }

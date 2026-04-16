@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -73,9 +74,10 @@ export default function ConnectedDevicesCard({ devices }: { devices: DeviceItem[
       </CardHeader>
       <CardContent className="space-y-3 pb-5">
         {devices.map((device) => (
-          <div
+          <Link
             key={device._id}
-            className="flex items-center gap-3 rounded-lg border border-white/5 bg-zinc-950 p-3"
+            to={`/devices/${device._id}`}
+            className="flex items-center gap-3 rounded-lg border border-white/5 bg-zinc-950 p-3 transition-colors hover:border-emerald-500/30"
           >
             <span className="text-xl">{deviceIcon(device.type)}</span>
             <div className="flex-1 min-w-0">
@@ -97,7 +99,7 @@ export default function ConnectedDevicesCard({ devices }: { devices: DeviceItem[
             <Badge variant="outline" className={`text-[10px] ${statusBadgeClass(device.status)}`}>
               {device.status}
             </Badge>
-          </div>
+          </Link>
         ))}
       </CardContent>
     </Card>

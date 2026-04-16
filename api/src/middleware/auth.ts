@@ -1,10 +1,21 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
 import { StatusCodes } from 'http-status-codes';
 import { errorResponse } from '../utils/response.js';
 import { getRedisClient } from '../loaders/redis.js';
 import config from '../config/index.js';
 import { enforceSupportedClientRelease } from './clientRelease.js';
+
+const jwtPayloadSchema = z.object({
+  sub: z.string().min(1),
+  jti: z.string().min(1),
+  email: z.string().min(1),
+  role: z.string().min(1),
+  scope: z.array(z.string()),
+  iat: z.number().int().nonnegative(),
+  exp: z.number().int().nonnegative(),
+});
 
 class AuthenticationFailureError extends Error {
   constructor(message: string) {
@@ -46,9 +57,16 @@ async function authenticateToken(token: string): Promise<JwtPayload> {
   }
 
   const algorithm = config.isProduction ? 'RS256' : 'HS256';
-  const decoded = jwt.verify(token, signingKey, {
+  const rawDecoded = jwt.verify(token, signingKey, {
     algorithms: [algorithm],
-  }) as JwtPayload;
+  });
+
+  // Validate JWT payload shape at runtime
+  const validation = jwtPayloadSchema.safeParse(rawDecoded);
+  if (!validation.success) {
+    throw new AuthenticationFailureError('Invalid token payload');
+  }
+  const decoded: JwtPayload = validation.data;
 
   const redis = getRedisClient();
   const sessionKey = `session:${decoded.sub}:${decoded.jti}`;

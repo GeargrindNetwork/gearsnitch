@@ -11,6 +11,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import HeatmapCalendar from '@/components/account/HeatmapCalendar';
 import CyclesPanel from '@/components/account/CyclesPanel';
 import MedicationDoseDialog from '@/components/account/MedicationDoseDialog';
+import NotificationPreferencesPanel from '@/components/account/NotificationPreferencesPanel';
+import EmergencyContactsPanel from '@/components/account/EmergencyContactsPanel';
+import SubscriptionPanel from '@/components/account/SubscriptionPanel';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { api } from '@/lib/api';
@@ -1015,6 +1018,9 @@ export default function AccountPage() {
                 <TabsTrigger value="purchases">Purchases</TabsTrigger>
                 <TabsTrigger value="calendar">Calendar</TabsTrigger>
                 <TabsTrigger value="cycles">Cycles</TabsTrigger>
+                <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                <TabsTrigger value="emergency">Emergency</TabsTrigger>
+                <TabsTrigger value="subscription">Plan</TabsTrigger>
               </TabsList>
 
               <TabsContent value="profile" className="mt-6">
@@ -1038,6 +1044,18 @@ export default function AccountPage() {
 
               <TabsContent value="cycles" className="mt-6">
                 <CyclesPanel />
+              </TabsContent>
+
+              <TabsContent value="notifications" className="mt-6">
+                <NotificationPreferencesPanel />
+              </TabsContent>
+
+              <TabsContent value="emergency" className="mt-6">
+                <EmergencyContactsPanel />
+              </TabsContent>
+
+              <TabsContent value="subscription" className="mt-6">
+                <SubscriptionPanel />
               </TabsContent>
             </Tabs>
           )}
