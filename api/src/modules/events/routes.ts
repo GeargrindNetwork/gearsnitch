@@ -17,7 +17,7 @@ const router = Router();
 const eventItemSchema = z.object({
   eventType: z.enum(EVENT_TYPES),
   metadata: z.record(z.unknown()).optional(),
-  source: z.enum(['ios', 'web', 'system', 'widget']).optional().default('ios'),
+  source: z.enum(['ios', 'web', 'system', 'widget', 'watchos']).optional().default('ios'),
   timestamp: z.string().datetime().optional(),
 });
 

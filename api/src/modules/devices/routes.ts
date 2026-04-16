@@ -24,7 +24,7 @@ const createDeviceSchema = z.object({
     return value;
   }, z.string().min(1).max(120).nullable()).optional(),
   bluetoothIdentifier: z.string().trim().min(1).max(255),
-  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'other']),
+  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'watch', 'other']),
   isFavorite: z.boolean().optional(),
 });
 
@@ -38,7 +38,7 @@ const updateDeviceSchema = z.object({
 
     return value;
   }, z.string().min(1).max(120).nullable()).optional(),
-  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'other']).optional(),
+  type: z.enum(['earbuds', 'tracker', 'belt', 'bag', 'watch', 'other']).optional(),
   isFavorite: z.boolean().optional(),
 }).refine((body) =>
   body.name !== undefined

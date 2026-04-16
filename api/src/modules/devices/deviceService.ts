@@ -31,14 +31,14 @@ interface CreateDeviceInput {
   name: string;
   nickname?: string | null;
   bluetoothIdentifier: string;
-  type: 'earbuds' | 'tracker' | 'belt' | 'bag' | 'other';
+  type: 'earbuds' | 'tracker' | 'belt' | 'bag' | 'watch' | 'other';
   isFavorite?: boolean;
 }
 
 interface UpdateDeviceInput {
   name?: string;
   nickname?: string | null;
-  type?: 'earbuds' | 'tracker' | 'belt' | 'bag' | 'other';
+  type?: 'earbuds' | 'tracker' | 'belt' | 'bag' | 'watch' | 'other';
   isFavorite?: boolean;
 }
 

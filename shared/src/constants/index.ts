@@ -2,7 +2,7 @@
 export const API_VERSION = 'v1' as const;
 
 /** Number of free days granted for a successful referral */
-export const REFERRAL_REWARD_DAYS = 90 as const;
+export const REFERRAL_REWARD_DAYS = 28 as const;
 
 /** Default geofence radius for gyms (meters) */
 export const DEFAULT_GYM_RADIUS_METERS = 150 as const;
@@ -63,13 +63,16 @@ export type MealType = (typeof MEAL_TYPES)[number];
 /** Health metric type identifiers */
 export const METRIC_TYPES = [
   'weight',
+  'height',
   'body_fat',
   'bmi',
   'resting_heart_rate',
+  'heart_rate',
   'blood_pressure_systolic',
   'blood_pressure_diastolic',
   'steps',
   'active_calories',
+  'workout_session',
 ] as const;
 export type MetricType = (typeof METRIC_TYPES)[number];
 
