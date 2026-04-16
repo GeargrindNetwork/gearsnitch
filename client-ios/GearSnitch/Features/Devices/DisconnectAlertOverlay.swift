@@ -1,4 +1,5 @@
 import SwiftUI
+import os
 
 // MARK: - Disconnect Alert State
 
@@ -10,6 +11,9 @@ enum DisconnectAlertPhase {
 
 // MARK: - Disconnect Alert Overlay
 
+fileprivate let perfLog = Logger(subsystem: "com.your.bundle", category: "performance")
+fileprivate let signposter = OSSignposter(subsystem: "com.your.bundle", category: "ui")
+
 struct DisconnectAlertOverlay: View {
     let deviceName: String
     let deviceIdentifier: UUID
@@ -20,6 +24,9 @@ struct DisconnectAlertOverlay: View {
     @ObservedObject private var bleManager = BLEManager.shared
     @State private var phase: DisconnectAlertPhase = .countdown(secondsRemaining: 20)
     @State private var countdownTask: Task<Void, Never>?
+    
+    // Signpost ID for countdown interval
+    @State private var countdownSignpostID: OSSignpostID = signposter.makeSignpostID()
 
     var body: some View {
         ZStack {
@@ -53,14 +60,20 @@ struct DisconnectAlertOverlay: View {
             }
         }
         .onAppear {
+            perfLog.info("DisconnectAlertOverlay appeared for device: \(self.deviceName, privacy: .public) \(self.deviceIdentifier.uuidString, privacy: .public)")
+            countdownSignpostID = signposter.makeSignpostID()
             startCountdown()
         }
         .onDisappear {
+            perfLog.info("DisconnectAlertOverlay disappeared for device: \(self.deviceName, privacy: .public)")
             countdownTask?.cancel()
         }
-        .onChange(of: bleManager.connectedDevices.map(\.identifier)) { _, connected in
+        .onChange(of: bleManager.connectedDevices.map(\.identifier)) { connected in
+            perfLog.info("Connected devices changed. Monitoring reconnection for: \(self.deviceIdentifier.uuidString, privacy: .public)")
             // Auto-clear if device reconnects
             if connected.contains(deviceIdentifier) {
+                perfLog.info("Device reconnected: \(self.deviceIdentifier.uuidString, privacy: .public). Dismissing overlay.")
+                signposter.emitEvent("DeviceReconnected", id: countdownSignpostID)
                 countdownTask?.cancel()
                 DisconnectProtectionActivityManager.shared.clearCountdown()
                 onDismissed()
@@ -138,6 +151,7 @@ struct DisconnectAlertOverlay: View {
                 .foregroundColor(.gsDanger)
 
             Button {
+                perfLog.info("Silence Alarm tapped for device: \(self.deviceIdentifier.uuidString, privacy: .public)")
                 withAnimation(.easeInOut(duration: 0.3)) {
                     phase = .actionChoice
                 }
@@ -168,6 +182,7 @@ struct DisconnectAlertOverlay: View {
                 .foregroundColor(.white.opacity(0.7))
 
             Button {
+                perfLog.info("Track Item tapped for device: \(self.deviceIdentifier.uuidString, privacy: .public)")
                 countdownTask?.cancel()
                 onTrackItem()
             } label: {
@@ -185,6 +200,7 @@ struct DisconnectAlertOverlay: View {
             .padding(.horizontal, 24)
 
             Button {
+                perfLog.info("Disregard tapped for device: \(self.deviceIdentifier.uuidString, privacy: .public)")
                 countdownTask?.cancel()
                 onDisregard()
             } label: {
@@ -211,7 +227,11 @@ struct DisconnectAlertOverlay: View {
 
     private func startCountdown() {
         countdownTask = Task { @MainActor in
+            let beginState = signposter.beginInterval("DisconnectCountdown", id: countdownSignpostID)
+            perfLog.info("Countdown started for device: \(self.deviceIdentifier.uuidString, privacy: .public)")
             for second in stride(from: 20, through: 1, by: -1) {
+                signposter.emitEvent("CountdownTick", id: countdownSignpostID)
+                perfLog.debug("Countdown tick: \(second) for device: \(self.deviceIdentifier.uuidString, privacy: .public)")
                 guard !Task.isCancelled else { return }
                 phase = .countdown(secondsRemaining: second)
 
@@ -226,15 +246,21 @@ struct DisconnectAlertOverlay: View {
 
             // Countdown finished — clear island countdown, trigger alarm, show silence button
             guard !Task.isCancelled else { return }
+            signposter.endInterval("DisconnectCountdown", beginState)
+            perfLog.info("Countdown finished for device: \(self.deviceIdentifier.uuidString, privacy: .public)")
             DisconnectProtectionActivityManager.shared.clearCountdown()
             withAnimation(.easeInOut(duration: 0.3)) {
                 phase = .silencePrompt
             }
 
+            perfLog.info("Searching for device to trigger alarm: \(self.deviceIdentifier.uuidString, privacy: .public)")
             // Trigger audio alarm if we can find the BLE device
             let allDevices = BLEManager.shared.discoveredDevices + BLEManager.shared.connectedDevices
             if let device = allDevices.first(where: { $0.identifier == deviceIdentifier }) {
+                perfLog.info("Triggering panic alarm for device: \(self.deviceIdentifier.uuidString, privacy: .public)")
                 PanicAlarmManager.shared.triggerPanic(device: device)
+            } else {
+                perfLog.warning("Device not found in discovered/connected list: \(self.deviceIdentifier.uuidString, privacy: .public)")
             }
         }
     }

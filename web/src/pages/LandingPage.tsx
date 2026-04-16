@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import AppScreenshotsSwiper from '@/components/landing/AppScreenshotsSwiper';
 
 const features = [
   {
@@ -176,6 +177,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* App screenshots swiper */}
+      <AppScreenshotsSwiper />
 
       {/* Features */}
       <section id="features" className="relative border-t border-white/5 bg-zinc-950 py-24">
