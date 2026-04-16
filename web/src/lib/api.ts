@@ -847,6 +847,58 @@ export async function completeRun(id: string, input: CompleteRunInput): Promise<
   return response.data;
 }
 
+// ─── Admin ────────────────────────────────────────────────────────────────
+
+export interface AdminUser {
+  _id: string;
+  email: string | null;
+  displayName: string | null;
+  roles: string[];
+  status: string;
+  subscriptionTier: string;
+  authProviders: string[];
+  createdAt: string;
+  onboardingCompletedAt: string | null;
+  deletedAt: string | null;
+}
+
+export interface AdminStats {
+  users: { total: number; active30d: number; new7d: number };
+  devices: { total: number };
+  sessions: { total: number; active: number };
+  subscriptions: { active: number };
+  health: { heartRateSamples: number };
+  labs: { totalAppointments: number };
+}
+
+export async function getAdminUsers(params: { page?: number; limit?: number; search?: string; status?: string } = {}): Promise<{ data: AdminUser[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
+  const qs = new URLSearchParams();
+  if (params.page) qs.set('page', String(params.page));
+  if (params.limit) qs.set('limit', String(params.limit));
+  if (params.search) qs.set('search', params.search);
+  if (params.status) qs.set('status', params.status);
+  const res = await api.get<AdminUser[]>(`/admin/users?${qs.toString()}`);
+  if (!res.success) throw new Error(res.error?.message || 'Failed to load users');
+  return { data: res.data ?? [], meta: res.meta as { page: number; limit: number; total: number; totalPages: number } };
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  const res = await api.get<AdminStats>('/admin/stats');
+  if (!res.success || !res.data) throw new Error(res.error?.message || 'Failed to load stats');
+  return res.data;
+}
+
+export async function updateAdminUser(id: string, body: { roles?: string[]; status?: string; displayName?: string }): Promise<AdminUser> {
+  const res = await api.patch<AdminUser>(`/admin/users/${id}`, body);
+  if (!res.success || !res.data) throw new Error(res.error?.message || 'Failed to update user');
+  return res.data;
+}
+
+export async function deleteAdminUser(id: string): Promise<void> {
+  const res = await api.delete<unknown>(`/admin/users/${id}`);
+  if (!res.success) throw new Error(res.error?.message || 'Failed to delete user');
+}
+
 // ─── Subscriptions ────────────────────────────────────────────────────────
 
 export interface SubscriptionStatus {

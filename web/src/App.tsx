@@ -20,6 +20,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import RunMapPage from './pages/RunMapPage';
 import DeviceDetailPage from './pages/DeviceDetailPage';
 import LabsPage from './pages/LabsPage';
+import AdminPage from './pages/AdminPage';
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,14 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <LabsPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/admin"
+                element={(
+                  <ProtectedAppRoute>
+                    <AdminPage />
                   </ProtectedAppRoute>
                 )}
               />
