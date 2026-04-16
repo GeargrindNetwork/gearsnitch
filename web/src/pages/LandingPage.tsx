@@ -155,30 +155,10 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Phone mockup */}
-          <div className="relative mx-auto mt-16 max-w-sm">
-            <div className="aspect-[9/19] overflow-hidden rounded-[2.5rem] border-2 border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 shadow-2xl shadow-cyan-500/10">
-              <div className="flex h-full flex-col items-center justify-center p-8">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-emerald-400">
-                  <svg viewBox="0 0 24 24" className="h-8 w-8 text-black" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                  </svg>
-                </div>
-                <p className="text-center text-sm text-zinc-500">App Preview Coming Soon</p>
-                <div className="mt-8 w-full space-y-3">
-                  <div className="h-3 rounded-full bg-zinc-800" />
-                  <div className="h-3 w-4/5 rounded-full bg-zinc-800" />
-                  <div className="h-3 w-3/5 rounded-full bg-zinc-800" />
-                  <div className="mt-6 h-20 rounded-xl bg-zinc-800/50" />
-                  <div className="h-20 rounded-xl bg-zinc-800/50" />
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* App screenshots swiper */}
+      {/* App screenshots swiper — unified single iPhone showing real app screens */}
       <AppScreenshotsSwiper />
 
       {/* Features */}
