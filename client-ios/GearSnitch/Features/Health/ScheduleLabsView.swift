@@ -267,7 +267,10 @@ final class ScheduleLabsViewModel: NSObject, ObservableObject {
 
     private static let bloodworkProductId = "com.gearsnitch.app.bloodwork"
     private static let bloodworkPrice: NSDecimalNumber = 69.99
-    private static let merchantId = "merchant.com.gearsnitch"
+    // Use the canonical, provisioned merchant ID from ApplePayManager — the
+    // Apple Pay Payment Processing Certificate is issued against THIS string
+    // and uploaded to Stripe. A local copy would drift again on the next rotation.
+    private static let merchantId = ApplePayManager.merchantID
 
     var dateRange: ClosedRange<Date> {
         let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
