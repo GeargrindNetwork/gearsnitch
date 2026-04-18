@@ -22,6 +22,7 @@ import RunMapPage from './pages/RunMapPage';
 import DeviceDetailPage from './pages/DeviceDetailPage';
 import LabsPage from './pages/LabsPage';
 import ReferralsPage from './pages/ReferralsPage';
+import AlertsPage from './pages/AlertsPage';
 import AdminPage from './pages/AdminPage';
 
 const queryClient = new QueryClient();
@@ -100,6 +101,14 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <ReferralsPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/alerts"
+                element={(
+                  <ProtectedAppRoute>
+                    <AlertsPage />
                   </ProtectedAppRoute>
                 )}
               />
