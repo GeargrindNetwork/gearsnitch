@@ -22,6 +22,7 @@ import RunMapPage from './pages/RunMapPage';
 import DeviceDetailPage from './pages/DeviceDetailPage';
 import LabsPage from './pages/LabsPage';
 import ReferralsPage from './pages/ReferralsPage';
+import CaloriesPage from './pages/CaloriesPage';
 import AlertsPage from './pages/AlertsPage';
 import AdminPage from './pages/AdminPage';
 
@@ -101,6 +102,14 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <ReferralsPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/calories"
+                element={(
+                  <ProtectedAppRoute>
+                    <CaloriesPage />
                   </ProtectedAppRoute>
                 )}
               />
