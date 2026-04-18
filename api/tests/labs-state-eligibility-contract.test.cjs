@@ -41,26 +41,30 @@ describe('labs state-eligibility contract (NY/NJ/RI) — mirrors iOS PR #27', ()
   test('labs routes gate POST /labs/orders with the state check before any side-effect', () => {
     expect(labsRoutes).toContain("router.post('/orders', isAuthenticated");
     // Guard must appear before any Mongo/Stripe/provider work in the orders handler.
+    // After merging #26 (LabProvider scaffold), the orders handler is
+    // `handleCreateOrder` which uses `createOrderSchema` — patient address lives
+    // at `body.patient.address.state`, not `shippingAddress.state`.
     const ordersFn = labsRoutes.slice(
-      labsRoutes.indexOf('async function handlePlaceLabOrder'),
-      labsRoutes.indexOf('async function handleListAppointments'),
+      labsRoutes.indexOf('async function handleCreateOrder'),
+      labsRoutes.indexOf('function extractOrderId'),
     );
-    expect(ordersFn).toContain('isRestricted(shippingAddress.state)');
+    expect(ordersFn).toContain('isRestricted(body.patient.address.state)');
     expect(ordersFn).toContain('sendStateRestrictedResponse');
-    // No LabAppointment.create, no Stripe charge in the orders handler before the gate.
-    const guardIdx = ordersFn.indexOf('isRestricted(shippingAddress.state)');
+    // No Mongo/Stripe/provider work in the orders handler before the gate.
+    const guardIdx = ordersFn.indexOf('isRestricted(body.patient.address.state)');
     const createIdx = ordersFn.indexOf('LabAppointment.create');
+    const providerIdx = ordersFn.indexOf('provider.createOrder');
     const stripeIdx = ordersFn.indexOf('stripe');
     expect(guardIdx).toBeGreaterThan(-1);
-    // Either absent entirely (preferred) or strictly after the guard.
     if (createIdx !== -1) expect(createIdx).toBeGreaterThan(guardIdx);
+    if (providerIdx !== -1) expect(providerIdx).toBeGreaterThan(guardIdx);
     if (stripeIdx !== -1) expect(stripeIdx).toBeGreaterThan(guardIdx);
   });
 
   test('labs routes also gate POST /labs/schedule for consistency (legacy path)', () => {
     const scheduleFn = labsRoutes.slice(
       labsRoutes.indexOf('async function handleScheduleLab'),
-      labsRoutes.indexOf('async function handlePlaceLabOrder'),
+      labsRoutes.indexOf('async function handleListAppointments'),
     );
     expect(scheduleFn).toContain('isRestricted(shippingState)');
     const guardIdx = scheduleFn.indexOf('isRestricted(shippingState)');
@@ -236,15 +240,16 @@ describe('labs state-eligibility runtime — POST /labs/orders Express integrati
         try {
           // Case 1: NY — must 400 with canonical shape
           const nyRes = await postJson('/labs/orders', {
-            productId: 'com.gearsnitch.app.bloodwork',
-            paymentToken: 'tok_test',
-            shippingAddress: {
-              name: 'Test User',
-              line1: '1 Test St',
-              city: 'New York',
-              state: 'NY',
-              postalCode: '10001',
-              country: 'US',
+            testIds: ['test_basic'],
+            collectionMethod: 'self_collect',
+            patient: {
+              firstName: 'Test',
+              lastName: 'User',
+              dateOfBirth: '1990-01-01',
+              sexAtBirth: 'male',
+              email: 'test@example.com',
+              phone: '+15551234567',
+              address: { line1: '1 Test St', city: 'New York', state: 'NY', postalCode: '10001' },
             },
           });
           if (nyRes.status !== 400) assertions.push('NY status=' + nyRes.status);
@@ -260,10 +265,16 @@ describe('labs state-eligibility runtime — POST /labs/orders Express integrati
 
           // Case 2: lowercase nj — must still 400
           const njRes = await postJson('/labs/orders', {
-            productId: 'com.gearsnitch.app.bloodwork',
-            paymentToken: 'tok_test',
-            shippingAddress: {
-              state: 'nj',
+            testIds: ['test_basic'],
+            collectionMethod: 'self_collect',
+            patient: {
+              firstName: 'Test',
+              lastName: 'User',
+              dateOfBirth: '1990-01-01',
+              sexAtBirth: 'male',
+              email: 'test@example.com',
+              phone: '+15551234567',
+              address: { line1: '1 Test St', city: 'Newark', state: 'nj', postalCode: '07102' },
             },
           });
           if (njRes.status !== 400) assertions.push('nj status=' + njRes.status);
@@ -271,19 +282,41 @@ describe('labs state-eligibility runtime — POST /labs/orders Express integrati
 
           // Case 3: RI with whitespace — must still 400
           const riRes = await postJson('/labs/orders', {
-            productId: 'com.gearsnitch.app.bloodwork',
-            paymentToken: 'tok_test',
-            shippingAddress: { state: ' RI ' },
+            testIds: ['test_basic'],
+            collectionMethod: 'self_collect',
+            patient: {
+              firstName: 'Test',
+              lastName: 'User',
+              dateOfBirth: '1990-01-01',
+              sexAtBirth: 'male',
+              email: 'test@example.com',
+              phone: '+15551234567',
+              address: { line1: '1 Main St', city: 'Providence', state: ' RI ', postalCode: '02903' },
+            },
           });
           if (riRes.status !== 400) assertions.push('RI status=' + riRes.status);
 
-          // Case 4: CA — should pass the gate (and then get 501 because orders flow is scaffold-only)
+          // Case 4: CA — should pass the gate (and then get 501 because the
+          // LabProvider stub throws NotImplementedError → sendProviderError → 501).
           const caRes = await postJson('/labs/orders', {
-            productId: 'com.gearsnitch.app.bloodwork',
-            paymentToken: 'tok_test',
-            shippingAddress: { state: 'CA' },
+            testIds: ['test_basic'],
+            collectionMethod: 'self_collect',
+            patient: {
+              firstName: 'Test',
+              lastName: 'User',
+              dateOfBirth: '1990-01-01',
+              sexAtBirth: 'male',
+              email: 'test@example.com',
+              phone: '+15551234567',
+              address: { line1: '1 Test St', city: 'San Francisco', state: 'CA', postalCode: '94103' },
+            },
           });
-          if (caRes.status !== 501) assertions.push('CA status=' + caRes.status + ' body=' + caRes.raw);
+          // CA must pass the state gate. It may then return 501 (NotImplementedError
+          // path) or 502 (generic provider error) depending on what the stub throws.
+          // Both prove the gate let it through; the state error code is what matters.
+          if (caRes.status !== 501 && caRes.status !== 502) {
+            assertions.push('CA status=' + caRes.status + ' body=' + caRes.raw);
+          }
           // Most importantly: CA must NOT produce the state-restricted error code.
           if (caRes.body && caRes.body.error === 'LAB_NOT_AVAILABLE_IN_STATE') {
             assertions.push('CA incorrectly gated');

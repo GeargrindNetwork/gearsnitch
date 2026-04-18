@@ -102,6 +102,9 @@ export type {
   CycleRoute,
 } from './Cycle';
 
+export { LabAuditLog } from './LabAuditLog';
+export type { ILabAuditLog } from './LabAuditLog';
+
 export { CycleEntry } from './CycleEntry';
 export type {
   ICycleEntry,
