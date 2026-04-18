@@ -21,6 +21,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import RunMapPage from './pages/RunMapPage';
 import DeviceDetailPage from './pages/DeviceDetailPage';
 import LabsPage from './pages/LabsPage';
+import ReferralsPage from './pages/ReferralsPage';
 import AdminPage from './pages/AdminPage';
 
 const queryClient = new QueryClient();
@@ -91,6 +92,14 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <LabsPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/referrals"
+                element={(
+                  <ProtectedAppRoute>
+                    <ReferralsPage />
                   </ProtectedAppRoute>
                 )}
               />
