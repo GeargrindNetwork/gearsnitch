@@ -8,12 +8,32 @@ export interface GeoJSONPoint {
 
 // ─── User ──────────────────────────────────────────────────────────────────
 
-/** User permission state tracking */
+/**
+ * Canonical per-permission grant state as reported by iOS (the source of
+ * truth for the wire format). Matches `PermissionStatus` in
+ * `client-ios/GearSnitch/Shared/Models/User.swift`.
+ */
+export type PermissionStateValue = 'granted' | 'denied' | 'not_determined';
+
+/**
+ * User permission state tracking.
+ *
+ * Wire format is driven by iOS, which sends one string enum per permission
+ * (see `PermissionStateSyncBody` in `client-ios/GearSnitch/Core/Network/APIEndpoint.swift`).
+ * All fields are optional because:
+ *   - iOS omits fields it does not know about yet (e.g. healthKit until the
+ *     user completes the corresponding onboarding step).
+ *   - Historical records stored before this field existed may be absent.
+ *
+ * The API normalizes missing fields to `'not_determined'` on read (see
+ * `api/src/utils/permissionsState.ts`).
+ */
 export interface IPermissionsState {
-  notificationsEnabled: boolean;
-  bluetoothEnabled: boolean;
-  locationEnabled: boolean;
-  healthKitEnabled: boolean;
+  bluetooth?: PermissionStateValue;
+  location?: PermissionStateValue;
+  backgroundLocation?: PermissionStateValue;
+  notifications?: PermissionStateValue;
+  healthKit?: PermissionStateValue;
 }
 
 /** User preferences */
