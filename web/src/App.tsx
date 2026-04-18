@@ -23,6 +23,7 @@ import DeviceDetailPage from './pages/DeviceDetailPage';
 import LabsPage from './pages/LabsPage';
 import ReferralsPage from './pages/ReferralsPage';
 import CaloriesPage from './pages/CaloriesPage';
+import AlertsPage from './pages/AlertsPage';
 import AdminPage from './pages/AdminPage';
 
 const queryClient = new QueryClient();
@@ -109,6 +110,14 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <CaloriesPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/alerts"
+                element={(
+                  <ProtectedAppRoute>
+                    <AlertsPage />
                   </ProtectedAppRoute>
                 )}
               />

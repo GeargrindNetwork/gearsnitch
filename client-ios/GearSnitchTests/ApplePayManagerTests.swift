@@ -22,7 +22,7 @@ final class ApplePayManagerTests: XCTestCase {
     func testMerchantIDMatchesProvisionedIdentifier() {
         XCTAssertEqual(
             ApplePayManager.merchantID,
-            "merchant.com.gearsnitch.app",
+            "merchant.gearsnitch.app",
             "Merchant ID must match Apple Developer portal provisioning — changing this invalidates Apple Pay on production."
         )
     }
@@ -213,7 +213,7 @@ final class ApplePayManagerTests: XCTestCase {
     // When `buildPaymentRequest` is refactored to be internal/static and
     // injectable, replace this with a direct call.
     func testExpectedPaymentRequestContract() {
-        let expectedMerchantID = "merchant.com.gearsnitch.app"
+        let expectedMerchantID = "merchant.gearsnitch.app"
         let expectedCountry = "US"
         let expectedCurrency = "USD"
         let expectedCapabilities: PKMerchantCapability = [.threeDSecure, .debit, .credit]
@@ -238,7 +238,7 @@ final class ApplePayManagerTests: XCTestCase {
     ///      `make(items:subtotal:tax:shipping:) -> PKPaymentRequest`.
     ///
     /// Once either lands, replace this stub with a real assertion covering:
-    ///   - merchantIdentifier == merchant.com.gearsnitch.app
+    ///   - merchantIdentifier == merchant.gearsnitch.app
     ///   - countryCode == "US", currencyCode == "USD"
     ///   - paymentSummaryItems includes each line + tax + shipping + final total
     ///   - final total is `subtotal + tax + shipping`
