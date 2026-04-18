@@ -414,6 +414,400 @@ extension APIEndpoint {
                 body: body
             )
         }
+
+        // MARK: Provider-backed endpoints (LabProvider abstraction)
+
+        static var tests: APIEndpoint {
+            APIEndpoint(path: "/api/v1/labs/tests")
+        }
+
+        static func drawSites(zip: String, radius: Int? = nil) -> APIEndpoint {
+            var queryItems: [URLQueryItem] = [URLQueryItem(name: "zip", value: zip)]
+            if let radius {
+                queryItems.append(URLQueryItem(name: "radius", value: "\(radius)"))
+            }
+            return APIEndpoint(path: "/api/v1/labs/draw-sites", queryItems: queryItems)
+        }
+
+        static func createOrder(body: CreateLabOrderBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/labs/orders", method: .POST, body: body)
+        }
+
+        static func orderStatus(orderId: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/labs/orders/\(orderId)")
+        }
+
+        static func orderResults(orderId: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/labs/orders/\(orderId)/results")
+        }
+
+        static func cancelOrder(orderId: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/labs/orders/\(orderId)/cancel", method: .POST)
+        }
+    }
+}
+
+// MARK: - Provider-backed Lab Types
+//
+// These types mirror the TypeScript `LabProvider` shapes in
+// api/src/modules/labs/providers/types.ts. Keep the two in sync.
+//
+// PHI note: the patient-identity fields below are HIPAA-scoped. Do NOT log
+// instances of `LabPatientBody` or `LabOrder` bodies to OSLog — the
+// existing `APIClient` redacts paths but not bodies.
+
+struct LabTestCatalogItem: Decodable, Identifiable, Hashable {
+    let id: String
+    let name: String
+    let description: String
+    let priceCents: Int
+    let currency: String
+    let turnaroundHours: Int
+    let collectionMethods: [String]
+    let fastingRequired: Bool
+}
+
+struct LabTestsResponse: Decodable {
+    let provider: String
+    let tests: [LabTestCatalogItem]
+}
+
+struct LabDrawSiteAddress: Decodable, Hashable {
+    let line1: String
+    let line2: String?
+    let city: String
+    let state: String
+    let postalCode: String
+}
+
+struct LabDrawSite: Decodable, Identifiable, Hashable {
+    let id: String
+    let name: String
+    let address: LabDrawSiteAddress
+    let phone: String?
+    let hours: String?
+    let distanceMiles: Double?
+}
+
+struct LabDrawSitesResponse: Decodable {
+    let provider: String
+    let sites: [LabDrawSite]
+}
+
+struct LabPatientAddressBody: Encodable {
+    let line1: String
+    let line2: String?
+    let city: String
+    let state: String
+    let postalCode: String
+}
+
+/// @phi — patient identity. Do not persist or log beyond the active request.
+struct LabPatientBody: Encodable {
+    let firstName: String
+    let lastName: String
+    /// YYYY-MM-DD
+    let dateOfBirth: String
+    /// "male" | "female" | "unknown"
+    let sexAtBirth: String
+    let email: String
+    let phone: String
+    let address: LabPatientAddressBody
+}
+
+struct CreateLabOrderBody: Encodable {
+    let testIds: [String]
+    /// "phlebotomy_site" | "mobile_phleb" | "self_collect"
+    let collectionMethod: String
+    let drawSiteId: String?
+    let preferredDateTime: String?
+    let patient: LabPatientBody
+}
+
+struct LabOrderResponse: Decodable {
+    let orderId: String
+    let status: String
+    let externalRef: String?
+    let requisitionUrl: String?
+}
+
+struct CreateLabOrderResponse: Decodable {
+    let provider: String
+    let order: LabOrderResponse
+}
+
+// MARK: - Provider-backed ViewModel
+
+/// ViewModel for the tests-catalog + draw-site + order flow backed by the
+/// `LabProvider` abstraction. Kept deliberately simple so it can be unit
+/// tested without presenting SwiftUI views.
+@MainActor
+final class LabProviderViewModel: ObservableObject {
+    @Published var tests: [LabTestCatalogItem] = []
+    @Published var drawSites: [LabDrawSite] = []
+    @Published var selectedTestIds: Set<String> = []
+    @Published var selectedDrawSiteId: String?
+    @Published var zip: String = ""
+    @Published var errorMessage: String?
+    @Published var isLoadingTests = false
+    @Published var isLoadingSites = false
+    @Published var isSubmitting = false
+    @Published var confirmedOrderId: String?
+
+    private let client: LabProviderAPI
+
+    init(client: LabProviderAPI = LiveLabProviderAPI()) {
+        self.client = client
+    }
+
+    // MARK: Computed
+
+    var totalPriceCents: Int {
+        tests
+            .filter { selectedTestIds.contains($0.id) }
+            .reduce(0) { $0 + $1.priceCents }
+    }
+
+    var canSubmitOrder: Bool {
+        !selectedTestIds.isEmpty && selectedDrawSiteId != nil && !isSubmitting
+    }
+
+    // MARK: Actions
+
+    func loadTests() async {
+        isLoadingTests = true
+        defer { isLoadingTests = false }
+        do {
+            let response = try await client.fetchTests()
+            tests = response.tests
+        } catch {
+            errorMessage = Self.sanitize(error)
+        }
+    }
+
+    func loadDrawSites() async {
+        guard Self.isValidZip(zip) else {
+            errorMessage = "Enter a valid 5-digit ZIP code."
+            return
+        }
+        isLoadingSites = true
+        defer { isLoadingSites = false }
+        do {
+            let response = try await client.fetchDrawSites(zip: zip, radius: 25)
+            drawSites = response.sites
+            if let firstId = response.sites.first?.id, selectedDrawSiteId == nil {
+                selectedDrawSiteId = firstId
+            }
+        } catch {
+            errorMessage = Self.sanitize(error)
+        }
+    }
+
+    func toggleTest(_ testId: String) {
+        if selectedTestIds.contains(testId) {
+            selectedTestIds.remove(testId)
+        } else {
+            selectedTestIds.insert(testId)
+        }
+    }
+
+    func submitOrder(patient: LabPatientBody, preferredDateTime: Date? = nil) async {
+        guard canSubmitOrder, let siteId = selectedDrawSiteId else { return }
+        isSubmitting = true
+        defer { isSubmitting = false }
+
+        let body = CreateLabOrderBody(
+            testIds: Array(selectedTestIds),
+            collectionMethod: "phlebotomy_site",
+            drawSiteId: siteId,
+            preferredDateTime: preferredDateTime?.ISO8601Format(),
+            patient: patient
+        )
+
+        do {
+            let response = try await client.createOrder(body: body)
+            confirmedOrderId = response.order.orderId
+        } catch {
+            errorMessage = Self.sanitize(error)
+        }
+    }
+
+    // MARK: Helpers
+
+    static func isValidZip(_ value: String) -> Bool {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.range(of: #"^\d{5}(-\d{4})?$"#, options: .regularExpression) != nil
+    }
+
+    /// Sanitizes errors so no PHI leaks into the UI. The underlying NSError
+    /// is allowed through, but network/decoder/internal messages are scrubbed.
+    static func sanitize(_ error: Error) -> String {
+        let message = (error as NSError).localizedDescription
+        if message.isEmpty {
+            return "Something went wrong. Please try again."
+        }
+        // Defensive: strip anything that could plausibly be PHI.
+        return message
+            .replacingOccurrences(of: #"\b\d{4}-\d{2}-\d{2}\b"#, with: "<date>", options: .regularExpression)
+            .replacingOccurrences(of: #"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"#, with: "<email>", options: .regularExpression)
+    }
+}
+
+// MARK: - Lab Provider API boundary
+
+/// Abstracts the `APIClient` interactions used by `LabProviderViewModel` so
+/// tests can inject a stub and run deterministically without a live API.
+protocol LabProviderAPI {
+    func fetchTests() async throws -> LabTestsResponse
+    func fetchDrawSites(zip: String, radius: Int?) async throws -> LabDrawSitesResponse
+    func createOrder(body: CreateLabOrderBody) async throws -> CreateLabOrderResponse
+}
+
+struct LiveLabProviderAPI: LabProviderAPI {
+    func fetchTests() async throws -> LabTestsResponse {
+        try await APIClient.shared.request(APIEndpoint.Labs.tests)
+    }
+
+    func fetchDrawSites(zip: String, radius: Int?) async throws -> LabDrawSitesResponse {
+        try await APIClient.shared.request(APIEndpoint.Labs.drawSites(zip: zip, radius: radius))
+    }
+
+    func createOrder(body: CreateLabOrderBody) async throws -> CreateLabOrderResponse {
+        try await APIClient.shared.request(APIEndpoint.Labs.createOrder(body: body))
+    }
+}
+
+// MARK: - Provider-backed catalog view
+//
+// A minimalist catalog UI so `LabProviderViewModel` has a real
+// SwiftUI surface. The existing `ScheduleLabsView` Apple Pay flow is
+// preserved above; this view is additive.
+
+struct LabTestsCatalogView: View {
+    @StateObject private var viewModel = LabProviderViewModel()
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Lab Test Catalog")
+                    .font(.title2.bold())
+                    .foregroundColor(.gsText)
+
+                if viewModel.isLoadingTests {
+                    ProgressView().frame(maxWidth: .infinity)
+                } else if viewModel.tests.isEmpty {
+                    Text("No tests available right now. Check back soon.")
+                        .font(.subheadline)
+                        .foregroundColor(.gsTextSecondary)
+                } else {
+                    ForEach(viewModel.tests) { test in
+                        Button {
+                            viewModel.toggleTest(test.id)
+                        } label: {
+                            catalogRow(for: test, selected: viewModel.selectedTestIds.contains(test.id))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                drawSiteSection
+
+                if let error = viewModel.errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.top, 8)
+                }
+            }
+            .padding(16)
+        }
+        .background(Color.gsBackground.ignoresSafeArea())
+        .task { await viewModel.loadTests() }
+    }
+
+    private var drawSiteSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Draw Site")
+                .font(.headline)
+                .foregroundColor(.gsText)
+
+            HStack {
+                TextField("ZIP", text: $viewModel.zip)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 120)
+
+                Button("Find Sites") {
+                    Task { await viewModel.loadDrawSites() }
+                }
+                .disabled(viewModel.isLoadingSites)
+            }
+
+            if viewModel.isLoadingSites {
+                ProgressView()
+            } else {
+                ForEach(viewModel.drawSites) { site in
+                    Button {
+                        viewModel.selectedDrawSiteId = site.id
+                    } label: {
+                        drawSiteRow(site, selected: viewModel.selectedDrawSiteId == site.id)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func catalogRow(for test: LabTestCatalogItem, selected: Bool) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(selected ? .gsEmerald : .gsTextSecondary)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(test.name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.gsText)
+                Text(test.description)
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+                    .lineLimit(2)
+                Text(String(format: "$%.2f • ~%dh turnaround", Double(test.priceCents) / 100.0, test.turnaroundHours))
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(Color.gsSurface)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(selected ? Color.gsEmerald : Color.gsBorder, lineWidth: 1)
+        )
+    }
+
+    private func drawSiteRow(_ site: LabDrawSite, selected: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(site.name)
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.gsText)
+            Text("\(site.address.line1), \(site.address.city), \(site.address.state) \(site.address.postalCode)")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+            if let miles = site.distanceMiles {
+                Text(String(format: "%.1f mi", miles))
+                    .font(.caption2)
+                    .foregroundColor(.gsTextSecondary)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.gsSurface)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(selected ? Color.gsEmerald : Color.gsBorder, lineWidth: 1)
+        )
     }
 }
 
