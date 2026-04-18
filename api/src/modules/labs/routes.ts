@@ -6,15 +6,42 @@ import { isAuthenticated, type JwtPayload } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate.js';
 import { LabAppointment } from '../../models/LabAppointment.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
+import {
+  isRestricted,
+  LAB_STATE_RESTRICTED_ERROR_CODE,
+  stateRestrictedMessage,
+} from './stateEligibility.js';
 
 const router = Router();
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
+/**
+ * Shipping address schema for lab orders. The `state` field is gated by
+ * `isRestricted` before any provider/Stripe/Mongo side-effects (mirrors iOS
+ * PR #27).
+ */
+const shippingAddressSchema = z.object({
+  name: z.string().min(1).optional(),
+  line1: z.string().min(1).optional(),
+  line2: z.string().optional(),
+  city: z.string().min(1).optional(),
+  state: z.string().min(2).max(2),
+  postalCode: z.string().min(1).optional(),
+  country: z.string().optional(),
+});
+
 const scheduleLabSchema = z.object({
   date: z.string().datetime(),
   paymentToken: z.string().min(1),
   productId: z.string().min(1),
+  shippingAddress: shippingAddressSchema.optional(),
+});
+
+const orderLabSchema = z.object({
+  productId: z.string().min(1),
+  paymentToken: z.string().min(1),
+  shippingAddress: shippingAddressSchema,
 });
 
 // ─── Lab Providers ────────────────────────────────────────────────────────────
@@ -54,6 +81,25 @@ function serializeAppointment(appt: Record<string, any>) {
   };
 }
 
+/**
+ * Writes the canonical state-eligibility rejection response.
+ *
+ * Uses a raw JSON body (not the standard envelope) so iOS + backend speak the
+ * exact shape PR #27 keys off of:
+ *   { error: 'LAB_NOT_AVAILABLE_IN_STATE', state: '<XX>', message: '<copy>' }
+ *
+ * The audit middleware from PR #26 observes the 400 status and logs the
+ * rejection automatically — no extra instrumentation needed here.
+ */
+function sendStateRestrictedResponse(res: Response, stateCode: string): void {
+  const normalized = String(stateCode).trim().toUpperCase();
+  res.status(StatusCodes.BAD_REQUEST).json({
+    error: LAB_STATE_RESTRICTED_ERROR_CODE,
+    state: normalized,
+    message: stateRestrictedMessage(normalized),
+  });
+}
+
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 
 // GET /labs/product
@@ -65,7 +111,20 @@ async function handleGetBloodworkProduct(_req: Request, res: Response) {
 async function handleScheduleLab(req: Request, res: Response) {
   try {
     const user = req.user as JwtPayload;
-    const { date, paymentToken: _paymentToken, productId } = req.body as z.infer<typeof scheduleLabSchema>;
+    const {
+      date,
+      paymentToken: _paymentToken,
+      productId,
+      shippingAddress,
+    } = req.body as z.infer<typeof scheduleLabSchema>;
+
+    // State-eligibility gate (Rupa Health: NY/NJ/RI restricted). Must fire
+    // BEFORE product lookup, Stripe charge, or Mongo write. Mirrors iOS PR #27.
+    const shippingState = shippingAddress?.state;
+    if (isRestricted(shippingState)) {
+      sendStateRestrictedResponse(res, shippingState as string);
+      return;
+    }
 
     if (productId !== BLOODWORK_PRODUCT.id) {
       errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid product', `Product ${productId} not found`);
@@ -106,6 +165,45 @@ async function handleScheduleLab(req: Request, res: Response) {
       res,
       StatusCodes.INTERNAL_SERVER_ERROR,
       'Failed to schedule lab appointment',
+      (err as Error).message,
+    );
+  }
+}
+
+// POST /labs/orders — at-home lab order placement (Rupa-backed).
+// Gates on state eligibility BEFORE any provider call, Stripe charge, or
+// LabOrder row. Paired with iOS PR #27 client-side gate.
+async function handlePlaceLabOrder(req: Request, res: Response) {
+  try {
+    const user = req.user as JwtPayload;
+    const { productId, shippingAddress } = req.body as z.infer<typeof orderLabSchema>;
+
+    // State-eligibility gate. Must run BEFORE any side-effect.
+    if (isRestricted(shippingAddress.state)) {
+      sendStateRestrictedResponse(res, shippingAddress.state);
+      return;
+    }
+
+    if (productId !== BLOODWORK_PRODUCT.id) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid product', `Product ${productId} not found`);
+      return;
+    }
+
+    // NOTE: LabProvider + LabOrder persistence land in a follow-up PR. For now,
+    // this endpoint only shapes the guard and response envelope. Returning 501
+    // signals to callers that the post-gate flow is intentionally incomplete.
+    void user;
+    errorResponse(
+      res,
+      StatusCodes.NOT_IMPLEMENTED,
+      'Lab order placement not yet implemented',
+      'POST /labs/orders is scaffolded with the state-eligibility gate; provider integration lands in a follow-up.',
+    );
+  } catch (err) {
+    errorResponse(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to place lab order',
       (err as Error).message,
     );
   }
@@ -161,6 +259,7 @@ async function handleCancelAppointment(req: Request, res: Response) {
 
 router.get('/product', isAuthenticated, handleGetBloodworkProduct);
 router.post('/schedule', isAuthenticated, validateBody(scheduleLabSchema), handleScheduleLab);
+router.post('/orders', isAuthenticated, validateBody(orderLabSchema), handlePlaceLabOrder);
 router.get('/appointments', isAuthenticated, handleListAppointments);
 router.patch('/appointments/:id/cancel', isAuthenticated, handleCancelAppointment);
 
