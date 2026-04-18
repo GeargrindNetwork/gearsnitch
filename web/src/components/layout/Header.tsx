@@ -16,6 +16,7 @@ export default function Header() {
       ? [
           { label: 'Runs', href: '/runs', route: true },
           { label: 'Metrics', href: '/metrics', route: true },
+          { label: 'Calories', href: '/calories', route: true },
           { label: 'Referrals', href: '/referrals', route: true },
         ]
       : []),
