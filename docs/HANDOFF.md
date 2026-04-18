@@ -201,7 +201,7 @@ These are the remaining blockers for true end-to-end launch validation. They are
 | Task | Where |
 |------|-------|
 | Enable "Sign In with Apple" for App ID com.gearsnitch.app | developer.apple.com/account |
-| Create Apple Merchant ID (merchant.com.gearsnitch.app) | developer.apple.com/account |
+| Create Apple Merchant ID (merchant.gearsnitch.app) | developer.apple.com/account |
 | Upload Stripe payment processing cert for Merchant ID | dashboard.stripe.com |
 | Create APNs push notification key | developer.apple.com/account |
 | Create Google OAuth client ID for iOS | console.cloud.google.com/apis/credentials?project=gearsnitch |

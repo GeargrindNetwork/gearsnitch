@@ -84,7 +84,7 @@ This board is the operational tracker for the remaining production integration w
 ### Apple Pay
 
 - Provider setup:
-  - Confirm merchant ID `merchant.com.gearsnitch.app`.
+  - Confirm merchant ID `merchant.gearsnitch.app`.
   - Complete merchant certificate and payment processor setup.
 - QA gate:
   - Apple Pay sheet appears on supported hardware.
