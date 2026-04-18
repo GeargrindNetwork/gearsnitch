@@ -89,7 +89,7 @@ API configuration:
 - Confirm webhook endpoint `/api/v1/store/payments/webhook` is reachable and signed correctly through [paymentRoutes.ts](/Users/shawn/Documents/GearSnitch/api/src/modules/store/paymentRoutes.ts:128).
 
 Apple Pay configuration:
-- Confirm the merchant ID `merchant.com.gearsnitch.app` used in [ApplePayManager.swift](/Users/shawn/Documents/GearSnitch/client-ios/GearSnitch/Core/Payments/ApplePayManager.swift:16) exists in Apple Developer.
+- Confirm the merchant ID `merchant.gearsnitch.app` used in [ApplePayManager.swift](/Users/shawn/Documents/GearSnitch/client-ios/GearSnitch/Core/Payments/ApplePayManager.swift:16) exists in Apple Developer.
 - Confirm the merchant certificate and domain associations are complete for the target environment.
 
 Verification:
