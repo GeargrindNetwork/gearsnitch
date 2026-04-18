@@ -32,6 +32,9 @@ struct ScheduleLabsView: View {
         } message: {
             Text(viewModel.error ?? "Something went wrong")
         }
+        .sheet(isPresented: $viewModel.showUnavailableSheet) {
+            LabsUnavailableView(stateCode: viewModel.selectedState)
+        }
     }
 
     // MARK: - Scheduling Form
@@ -62,6 +65,58 @@ struct ScheduleLabsView: View {
                         .padding(.horizontal, 16)
                 }
                 .padding(.top, 16)
+
+                // Shipping State (eligibility gate)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Shipping State")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.gsText)
+
+                    Text("Enter the 2-letter state code for your shipping address.")
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+
+                    TextField("e.g. CA", text: $viewModel.selectedState)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled(true)
+                        .font(.body.weight(.medium))
+                        .foregroundColor(.gsText)
+                        .padding(12)
+                        .background(Color.gsBackground)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(viewModel.isStateRestricted ? Color.gsDanger : Color.gsBorder, lineWidth: 1)
+                        )
+                        .onChange(of: viewModel.selectedState) { _, newValue in
+                            // Clamp to 2 chars, uppercase — keeps input canonical.
+                            let trimmed = newValue
+                                .trimmingCharacters(in: .whitespacesAndNewlines)
+                                .uppercased()
+                            let clamped = String(trimmed.prefix(2))
+                            if clamped != newValue {
+                                viewModel.selectedState = clamped
+                            }
+                        }
+
+                    if viewModel.isStateRestricted {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.caption)
+                                .foregroundColor(.gsDanger)
+                            Text("Not available in \(viewModel.selectedState) due to state regulations.")
+                                .font(.caption)
+                                .foregroundColor(.gsDanger)
+                        }
+                    }
+                }
+                .padding(16)
+                .background(Color.gsSurface)
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(viewModel.isStateRestricted ? Color.gsDanger.opacity(0.5) : Color.gsBorder, lineWidth: 1)
+                )
 
                 // What's included card
                 VStack(alignment: .leading, spacing: 10) {
@@ -148,7 +203,7 @@ struct ScheduleLabsView: View {
 
                 // Apple Pay button
                 Button {
-                    viewModel.initiateApplePay()
+                    viewModel.attemptSubmit()
                 } label: {
                     HStack(spacing: 8) {
                         if viewModel.isProcessing {
@@ -170,8 +225,9 @@ struct ScheduleLabsView: View {
                         RoundedRectangle(cornerRadius: 14)
                             .stroke(Color.white.opacity(0.2), lineWidth: 1)
                     )
+                    .opacity(viewModel.canSubmit ? 1 : 0.5)
                 }
-                .disabled(viewModel.isProcessing)
+                .disabled(!viewModel.canSubmit)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 32)
@@ -265,6 +321,31 @@ final class ScheduleLabsViewModel: NSObject, ObservableObject {
     @Published var error: String?
     @Published var assignedLocation = ""
 
+    /// USPS 2-letter state code for the user's shipping address.
+    /// Kept as canonical uppercase by the view's onChange clamp.
+    @Published var selectedState: String = ""
+
+    /// Drives presentation of `LabsUnavailableView` when a restricted state
+    /// is entered and the user attempts to pay.
+    @Published var showUnavailableSheet: Bool = false
+
+    /// `true` when the current `selectedState` is in the restricted list.
+    /// Used for inline validation styling and as part of `canSubmit`.
+    var isStateRestricted: Bool {
+        guard !selectedState.isEmpty else { return false }
+        return LabsStateEligibility.isRestricted(selectedState)
+    }
+
+    /// Controls whether the Pay button is tappable. We keep the button
+    /// tappable for restricted states so `attemptSubmit()` can present the
+    /// `LabsUnavailableView` explainer sheet. We only block taps while
+    /// mid-payment or when no valid 2-letter state has been entered.
+    var canSubmit: Bool {
+        guard !isProcessing else { return false }
+        let normalized = selectedState.trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalized.count == 2
+    }
+
     private static let bloodworkProductId = "com.gearsnitch.app.bloodwork"
     private static let bloodworkPrice: NSDecimalNumber = 69.99
     private static let merchantId = "merchant.com.gearsnitch"
@@ -281,6 +362,20 @@ final class ScheduleLabsViewModel: NSObject, ObservableObject {
 
     var formattedTime: String {
         selectedDate.formatted(date: .omitted, time: .shortened)
+    }
+
+    // MARK: - Submit Gate
+
+    /// Entry point for the primary Pay button. Enforces the state eligibility
+    /// gate before handing off to Apple Pay. If the user's shipping state is
+    /// on the restricted list (NY/NJ/RI per Rupa Health), we present an
+    /// explainer sheet and do NOT initiate payment.
+    func attemptSubmit() {
+        if LabsStateEligibility.isRestricted(selectedState) {
+            showUnavailableSheet = true
+            return
+        }
+        initiateApplePay()
     }
 
     // MARK: - Apple Pay
@@ -417,9 +512,73 @@ extension APIEndpoint {
     }
 }
 
+// MARK: - Labs Unavailable Sheet
+
+/// Shown when a user with a restricted-state shipping address (NY, NJ, RI)
+/// attempts to submit the labs flow. Explains the regulatory reason and
+/// offers a single "Back" action — there is no path forward from this sheet.
+/// See `LabsStateEligibility` for the source-of-truth list.
+struct LabsUnavailableView: View {
+    @Environment(\.dismiss) private var dismiss
+    let stateCode: String
+
+    private var displayState: String {
+        let trimmed = stateCode.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        return trimmed.isEmpty ? "your state" : trimmed
+    }
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(Color.gsDanger.opacity(0.15))
+                    .frame(width: 96, height: 96)
+
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 44))
+                    .foregroundColor(.gsDanger)
+            }
+
+            Text("Labs Unavailable")
+                .font(.title2.bold())
+                .foregroundColor(.gsText)
+
+            Text("Unfortunately, at-home lab testing is not available in \(displayState) due to current state regulations. We'll notify you when this changes.")
+                .font(.subheadline)
+                .foregroundColor(.gsTextSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+
+            Spacer()
+
+            Button {
+                dismiss()
+            } label: {
+                Text("Back")
+                    .font(.headline)
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 54)
+                    .background(Color.gsEmerald)
+                    .cornerRadius(14)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
+        }
+        .background(Color.gsBackground.ignoresSafeArea())
+    }
+}
+
 #Preview {
     NavigationStack {
         ScheduleLabsView()
     }
     .preferredColorScheme(.dark)
+}
+
+#Preview("Labs Unavailable") {
+    LabsUnavailableView(stateCode: "NY")
+        .preferredColorScheme(.dark)
 }
