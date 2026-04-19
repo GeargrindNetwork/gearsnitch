@@ -7,4 +7,4 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 |---|---|---|---|
 | 1 | Universal Links — `/r/:code` landing + AASA + iOS handler | merged | [#44](https://github.com/GeargrindNetwork/gearsnitch/pull/44) |
 | 2 | Post-install referral attribution | pr-open | [#46](https://github.com/GeargrindNetwork/gearsnitch/pull/46) |
-| 3 | Stripe Customer Portal deep-link into iOS | pr-open | _set on PR open_ |
+| 3 | Stripe Customer Portal deep-link into iOS | pr-open | [#47](https://github.com/GeargrindNetwork/gearsnitch/pull/47) |
