@@ -80,7 +80,6 @@ enum SubscriptionTier: String, CaseIterable, Identifiable {
             return [
                 "Everything in HWMF",
                 "Unlimited devices",
-                "Mesh chat",
                 "Device map history",
                 "Lifetime updates",
                 "Early access features",
