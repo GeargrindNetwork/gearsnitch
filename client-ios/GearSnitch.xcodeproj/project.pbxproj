@@ -219,6 +219,7 @@
 		C0C8D5B078D060AE7C239359 /* WorkoutAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03C66A774A3110D7AC7461B /* WorkoutAppShortcuts.swift */; };
 		C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */; };
 		C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */; };
+		C2BFF2DAA4C4B99464D75C09 /* GearSnitchWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CA95213EDCE919F70CDCBCD8 /* GearSnitchWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C2C54017F71B796A166C970B /* DeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196547EBE5AAE728369FB79D /* DeviceDetailView.swift */; };
 		C37297D5DDEDDAA1FF8786DF /* GearService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82C8AF98938A9BB5A17236D /* GearService.swift */; };
 		C5C6633A7173DEF37BFE723D /* ExternalHRSensorAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */; };
@@ -301,6 +302,13 @@
 			remoteGlobalIDString = ECF6BEF24B590549BDA03608;
 			remoteInfo = GearSnitch;
 		};
+		644BB3F5F4413A3DB66946B3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BBE1BCD4DFAE9AAA147B6DCD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 45835FA151003E74D7BFD1A0;
+			remoteInfo = GearSnitchWatch;
+		};
 		B753B5C0E750057670794459 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BBE1BCD4DFAE9AAA147B6DCD /* Project object */;
@@ -341,6 +349,17 @@
 				3E46A1E1677DA39F4243EFC7 /* GearSnitchWatchWidgets.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		579A610E9A3820FAA78FC6E2 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				C2BFF2DAA4C4B99464D75C09 /* GearSnitchWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A1CE963B4352B97747F03880 /* Embed Foundation Extensions */ = {
@@ -1578,11 +1597,13 @@
 				2957AFFBE965A6D54533EEF4 /* Resources */,
 				4BF2BFF306B54D4956DA81A6 /* Frameworks */,
 				A1CE963B4352B97747F03880 /* Embed Foundation Extensions */,
+				579A610E9A3820FAA78FC6E2 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				35F49ACA36D024E00A1EFDDE /* PBXTargetDependency */,
+				35BD62F4F6C9E9EECFE12FE6 /* PBXTargetDependency */,
 			);
 			name = GearSnitch;
 			packageProductDependencies = (
@@ -2008,6 +2029,11 @@
 			isa = PBXTargetDependency;
 			target = 6CEC398F94F1452D4F7CA825 /* GearSnitchWatchWidgets */;
 			targetProxy = D1F2D4D62BB77E59094E2270 /* PBXContainerItemProxy */;
+		};
+		35BD62F4F6C9E9EECFE12FE6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 45835FA151003E74D7BFD1A0 /* GearSnitchWatch */;
+			targetProxy = 644BB3F5F4413A3DB66946B3 /* PBXContainerItemProxy */;
 		};
 		35F49ACA36D024E00A1EFDDE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

@@ -77,6 +77,11 @@ targets:
       - package: GoogleSignIn
       - target: GearSnitchWidgets
         embed: true
+      # Embed the Watch app so it installs on the paired Apple Watch when
+      # the iPhone app installs. Without this, GearSnitch.app/Watch/ is
+      # empty and the Watch app never reaches the user's wrist.
+      - target: GearSnitchWatch
+        embed: true
     scheme:
       testTargets:
         - GearSnitchTests
