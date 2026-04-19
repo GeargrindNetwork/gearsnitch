@@ -14,6 +14,11 @@ export const EVENT_TYPES = [
   'workout_started',
   'workout_ended',
   'profile_updated',
+  // Gear retirement / mileage tracking (item #4 — see
+  // api/src/modules/gear/routes.ts and worker/src/jobs/pushNotification.ts).
+  'GearWarningCrossed',
+  'GearRetirementCrossed',
+  'GearRetired',
   // Subscription reconciliation (weekly cron, see worker/src/jobs/subscriptionReconciliation.ts)
   'SubscriptionDriftHealed',
   'SubscriptionNotAtProvider',

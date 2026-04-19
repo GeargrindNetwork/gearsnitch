@@ -179,6 +179,7 @@
 		C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */; };
 		C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */; };
 		C2C54017F71B796A166C970B /* DeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196547EBE5AAE728369FB79D /* DeviceDetailView.swift */; };
+		C37297D5DDEDDAA1FF8786DF /* GearService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82C8AF98938A9BB5A17236D /* GearService.swift */; };
 		C5C6633A7173DEF37BFE723D /* ExternalHRSensorAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */; };
 		C771426D99982CF60723DE02 /* PermissionGateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E5B10371664AD313AD389E2 /* PermissionGateManager.swift */; };
 		C7BCED7BF8563DB9B2EA0E74 /* HandPreferenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43994928D28F3BFEBAACB47D /* HandPreferenceManager.swift */; };
@@ -201,6 +202,9 @@
 		D977C64BDD05A98BBCF428AC /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D945F2BF6C97E6654C9BF18 /* OnboardingViewModel.swift */; };
 		DA78F0531AD2402913F2092C /* DisconnectAlertOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02514B1E9874CEB3FE3D56DB /* DisconnectAlertOverlay.swift */; };
 		DA9673E242743CD89C29C3FC /* TrendsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE31C69DCC5519DB263464A3 /* TrendsViewModel.swift */; };
+		DBC36520BE30FBD68C21D437 /* GearServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2A43F9B9D41EC035383125 /* GearServiceTests.swift */; };
+		DC1AE9BB0535BB07BAEF2E44 /* GearDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73D7BC42E1C90A771411A7E7 /* GearDetailView.swift */; };
+		DE6CE1FD494CCCE5AE69CC17 /* GearListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02D79549155591FD326F63A0 /* GearListView.swift */; };
 		DEC76F5BE0B6B72A5D0FB0D1 /* DosingCalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8CD7598811AF36A137595A6 /* DosingCalculatorView.swift */; };
 		DF96153FB19AEBF3ED46981E /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B0427DD41CE5177C56D180C /* HealthKitManager.swift */; };
 		DF9ED7A103B8B2E5E3A85E27 /* WorkoutDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88F615771AA8AEC73889AAE6 /* WorkoutDetailView.swift */; };
@@ -304,6 +308,7 @@
 		02514B1E9874CEB3FE3D56DB /* DisconnectAlertOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisconnectAlertOverlay.swift; sourceTree = "<group>"; };
 		026C428CF4CCF85191191B0B /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
 		0292382E993D9CD14F1B9737 /* HeartRateMonitorSplitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateMonitorSplitTests.swift; sourceTree = "<group>"; };
+		02D79549155591FD326F63A0 /* GearListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearListView.swift; sourceTree = "<group>"; };
 		03EB90ADAAC9DC50555F55EE /* HealthKitPermissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitPermissions.swift; sourceTree = "<group>"; };
 		0475A09D6432948147C5A574 /* MapSearchManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapSearchManager.swift; sourceTree = "<group>"; };
 		0619737EE7E3393951FA1D62 /* GearSnitchTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GearSnitchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -402,6 +407,7 @@
 		6EBE7165C08E884061DCB8D7 /* QuickActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActionsView.swift; sourceTree = "<group>"; };
 		6F590B33018B52518E473826 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		70F9CF4C94401C2900ADB20B /* GoogleSignInManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleSignInManager.swift; sourceTree = "<group>"; };
+		73D7BC42E1C90A771411A7E7 /* GearDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearDetailView.swift; sourceTree = "<group>"; };
 		74978A4A8A7E3AE809C25A91 /* ECGViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGViewModel.swift; sourceTree = "<group>"; };
 		765EB0F048354608BECF6173 /* ReleaseGateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseGateManager.swift; sourceTree = "<group>"; };
 		77028B5C096D4784BBF49AA4 /* WatchHRSamplePayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHRSamplePayloadTests.swift; sourceTree = "<group>"; };
@@ -412,6 +418,7 @@
 		7B7A3A080222FD6EBEEFB2F3 /* ReferralQRModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralQRModalView.swift; sourceTree = "<group>"; };
 		7C214E8EAE2147E0D752B9D5 /* ApplePayButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayButton.swift; sourceTree = "<group>"; };
 		7C56C84E74ED46F4CAB07188 /* WatchComplicationCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchComplicationCenter.swift; sourceTree = "<group>"; };
+		7D2A43F9B9D41EC035383125 /* GearServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearServiceTests.swift; sourceTree = "<group>"; };
 		7D8F66DD4AB609729A71DD1A /* StopwatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopwatchView.swift; sourceTree = "<group>"; };
 		7ED0FD7D6607FFCF61139F04 /* StripePortalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePortalService.swift; sourceTree = "<group>"; };
 		7FDAF6E82525532EB0FFC115 /* LogMealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogMealView.swift; sourceTree = "<group>"; };
@@ -521,6 +528,7 @@
 		F732D9E9ECE794CBE91F2A0D /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		F7447513075EF893EBB81204 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		F7E6883A9A303D7BFAC83E26 /* GearSnitchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearSnitchUITests.swift; sourceTree = "<group>"; };
+		F82C8AF98938A9BB5A17236D /* GearService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearService.swift; sourceTree = "<group>"; };
 		F8CD7598811AF36A137595A6 /* DosingCalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosingCalculatorView.swift; sourceTree = "<group>"; };
 		F96AEA4AB904C01FED7EC5F3 /* MedicationsSyncSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationsSyncSettingsView.swift; sourceTree = "<group>"; };
 		FA07F4455FC91DFEBF1E9057 /* StoreHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreHomeView.swift; sourceTree = "<group>"; };
@@ -573,6 +581,15 @@
 				270D9DD9964E6987742B699F /* UpdateRequiredView.swift */,
 			);
 			path = Release;
+			sourceTree = "<group>";
+		};
+		1201E993AC582A8A9771ED7A /* Gear */ = {
+			isa = PBXGroup;
+			children = (
+				73D7BC42E1C90A771411A7E7 /* GearDetailView.swift */,
+				02D79549155591FD326F63A0 /* GearListView.swift */,
+			);
+			path = Gear;
 			sourceTree = "<group>";
 		};
 		1252B512DFB907E2D47F8A7B /* Calendar */ = {
@@ -639,6 +656,14 @@
 				77028B5C096D4784BBF49AA4 /* WatchHRSamplePayloadTests.swift */,
 			);
 			path = GearSnitchWatchTests;
+			sourceTree = "<group>";
+		};
+		2A4C2681E56939FCAA99ABC3 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				F82C8AF98938A9BB5A17236D /* GearService.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		34E5E4649638B2F5D73B0B1E /* Onboarding */ = {
@@ -810,6 +835,7 @@
 				87B1DFDA81A53E400021833A /* ECGViewModelTests.swift */,
 				FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */,
 				30C1DE53A384AF785E1999E2 /* ExternalHRSourceDetectionTests.swift */,
+				7D2A43F9B9D41EC035383125 /* GearServiceTests.swift */,
 				30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */,
 				4B66AE0569C6234BEA5970F5 /* HandPreferenceManagerTests.swift */,
 				2918A4D1C1C002CF48980700 /* HealthKitMedicationsSyncTests.swift */,
@@ -894,6 +920,7 @@
 				5E34DC12B8950CE7F705DEE8 /* DeviceMap */,
 				90C6AF5E383A598A8DB2CF47 /* Devices */,
 				53787386098F27B3F6804757 /* DosingCalculator */,
+				1201E993AC582A8A9771ED7A /* Gear */,
 				70D0B0725B728022781506A4 /* Gyms */,
 				7AAF396F55DB44D3CD9F0BB1 /* Health */,
 				24101B7A4A21ED111F3FF5EE /* MeshChat */,
@@ -971,6 +998,7 @@
 				64EDC5694E70347DE12ED77B /* Persistence */,
 				6ADFCAE61675D4B0A0E1E6C5 /* Realtime */,
 				4441329B86EC2858A42CE832 /* RunTracking */,
+				2A4C2681E56939FCAA99ABC3 /* Services */,
 				DAFDC6CD665FCE1B0F3D9D9B /* Session */,
 				922E3346A0E559F42B16F978 /* UI */,
 				5ACFDB0AFFEC683C60B62776 /* Watch */,
@@ -1573,6 +1601,7 @@
 				3FEA11D8F5C845EE76310F6F /* ECGViewModelTests.swift in Sources */,
 				C5C6633A7173DEF37BFE723D /* ExternalHRSensorAdapterTests.swift in Sources */,
 				B800757CDA3C62EE52FE4082 /* ExternalHRSourceDetectionTests.swift in Sources */,
+				DBC36520BE30FBD68C21D437 /* GearServiceTests.swift in Sources */,
 				B03D91635654732CA98894AE /* GymSessionAttributesTests.swift in Sources */,
 				B3B38C22B5D6DFF2D1FDC562 /* HandPreferenceManagerTests.swift in Sources */,
 				6A8795F413628EE87E0992C1 /* HealthKitMedicationsSyncTests.swift in Sources */,
@@ -1659,6 +1688,9 @@
 				F1F2663889480A84734B9AD0 /* ExternalHRSensorsView.swift in Sources */,
 				D28F759FEDBA4B1E71568B02 /* FeatureFlags.swift in Sources */,
 				738A17E8421FF3B9B4F28C69 /* FloatingMenuView.swift in Sources */,
+				DC1AE9BB0535BB07BAEF2E44 /* GearDetailView.swift in Sources */,
+				DE6CE1FD494CCCE5AE69CC17 /* GearListView.swift in Sources */,
+				C37297D5DDEDDAA1FF8786DF /* GearService.swift in Sources */,
 				34A78B5370C92303B55123C8 /* GearSnitchApp.swift in Sources */,
 				0A904B6FA32654923065626A /* GeofenceManager.swift in Sources */,
 				532C92B68B7591740D06E5E6 /* GoogleSignInManager.swift in Sources */,
