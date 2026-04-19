@@ -53,6 +53,63 @@ struct HeartRateSample: Identifiable {
     let sourceDeviceName: String?
 }
 
+// MARK: - Rolling Buffer Sample
+
+/// A time-stamped entry in one of the per-source rolling buffers that drive
+/// the Dashboard split chart UI. `bpm == nil` represents a missed 30-second
+/// tick — the chart renders a gap there so users see data fidelity, not a
+/// misleading flat line.
+struct HRSample: Identifiable, Equatable {
+    let id: UUID
+    let timestamp: Date
+    let bpm: Int?
+    let source: HeartRateSourceKind
+
+    init(id: UUID = UUID(), timestamp: Date, bpm: Int?, source: HeartRateSourceKind) {
+        self.id = id
+        self.timestamp = timestamp
+        self.bpm = bpm
+        self.source = source
+    }
+}
+
+// MARK: - Heart Rate Source Kind
+
+/// Classification of the device that emitted a heart rate sample. Used by the
+/// Dashboard HR card to show a helpful attribution label (e.g. "via AirPods").
+enum HeartRateSourceKind: String {
+    case airpods
+    case watch
+    case phone
+    case other
+    case unknown
+
+    static func classify(sourceName: String?) -> HeartRateSourceKind {
+        guard let name = sourceName?.lowercased(), !name.isEmpty else { return .unknown }
+        if name.contains("airpod") { return .airpods }
+        if name.contains("watch") { return .watch }
+        if name.contains("iphone") { return .phone }
+        return .other
+    }
+}
+
+// MARK: - Health Store Protocol (for tests)
+
+/// Narrow protocol over `HKHealthStore` so unit tests can inject a fake store
+/// that emits canned `HKQuantitySample` instances without touching real
+/// HealthKit state.
+protocol HeartRateHealthStore: AnyObject {
+    func execute(_ query: HKQuery)
+    func stop(_ query: HKQuery)
+    func isHealthDataAvailableOnDevice() -> Bool
+}
+
+extension HKHealthStore: HeartRateHealthStore {
+    func isHealthDataAvailableOnDevice() -> Bool {
+        HKHealthStore.isHealthDataAvailable()
+    }
+}
+
 // MARK: - Heart Rate Monitor
 
 @MainActor
@@ -63,28 +120,70 @@ final class HeartRateMonitor: ObservableObject {
     @Published private(set) var currentBPM: Int?
     @Published private(set) var currentZone: HeartRateZone?
     @Published private(set) var sourceDeviceName: String?
+    @Published private(set) var sourceKind: HeartRateSourceKind = .unknown
     @Published private(set) var isMonitoring = false
     @Published private(set) var lastUpdated: Date?
 
-    private let healthStore = HKHealthStore()
+    /// Rolling 5-minute buffer of samples attributed to the Apple Watch.
+    /// Driven by the 30-second split-sampling timer and by WatchConnectivity
+    /// live pushes from the paired Watch. Used by the Dashboard split UI.
+    @Published private(set) var watchSamples: [HRSample] = []
+
+    /// Rolling 5-minute buffer of samples attributed to AirPods. Driven by
+    /// the 30-second split-sampling timer (HealthKit is the only transport
+    /// for AirPods HR — there is no BLE GATT path).
+    @Published private(set) var airpodsSamples: [HRSample] = []
+
+    private let healthStore: HeartRateHealthStore
     private let logger = Logger(subsystem: "com.gearsnitch", category: "HeartRateMonitor")
 
     private var anchoredQuery: HKAnchoredObjectQuery?
     private var pendingSamples: [HeartRateSample] = []
     private var batchSyncTask: Task<Void, Never>?
     private var liveActivityUpdateTask: Task<Void, Never>?
+    private var splitSamplingTask: Task<Void, Never>?
     private var lastLiveActivityUpdate: Date = .distantPast
 
     private let batchSyncInterval: TimeInterval = 30
     private let liveActivityThrottleInterval: TimeInterval = 2
 
-    private init() {}
+    /// Cadence for the split-sampling timer. HARD requirement per product
+    /// spec: every 30 seconds we poll the latest HealthKit sample per source
+    /// and append to the Watch/AirPods rolling buffers so the Dashboard chart
+    /// has a consistent x-axis density regardless of HealthKit batch flushes.
+    static let splitSamplingInterval: TimeInterval = 30
+
+    /// How far back a HealthKit sample may be at tick time and still be
+    /// considered "current". Tuned to 60s so a missed 30s tick can still be
+    /// backfilled by the next tick before falling off into a chart gap.
+    static let splitSamplingFreshness: TimeInterval = 60
+
+    /// How much history the Dashboard chart renders per column. Samples older
+    /// than this are evicted on every buffer append.
+    static let splitSamplingWindow: TimeInterval = 5 * 60
+
+    /// Most recent per-source reading observed via HealthKit or (for Watch)
+    /// via WatchConnectivity. The 30-second tick uses this cache rather than
+    /// issuing a separate HKSampleQuery every tick — the anchored observer
+    /// is already running and pushing new samples as they land.
+    private var latestWatchReading: (bpm: Int, at: Date)?
+    private var latestAirPodsReading: (bpm: Int, at: Date)?
+
+    /// How far back to look for a seed sample when monitoring starts. This
+    /// lets the Dashboard card render the most recent HR immediately after
+    /// pairing AirPods, rather than staying blank until the next sample lands.
+    private static let backfillLookback: TimeInterval = 15 * 60
+
+    /// Designated initializer used by tests. Production code should use `shared`.
+    init(healthStore: HeartRateHealthStore = HKHealthStore()) {
+        self.healthStore = healthStore
+    }
 
     // MARK: - Public API
 
     func startMonitoring() {
         guard !isMonitoring else { return }
-        guard HKHealthStore.isHealthDataAvailable() else {
+        guard healthStore.isHealthDataAvailableOnDevice() else {
             logger.warning("HealthKit not available — cannot monitor heart rate")
             return
         }
@@ -96,10 +195,15 @@ final class HeartRateMonitor: ObservableObject {
         isMonitoring = true
         logger.info("Starting heart rate monitoring")
 
+        // Predicate spans from (now - backfillLookback) forward, so that the
+        // anchored query's initial handler returns any recent samples (e.g.
+        // the most recent AirPods reading) AND future samples flow through
+        // the updateHandler as HealthKit writes them.
+        let start = Date(timeIntervalSinceNow: -Self.backfillLookback)
         let query = HKAnchoredObjectQuery(
             type: heartRateType,
             predicate: HKQuery.predicateForSamples(
-                withStart: Date(),
+                withStart: start,
                 end: nil,
                 options: .strictStartDate
             ),
@@ -107,19 +211,20 @@ final class HeartRateMonitor: ObservableObject {
             limit: HKObjectQueryNoLimit
         ) { [weak self] _, samples, _, _, error in
             Task { @MainActor in
-                self?.handleNewSamples(samples, error: error)
+                self?.handleNewSamples(samples, error: error, isBackfill: true)
             }
         }
 
         query.updateHandler = { [weak self] _, samples, _, _, error in
             Task { @MainActor in
-                self?.handleNewSamples(samples, error: error)
+                self?.handleNewSamples(samples, error: error, isBackfill: false)
             }
         }
 
         anchoredQuery = query
         healthStore.execute(query)
         startBatchSyncLoop()
+        startSplitSampling()
     }
 
     func stopMonitoring() {
@@ -134,6 +239,7 @@ final class HeartRateMonitor: ObservableObject {
         batchSyncTask = nil
         liveActivityUpdateTask?.cancel()
         liveActivityUpdateTask = nil
+        stopSplitSampling()
 
         flushPendingSamples()
 
@@ -141,14 +247,21 @@ final class HeartRateMonitor: ObservableObject {
         currentBPM = nil
         currentZone = nil
         sourceDeviceName = nil
+        sourceKind = .unknown
         lastUpdated = nil
+
+        watchSamples.removeAll()
+        airpodsSamples.removeAll()
+        latestWatchReading = nil
+        latestAirPodsReading = nil
 
         logger.info("Stopped heart rate monitoring")
     }
 
     // MARK: - Sample Handling
 
-    private func handleNewSamples(_ samples: [HKSample]?, error: Error?) {
+    /// Visible for tests — callable with a canned list of samples.
+    func handleNewSamples(_ samples: [HKSample]?, error: Error?, isBackfill: Bool) {
         if let error {
             logger.error("Heart rate query error: \(error.localizedDescription)")
             return
@@ -159,6 +272,26 @@ final class HeartRateMonitor: ObservableObject {
         }
 
         let bpmUnit = HKUnit.count().unitDivided(by: .minute())
+
+        // For backfill (initial snapshot on startMonitoring), we only publish
+        // the single most recent sample and do NOT enqueue all historical
+        // samples for upload — they've likely already been synced and would
+        // duplicate the backend's heart-rate series.
+        if isBackfill {
+            guard let latest = quantitySamples.max(by: { $0.endDate < $1.endDate }) else {
+                return
+            }
+            let bpm = Int(latest.quantity.doubleValue(for: bpmUnit))
+            let sourceName = extractSourceDeviceName(from: latest)
+            currentBPM = bpm
+            currentZone = HeartRateZone.from(bpm: bpm)
+            sourceDeviceName = sourceName
+            sourceKind = HeartRateSourceKind.classify(sourceName: sourceName)
+            lastUpdated = latest.endDate
+            recordLatestPerSource(bpm: bpm, at: latest.endDate, sourceName: sourceName)
+            logger.info("Heart rate backfill: \(bpm) BPM from \(sourceName ?? "unknown source")")
+            return
+        }
 
         for sample in quantitySamples {
             let bpm = Int(sample.quantity.doubleValue(for: bpmUnit))
@@ -176,28 +309,151 @@ final class HeartRateMonitor: ObservableObject {
             currentBPM = bpm
             currentZone = HeartRateZone.from(bpm: bpm)
             sourceDeviceName = sourceName ?? sourceDeviceName
+            sourceKind = HeartRateSourceKind.classify(sourceName: sourceName ?? sourceDeviceName)
             lastUpdated = sample.endDate
+
+            recordLatestPerSource(bpm: bpm, at: sample.endDate, sourceName: sourceName)
         }
 
         throttledLiveActivityUpdate()
     }
 
-    private func extractSourceDeviceName(from sample: HKQuantitySample) -> String? {
+    /// Update the per-source "last seen" cache used by the 30-second split
+    /// sampling timer. Silently ignores `.phone`, `.other`, and `.unknown`
+    /// kinds — only the Watch and AirPods columns feed the Dashboard chart.
+    private func recordLatestPerSource(bpm: Int, at timestamp: Date, sourceName: String?) {
+        switch HeartRateSourceKind.classify(sourceName: sourceName) {
+        case .watch:
+            if (latestWatchReading?.at ?? .distantPast) <= timestamp {
+                latestWatchReading = (bpm, timestamp)
+            }
+        case .airpods:
+            if (latestAirPodsReading?.at ?? .distantPast) <= timestamp {
+                latestAirPodsReading = (bpm, timestamp)
+            }
+        case .phone, .other, .unknown:
+            break
+        }
+    }
+
+    /// Extract a human-readable source name for a heart rate sample. Prefers
+    /// the advertised device name (e.g. "Shawn's AirPods Pro"), falls back to
+    /// the device model, and finally the sample's source revision name (the
+    /// name of the app or system surface that wrote the sample).
+    ///
+    /// NOTE: AirPods Pro 3 heart rate is only exposed through HealthKit — it
+    /// is NOT available on a BLE GATT service. Apple sets the sample's source
+    /// name to something containing "AirPods" when the sample originates from
+    /// AirPods' onboard PPG sensor.
+    func extractSourceDeviceName(from sample: HKQuantitySample) -> String? {
         if let device = sample.device {
-            if let name = device.name {
+            if let name = device.name, !name.isEmpty {
                 return name
             }
-            if let model = device.model {
+            if let model = device.model, !model.isEmpty {
                 return model
             }
         }
 
         let sourceName = sample.sourceRevision.source.name
-        if sourceName.lowercased().contains("airpods") {
-            return sourceName
-        }
+        return sourceName.isEmpty ? nil : sourceName
+    }
 
-        return sourceName
+    // MARK: - Split Sampling (Watch vs. AirPods, 30s cadence)
+
+    /// Latest non-nil BPM reading in the rolling buffer for a given source,
+    /// or `nil` if the buffer is empty or contains only gap placeholders.
+    func latestBPM(for source: HeartRateSourceKind) -> Int? {
+        switch source {
+        case .watch: return watchSamples.last(where: { $0.bpm != nil })?.bpm ?? nil
+        case .airpods: return airpodsSamples.last(where: { $0.bpm != nil })?.bpm ?? nil
+        default: return nil
+        }
+    }
+
+    /// Absolute BPM delta between the most recent non-nil Watch sample and
+    /// the most recent non-nil AirPods sample. `nil` if either column is
+    /// empty (or all entries are gap placeholders) — the Dashboard shows
+    /// "—" in that case.
+    var latestHeartRateDelta: Int? {
+        guard let w = watchSamples.last(where: { $0.bpm != nil })?.bpm,
+              let a = airpodsSamples.last(where: { $0.bpm != nil })?.bpm else {
+            return nil
+        }
+        return abs(w - a)
+    }
+
+    /// Start the 30-second sampling timer. Runs independently of
+    /// `startMonitoring` because the split UI is desirable even when the
+    /// full batch-sync pipeline is off (e.g. outside of a gym session).
+    func startSplitSampling() {
+        guard splitSamplingTask == nil else { return }
+        splitSamplingTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(Self.splitSamplingInterval))
+                guard !Task.isCancelled else { break }
+                await MainActor.run {
+                    self?.tickSplitSampling(now: Date())
+                }
+            }
+        }
+    }
+
+    func stopSplitSampling() {
+        splitSamplingTask?.cancel()
+        splitSamplingTask = nil
+    }
+
+    /// One 30-second tick of the split-sampling timer. Extracted from the
+    /// loop so tests can drive it deterministically.
+    func tickSplitSampling(now: Date = Date()) {
+        let freshCutoff = now.addingTimeInterval(-Self.splitSamplingFreshness)
+
+        let watchBPM: Int? = {
+            guard let reading = latestWatchReading, reading.at >= freshCutoff else {
+                return nil
+            }
+            return reading.bpm
+        }()
+
+        let airpodsBPM: Int? = {
+            guard let reading = latestAirPodsReading, reading.at >= freshCutoff else {
+                return nil
+            }
+            return reading.bpm
+        }()
+
+        appendToBuffer(
+            &watchSamples,
+            sample: HRSample(timestamp: now, bpm: watchBPM, source: .watch),
+            now: now
+        )
+        appendToBuffer(
+            &airpodsSamples,
+            sample: HRSample(timestamp: now, bpm: airpodsBPM, source: .airpods),
+            now: now
+        )
+    }
+
+    /// Append `sample` and evict anything older than `splitSamplingWindow`
+    /// relative to `now`.
+    private func appendToBuffer(_ buffer: inout [HRSample], sample: HRSample, now: Date) {
+        buffer.append(sample)
+        let cutoff = now.addingTimeInterval(-Self.splitSamplingWindow)
+        buffer.removeAll { $0.timestamp < cutoff }
+    }
+
+    /// Low-latency fast-path for Watch samples pushed over WatchConnectivity.
+    /// The Watch companion forwards a reading as soon as the Watch's HK
+    /// observer fires, so this typically lands before the iPhone's own HK
+    /// auto-sync surfaces the same sample via `handleNewSamples`.
+    func ingestWatchSample(bpm: Int, timestamp: Date) {
+        let sample = HRSample(timestamp: timestamp, bpm: bpm, source: .watch)
+        appendToBuffer(&watchSamples, sample: sample, now: Date())
+
+        if (latestWatchReading?.at ?? .distantPast) <= timestamp {
+            latestWatchReading = (bpm, timestamp)
+        }
     }
 
     // MARK: - Live Activity Updates
@@ -248,7 +504,7 @@ final class HeartRateMonitor: ObservableObject {
                     HeartRateBatchPayload(
                         bpm: sample.bpm,
                         recordedAt: ISO8601DateFormatter().string(from: sample.recordedAt),
-                        source: "airpods_pro"
+                        source: Self.backendSourceTag(for: sample.sourceDeviceName)
                     )
                 }
 
@@ -268,6 +524,18 @@ final class HeartRateMonitor: ObservableObject {
                     }
                 }
             }
+        }
+    }
+
+    /// Map a HealthKit source name to a short backend tag. Keeps the wire
+    /// protocol stable while letting the UI display the full device name.
+    nonisolated static func backendSourceTag(for sourceName: String?) -> String {
+        switch HeartRateSourceKind.classify(sourceName: sourceName) {
+        case .airpods: return "airpods_pro"
+        case .watch: return "apple_watch"
+        case .phone: return "iphone"
+        case .other: return "healthkit"
+        case .unknown: return "unknown"
         }
     }
 }

@@ -225,43 +225,73 @@ export class PaymentService {
   }
 
   /**
-   * Get or create a Stripe customer for the user. Persists the Stripe
-   * customer ID on the User record so subscription webhooks can resolve
-   * back to our user via `stripeCustomerId`.
+   * Get or create a Stripe customer for the user.
+   *
+   * Resolution order:
+   *   1. If `user.stripeCustomerId` is persisted, retrieve it from Stripe.
+   *      If Stripe replies with `resource_missing` (customer was deleted),
+   *      fall through to create a fresh one and re-link.
+   *   2. Backfill path for legacy users (no persisted id): look up by email
+   *      via `stripe.customers.list` and accept a match only when
+   *      `metadata.userId` equals this user's id. This avoids cross-linking
+   *      two users who happen to share an email.
+   *   3. Create a new Stripe customer with `metadata.userId` set.
+   *
+   * In every branch that resolves a customer, `user.stripeCustomerId` is
+   * persisted so subsequent calls skip the list/create paths entirely.
    */
   async getOrCreateStripeCustomer(
     userId: string,
     email: string,
   ): Promise<string> {
-    // Prefer the ID already persisted on the user.
-    const user = await User.findById(userId).select('stripeCustomerId').lean();
-    if (user?.stripeCustomerId) {
-      return user.stripeCustomerId;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new PaymentError('User not found', 'USER_NOT_FOUND');
     }
 
-    // Search for existing customer by email
-    const existing = await stripe.customers.list({
+    // 1. Fast path: we already know the Stripe customer id.
+    if (user.stripeCustomerId) {
+      try {
+        const existing = await stripe.customers.retrieve(user.stripeCustomerId);
+        if (existing && !(existing as { deleted?: boolean }).deleted) {
+          return existing.id;
+        }
+        // Deleted customer object returned — fall through to recreate.
+      } catch (err: unknown) {
+        const code = (err as { code?: string }).code;
+        const message = (err as { message?: string }).message ?? '';
+        const isMissing =
+          code === 'resource_missing' || /No such customer/i.test(message);
+        if (!isMissing) {
+          throw err;
+        }
+        // Stale id — recreate below.
+      }
+    }
+
+    // 2. Backfill path: look up by email but only trust it if the Stripe
+    //    customer's metadata.userId matches us.
+    const existing = await stripe.customers.list({ email, limit: 1 });
+    const match = existing.data.find(
+      (c) =>
+        !(c as { deleted?: boolean }).deleted &&
+        c.metadata?.userId === userId,
+    );
+    if (match) {
+      user.stripeCustomerId = match.id;
+      await user.save();
+      return match.id;
+    }
+
+    // 3. Nothing usable — create a new customer and persist the link.
+    const customer = await stripe.customers.create({
       email,
-      limit: 1,
+      metadata: { userId },
     });
 
-    let customerId: string;
-    if (existing.data.length > 0) {
-      customerId = existing.data[0].id;
-    } else {
-      const customer = await stripe.customers.create({
-        email,
-        metadata: { userId },
-      });
-      customerId = customer.id;
-    }
-
-    await User.updateOne(
-      { _id: new Types.ObjectId(userId) },
-      { $set: { stripeCustomerId: customerId } },
-    );
-
-    return customerId;
+    user.stripeCustomerId = customer.id;
+    await user.save();
+    return customer.id;
   }
 
   /**
@@ -293,6 +323,35 @@ export class PaymentService {
       signature,
       config.stripeWebhookSecret,
     );
+  }
+
+  /**
+   * Flag a Stripe subscription to cancel at the end of the current period.
+   * Throws a PaymentError on upstream Stripe failure so the caller can
+   * refuse to mutate local state (truth must not be rewritten on a
+   * failed upstream cancel).
+   */
+  async cancelStripeSubscriptionAtPeriodEnd(
+    stripeSubscriptionId: string,
+  ): Promise<Stripe.Subscription> {
+    if (!stripeSubscriptionId) {
+      throw new PaymentError(
+        'Missing Stripe subscription id',
+        'STRIPE_SUB_ID_MISSING',
+      );
+    }
+
+    try {
+      return await stripe.subscriptions.update(stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown Stripe error';
+      throw new PaymentError(
+        `Stripe cancel failed: ${message}`,
+        'STRIPE_CANCEL_FAILED',
+      );
+    }
   }
 
   private async finalizeConfirmedIntent(

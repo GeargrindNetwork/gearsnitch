@@ -1,16 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { getSubscription, createSubscription, cancelSubscription } from '@/lib/api';
+import { getSubscription, cancelSubscription } from '@/lib/api';
 
-const TIERS: Array<{ key: string; name: string; price: string; badge?: string; features: string[] }> = [
-  { key: 'hustle', name: 'HUSTLE', price: '$4.99/mo', features: ['Real-time BLE monitoring', 'Disconnect alerts', '1 gym', '3 devices'] },
-  { key: 'hwmf', name: 'HWMF', price: '$60/yr', badge: 'Recommended', features: ['Everything in HUSTLE', 'Unlimited gyms', '10 devices', 'Panic alarm', 'Health sync'] },
-  { key: 'babyMomma', name: 'BABY MOMMA', price: '$99 once', badge: 'Best Value', features: ['Everything in HWMF', 'Unlimited devices', 'Mesh chat', 'Lifetime updates'] },
-];
+const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 
 function tierColor(tier: string) {
   switch (tier) {
@@ -29,19 +25,12 @@ function formatDate(iso: string | null) {
 export default function SubscriptionPanel() {
   const queryClient = useQueryClient();
   const [showCancel, setShowCancel] = useState(false);
+  const [showWebHelper, setShowWebHelper] = useState(false);
 
   const { data: sub, isLoading } = useQuery({
     queryKey: ['subscription'],
     queryFn: getSubscription,
     staleTime: 30_000,
-  });
-
-  const subscribeMutation = useMutation({
-    mutationFn: (tier: string) => createSubscription(tier),
-    onSuccess: (data) => {
-      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
-      queryClient.invalidateQueries({ queryKey: ['subscription'] });
-    },
   });
 
   const cancelMutation = useMutation({
@@ -58,6 +47,9 @@ export default function SubscriptionPanel() {
 
   const isActive = sub?.status === 'active';
   const currentTier = sub?.tier;
+  const platform = sub?.platform ?? null;
+  const isStripeSub = platform === 'stripe';
+  const isIosSub = platform === 'ios' || platform === 'apple' || platform === 'appstore' || platform === 'app_store';
 
   return (
     <>
@@ -77,56 +69,64 @@ export default function SubscriptionPanel() {
             {currentTier === 'lifetime' && <p className="text-xs text-emerald-400">Lifetime — never expires</p>}
             {sub?.platform && <p className="text-xs text-zinc-600">Platform: {sub.platform}</p>}
 
-            {isActive && currentTier !== 'lifetime' && (
+            {isActive && currentTier !== 'lifetime' && isStripeSub && (
               <Button variant="ghost" size="sm" className="mt-2 text-xs text-red-400" onClick={() => setShowCancel(true)}>
                 Cancel Subscription
               </Button>
             )}
+
+            {isActive && isIosSub && (
+              <a
+                href={APP_STORE_SUBSCRIPTIONS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block text-xs text-cyan-400 underline-offset-2 hover:underline"
+              >
+                Manage in App Store → Subscriptions
+              </a>
+            )}
           </CardContent>
         </Card>
 
-        {/* Available Plans */}
-        <Card className="border-white/5 bg-zinc-900/70">
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-zinc-400">{isActive ? 'Upgrade Plan' : 'Choose a Plan'}</CardTitle></CardHeader>
-          <CardContent className="space-y-3 pb-4">
-            {TIERS.map(tier => {
-              const isCurrent = tier.name === sub?.plan;
-              return (
-                <div key={tier.key} className={`rounded-lg border p-4 ${isCurrent ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/5 bg-zinc-950'}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-zinc-200">{tier.name}</span>
-                      {tier.badge && <Badge variant="secondary" className="border-emerald-500/20 bg-emerald-500/10 text-[10px] text-emerald-400">{tier.badge}</Badge>}
-                      {isCurrent && <Badge variant="secondary" className="border-emerald-500/20 bg-emerald-500/10 text-[10px] text-emerald-400">Current</Badge>}
-                    </div>
-                    <span className="text-sm font-semibold text-zinc-300">{tier.price}</span>
-                  </div>
-                  <ul className="mt-2 space-y-1">
-                    {tier.features.map(f => (
-                      <li key={f} className="flex items-center gap-1.5 text-xs text-zinc-400">
-                        <span className="text-emerald-400">&#10003;</span> {f}
-                      </li>
-                    ))}
-                  </ul>
-                  {!isCurrent && (
-                    <Button
-                      size="sm"
-                      className="mt-3 w-full bg-emerald-600 text-xs text-white hover:bg-emerald-700"
-                      onClick={() => subscribeMutation.mutate(tier.key)}
-                      disabled={subscribeMutation.isPending}
-                    >
-                      {subscribeMutation.isPending ? 'Processing...' : isActive ? 'Upgrade' : 'Subscribe'}
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-            {subscribeMutation.isError && <p className="text-xs text-red-400">{(subscribeMutation.error as Error).message}</p>}
-          </CardContent>
-        </Card>
+        {/* iOS-first messaging for users without an active subscription */}
+        {!isActive && (
+          <Card className="border-white/5 bg-zinc-900/70">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-zinc-400">Get GearSnitch Pro</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pb-4">
+              <div className="rounded-lg border border-white/5 bg-zinc-950 p-4">
+                <p className="text-sm font-semibold text-zinc-100">
+                  GearSnitch subscriptions are purchased in the iOS app.
+                </p>
+                <p className="mt-2 text-xs text-zinc-400">
+                  Open the app → Settings → Upgrade to Pro.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="text-left text-xs text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline"
+                onClick={() => setShowWebHelper((prev) => !prev)}
+                aria-expanded={showWebHelper}
+              >
+                Why can&apos;t I subscribe on the web?
+              </button>
+
+              {showWebHelper && (
+                <p className="rounded-md border border-white/5 bg-zinc-950/60 p-3 text-xs leading-relaxed text-zinc-400">
+                  GearSnitch uses Apple&apos;s in-app purchase system for iOS subscriptions so your
+                  billing, renewals, and family sharing stay managed inside your Apple ID. Web
+                  checkout (Stripe) is on the roadmap — for now, please complete your purchase in
+                  the iPhone app.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Cancel Confirmation */}
+      {/* Cancel Confirmation — Stripe subs only */}
       <Dialog open={showCancel} onOpenChange={setShowCancel}>
         <DialogContent className="border-zinc-800 bg-zinc-900 text-zinc-100">
           <DialogHeader><DialogTitle>Cancel Subscription</DialogTitle></DialogHeader>

@@ -7,6 +7,7 @@ struct DashboardView: View {
     @ObservedObject private var heartRateMonitor = HeartRateMonitor.shared
     @State private var navigateToScanner = false
     @State private var scannerTargetDevice: BLEDevice?
+    @State private var showReferralQR = false
 
     var body: some View {
         ScrollView {
@@ -37,6 +38,16 @@ struct DashboardView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showReferralQR = true
+                } label: {
+                    Image(systemName: "qrcode")
+                        .font(.title3)
+                        .foregroundColor(.gsEmerald)
+                }
+                .accessibilityLabel("Show referral QR code")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 if bleManager.isDisconnectProtectionArmed {
                     Button {
@@ -59,6 +70,9 @@ struct DashboardView: View {
         }
         .refreshable {
             await viewModel.loadDashboard()
+        }
+        .sheet(isPresented: $showReferralQR) {
+            ReferralQRModalView()
         }
         .overlay {
             if viewModel.isLoading && viewModel.devices.isEmpty {

@@ -31,8 +31,13 @@ jobs:
 
       - name: Resolve web build config
         run: |
-          API_URL="$(gcloud run services describe gearsnitch-api --region=us-central1 --project=gearsnitch --format='value(status.url)')/api/v1"
-          WS_URL="$(gcloud run services describe gearsnitch-realtime --region=us-central1 --project=gearsnitch --format='value(status.url)')"
+          # Pin to the pretty public hostnames so the SPA bundle targets the
+          # same origin its session cookies are scoped to (api.gearsnitch.com).
+          # Using the ephemeral Cloud Run URL here bakes the raw *.run.app host
+          # into the JS bundle, which defeats the cookie-based auth refresh and
+          # every CORS/Worker fix applied at api.gearsnitch.com.
+          API_URL="https://api.gearsnitch.com/api/v1"
+          WS_URL="wss://ws.gearsnitch.com"
           GOOGLE_CLIENT_ID="$(gcloud secrets versions access latest --secret=google-oauth-client-id --project=gearsnitch 2>/dev/null || true)"
           APPLE_SERVICE_ID="$(gcloud secrets versions access latest --secret=apple-service-id --project=gearsnitch 2>/dev/null || true)"
           APPLE_REDIRECT_URI="$(gcloud secrets versions access latest --secret=apple-redirect-uri --project=gearsnitch 2>/dev/null || true)"
