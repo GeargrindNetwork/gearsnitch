@@ -144,7 +144,7 @@ router.get('/records', isAuthenticated, async (req: Request, res: Response) => {
 router.get('/records/:id', isAuthenticated, async (req: Request, res: Response) => {
   try {
     const user = req.user as JwtPayload;
-    const { id } = req.params;
+    const id = String(req.params.id);
     if (!Types.ObjectId.isValid(id)) {
       errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid ECG record id');
       return;
@@ -172,7 +172,7 @@ router.get('/records/:id', isAuthenticated, async (req: Request, res: Response) 
 router.delete('/records/:id', isAuthenticated, async (req: Request, res: Response) => {
   try {
     const user = req.user as JwtPayload;
-    const { id } = req.params;
+    const id = String(req.params.id);
     if (!Types.ObjectId.isValid(id)) {
       errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid ECG record id');
       return;
