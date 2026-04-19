@@ -43,6 +43,44 @@ enum BLEScanMode {
     }
 }
 
+/// Result of an attempted scan start. Returned from
+/// ``BLEManager/startScanning(mode:)`` so the UI can surface the reason a
+/// manual-scan tap didn't actually kick off a scan.
+///
+/// - `started`: CBCentralManager is now scanning.
+/// - `alreadyScanning`: A scan was already running — no-op.
+/// - `unauthorized`: The user has not granted Bluetooth permission yet (or
+///   has explicitly denied it). The caller should surface a toast that
+///   directs to Settings.
+/// - `unavailable`: Bluetooth is turned off, in airplane mode, or the
+///   CBCentralManager is still warming up (`.unknown`). The caller should
+///   show a transient "Bluetooth not ready" error.
+enum BLEScanStartResult: Equatable {
+    case started
+    case alreadyScanning
+    case unauthorized
+    case unavailable(state: CBManagerState)
+
+    var userMessage: String? {
+        switch self {
+        case .started, .alreadyScanning:
+            return nil
+        case .unauthorized:
+            return "Bluetooth permission is required to scan. Enable Bluetooth access for GearSnitch in Settings."
+        case .unavailable(.poweredOff):
+            return "Bluetooth is turned off. Enable it from Control Center or Settings."
+        case .unavailable(.resetting):
+            return "Bluetooth is restarting — try again in a moment."
+        case .unavailable(.unsupported):
+            return "This device doesn't support Bluetooth Low Energy."
+        case .unavailable(.unauthorized):
+            return "Bluetooth permission is required to scan. Enable Bluetooth access for GearSnitch in Settings."
+        case .unavailable:
+            return "Bluetooth is initializing — try again in a moment."
+        }
+    }
+}
+
 /// Central BLE manager handling scanning, connection, reconnection, and
 /// state restoration for GearSnitch device peripherals.
 @MainActor
@@ -114,18 +152,41 @@ final class BLEManager: NSObject, ObservableObject {
 
     /// Start scanning for BLE peripherals. Filters by registered service UUIDs
     /// when available, otherwise scans for all devices.
-    func startScanning(mode: BLEScanMode = .monitoring) {
+    ///
+    /// Returns a ``BLEScanStartResult`` describing whether the scan actually
+    /// started — previously this was a `Void`-returning call that silently
+    /// no-op'd when the manager was unauthorized or still warming up. That
+    /// produced the "Scan Manually does nothing" bug on the pair-device
+    /// screen because the UI couldn't distinguish "scan started" from "scan
+    /// refused" and never surfaced the underlying cause. Callers that still
+    /// want fire-and-forget semantics can discard the result.
+    @discardableResult
+    func startScanning(mode: BLEScanMode = .monitoring) -> BLEScanStartResult {
+        // When the user taps "Scan Manually" for the first time we want the
+        // OS permission sheet to appear. `CBCentralManager.authorization ==
+        // .notDetermined` is the signal — we lazily instantiate the central
+        // manager here (which causes CoreBluetooth to show the prompt) and
+        // then report `.unavailable(.unknown)` so the UI displays a gentle
+        // "Bluetooth is initializing" message while we wait for the state
+        // callback. `onChange(of: bluetoothState)` in the calling view will
+        // re-trigger the scan once the user grants permission and the state
+        // flips to `.poweredOn`.
+        if CBCentralManager.authorization == .notDetermined {
+            configureCentralManager(showPowerAlert: true)
+            return .unavailable(state: .unknown)
+        }
+
         guard let centralManager = configureCentralManagerIfAuthorized() else {
             logger.info("Skipping BLE scan until Bluetooth permission is explicitly requested")
-            return
+            return .unauthorized
         }
 
         guard bluetoothState == .poweredOn else {
             logger.warning("Cannot scan: Bluetooth not powered on (state: \(self.bluetoothState.rawValue))")
-            return
+            return .unavailable(state: bluetoothState)
         }
 
-        guard !isScanning else { return }
+        guard !isScanning else { return .alreadyScanning }
 
         scanner.reset()
 
@@ -143,6 +204,8 @@ final class BLEManager: NSObject, ObservableObject {
         // Schedule periodic stale-device pruning
         scheduleStalePruning()
         scheduleScanTimeoutIfNeeded(for: mode)
+
+        return .started
     }
 
     /// Stop scanning for BLE peripherals.

@@ -139,6 +139,10 @@ extension APIEndpoint {
             APIEndpoint(path: "/api/v1/devices/\(id)/events")
         }
 
+        static func delete(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/devices/\(id)", method: .DELETE)
+        }
+
         static var locations: APIEndpoint {
             APIEndpoint(path: "/api/v1/devices/locations")
         }
@@ -542,6 +546,10 @@ extension APIEndpoint {
 
         static func complete(id: String, body: CompleteRunBody) -> APIEndpoint {
             APIEndpoint(path: "/api/v1/runs/\(id)/complete", method: .POST, body: body)
+        }
+
+        static func delete(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/runs/\(id)", method: .DELETE)
         }
 
         static var active: APIEndpoint {

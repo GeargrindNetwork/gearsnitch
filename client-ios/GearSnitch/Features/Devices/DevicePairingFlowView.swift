@@ -223,7 +223,15 @@ struct DevicePairingFlowView: View {
 
                 if !bleManager.isScanning {
                     Button {
-                        bleManager.startScanning(mode: .discovery)
+                        // Capture the typed result so we can surface
+                        // .unauthorized / .unavailable to the user instead
+                        // of silently no-op'ing (the old bug).
+                        let result = bleManager.startScanning(mode: .discovery)
+                        if let message = result.userMessage {
+                            error = message
+                        } else {
+                            error = nil
+                        }
                     } label: {
                         Label(
                             pairingCapability == .accessorySetupKit ? "Scan Manually" : "Start Scanning",
