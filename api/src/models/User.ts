@@ -13,7 +13,6 @@ export interface IUser extends Document {
   authProviders: string[];
   roles: string[];
   status: string;
-  stripeCustomerId?: string | null;
   firstName?: string;
   lastName?: string;
   dateOfBirth?: Date;
@@ -28,7 +27,7 @@ export interface IUser extends Document {
    * race-unsafe and could return the wrong customer if two users ever
    * shared an email. See PaymentService.getOrCreateStripeCustomer.
    */
-  stripeCustomerId?: string;
+  stripeCustomerId?: string | null;
   onboardingCompletedAt: Date | null;
   permissionsState: {
     bluetooth: PermissionStateValue | boolean;
@@ -79,7 +78,6 @@ const UserSchema = new Schema<IUser>(
     heightCm: { type: Number, default: null },
     weightKg: { type: Number, default: null },
     defaultGymId: { type: Schema.Types.ObjectId, ref: 'Gym', default: null },
-    stripeCustomerId: { type: String, default: undefined },
     onboardingCompletedAt: { type: Date, default: null },
     permissionsState: {
       bluetooth: { type: Schema.Types.Mixed, default: 'not_determined' },
