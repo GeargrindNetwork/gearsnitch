@@ -55,6 +55,13 @@ enum AnalyticsEvent {
     case mealLogged(mealType: String, calories: Double)
     case waterLogged(amountMl: Double)
 
+    // Navigation (S2 — 3-tab nav rebuild)
+    /// Emitted by `RootTabView` when the user switches primary tabs.
+    /// - Parameters:
+    ///   - newTabId: new-nav tab id (`gear` | `train` | `chemistry`)
+    ///   - legacyTabId: legacy tab id for funnel continuity with the 5-tab nav
+    case tabEntered(newTabId: String, legacyTabId: String)
+
     /// Event name for the analytics payload.
     var name: String {
         switch self {
@@ -84,6 +91,7 @@ enum AnalyticsEvent {
         case .healthKitSyncCompleted: return "healthkit_sync_completed"
         case .mealLogged: return "meal_logged"
         case .waterLogged: return "water_logged"
+        case .tabEntered: return "tab_entered"
         }
     }
 
@@ -142,6 +150,8 @@ enum AnalyticsEvent {
             return ["meal_type": mealType, "calories": calories]
         case .waterLogged(let amountMl):
             return ["amount_ml": amountMl]
+        case .tabEntered(let newTabId, let legacyTabId):
+            return ["tab_id": newTabId, "legacy_tab_id": legacyTabId]
         }
     }
 }

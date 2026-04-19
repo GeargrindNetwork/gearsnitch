@@ -7,6 +7,7 @@ extension Notification.Name {
 struct RootView: View {
     @EnvironmentObject private var authManager: AuthManager
     @EnvironmentObject private var coordinator: AppCoordinator
+    @EnvironmentObject private var featureFlags: FeatureFlags
     @EnvironmentObject private var referralAttribution: ReferralAttributionStore
     @ObservedObject private var gateManager = PermissionGateManager.shared
     @ObservedObject private var releaseGateManager = ReleaseGateManager.shared
@@ -95,10 +96,19 @@ struct RootView: View {
             } else if showFixPermissions {
                 fixPermissionsView
             } else {
-                MainTabView()
-                    .onAppear {
-                        checkRequiredPermissions()
+                // S2: default to the new 3-tab nav. The legacy 5-tab
+                // floating-menu nav is retained behind `legacyNavEnabled`
+                // as an emergency rollback path.
+                Group {
+                    if featureFlags.legacyNavEnabled {
+                        OldTabView()
+                    } else {
+                        RootTabView()
                     }
+                }
+                .onAppear {
+                    checkRequiredPermissions()
+                }
             }
         }
     }
@@ -382,6 +392,7 @@ struct RootView: View {
     RootView()
         .environmentObject(AuthManager.shared)
         .environmentObject(AppCoordinator())
+        .environmentObject(FeatureFlags.shared)
         .environmentObject(BLEManager())
         .environmentObject(LocationManager())
         .environmentObject(ReferralAttributionStore.shared)

@@ -1,6 +1,9 @@
 import SwiftUI
 
-struct MainTabView: View {
+/// Legacy pre-S2 5-tab nav. Retained behind the
+/// `FeatureFlags.legacyNavEnabled` kill-switch for emergency rollback.
+/// New code should not reference `OldTabView`; use `RootTabView` instead.
+struct OldTabView: View {
     @EnvironmentObject private var coordinator: AppCoordinator
     @State private var menuExpanded = false
     @State private var showHospitals = false
@@ -283,7 +286,7 @@ private struct AlertDestinationView: View {
 }
 
 #Preview {
-    MainTabView()
+    OldTabView()
         .environmentObject(AppCoordinator())
         .environmentObject(AuthManager.shared)
         .preferredColorScheme(.dark)

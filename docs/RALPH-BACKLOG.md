@@ -13,6 +13,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | — | APNs push sender (item #19 prep) | merged | [#48](https://github.com/GeargrindNetwork/gearsnitch/pull/48) |
 | 5 | Weekly reconciliation cron for subscription state drift | merged | [#50](https://github.com/GeargrindNetwork/gearsnitch/pull/50) |
 | 35 | Dark-mode consistency pass | merged | [#53](https://github.com/GeargrindNetwork/gearsnitch/pull/53) |
+| S2 | 3-tab nav rebuild (Gear / Train / Chemistry + avatar) | pr-open | _PR URL pending_ |
 
 ## Queued — ranked by impact × (1/complexity)
 
@@ -68,7 +69,7 @@ Items escalated here require explicit user approval before spawning a coding age
 | # | Title | Reason | Source / Notes |
 |---|---|---|---|
 | S1 | Identity collapse — brand consolidation | Requires pillar decision | GearSnitch / GearGrind.Net / GearGrind Network / Shawn Frazier Inc all coexist. |
-| S2 | 3-tab nav rebuild (Gear / Train / Chemistry + avatar) | Requires pillar decision | Matches ultrathink redesign. Significant iOS refactor. |
+| ~~S2~~ | ~~3-tab nav rebuild (Gear / Train / Chemistry + avatar)~~ | Shipped — see Shipped row | Founder signoff received; moved to Shipped. |
 | S3 | Onboarding "first win" restructure | Requires pillar decision | Defer permission gauntlet; let user pair a device / log a gym / browse store first. |
 | S4 | Retire / demote unused features (Mesh Chat, Stopwatch, BMI calc) | Requires product decision | Per ultrathink redesign. |
 | S5 | KMS envelope encryption on PHI — scope expansion (BAA inventory + audit-log retention) | Tier 1 (encryption keys + PHI) | 2026 HIPAA guidance: AES-256 at rest + TLS 1.3 + audit logs + BAAs. |

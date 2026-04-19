@@ -18,6 +18,19 @@ final class FeatureFlags: ObservableObject {
     @Published private(set) var waterTrackingEnabled: Bool = false
     @Published private(set) var emergencyContactsEnabled: Bool = false
 
+    /// S2 rollback kill-switch. When `true`, `RootView` falls back to the
+    /// pre-S2 `MainTabView` (5-tab floating menu) instead of the new
+    /// 3-tab `RootTabView`. Defaults to `false` — new nav is the default.
+    /// Stored in `UserDefaults` so QA / TestFlight can flip without a
+    /// remote-config round-trip.
+    @Published var legacyNavEnabled: Bool = UserDefaults.standard.bool(forKey: FeatureFlags.legacyNavDefaultsKey) {
+        didSet {
+            UserDefaults.standard.set(legacyNavEnabled, forKey: FeatureFlags.legacyNavDefaultsKey)
+        }
+    }
+
+    static let legacyNavDefaultsKey = "gs_legacy_nav_enabled"
+
     private let logger = Logger(subsystem: "com.gearsnitch", category: "FeatureFlags")
 
     init() {
