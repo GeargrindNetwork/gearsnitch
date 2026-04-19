@@ -116,6 +116,7 @@
 		80C90970BFEDB6AAE9EEC1B9 /* HeartRateMonitorCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB013F4ED78E99B9669CBE4F /* HeartRateMonitorCard.swift */; };
 		8138C287B1DBBD8EF40C5AD1 /* NearestHospitalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C438FC7CC92304CD16BF5819 /* NearestHospitalsView.swift */; };
 		8166C310BED23E5520774184 /* DeviceMapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5041DC1B23AE52CEFE28B388 /* DeviceMapViewModel.swift */; };
+		818BABB1687AC7F4E2ABB279 /* PostInstallReferralBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25495D7C5BE5BE059302E9C5 /* PostInstallReferralBridge.swift */; };
 		8215606397D35CECD32D4C7A /* WatchSyncPayloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAAF4F40C3E69357C164C866 /* WatchSyncPayloads.swift */; };
 		82417DE74E327115B9325EEA /* SubscriptionTierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8C5E7FE280E1ADD4E89EA4E /* SubscriptionTierTests.swift */; };
 		824EE2DEBC27F8F00B14DC94 /* AlertDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B36B16C524620D9F19754CA /* AlertDetailView.swift */; };
@@ -184,7 +185,6 @@
 		CF443E352F433E5677219483 /* coverage.geojson in Resources */ = {isa = PBXBuildFile; fileRef = 7A8FAD0447CAA96B7AAD5FE8 /* coverage.geojson */; };
 		D07CA7812C5706F4F694BBF4 /* ReferralQRModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7A3A080222FD6EBEEFB2F3 /* ReferralQRModalView.swift */; };
 		D08ACB55AE0D613900A5871E /* ApplePayButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C214E8EAE2147E0D752B9D5 /* ApplePayButton.swift */; };
-		D0BE86BB19680CBF2292AD3B /* WatchHRSamplePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46C21E86E9093630621327BB /* WatchHRSamplePayload.swift */; };
 		D268CA5A359B68DEAB78C5BA /* StripePortalServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66B182407BBAA6FAB794692D /* StripePortalServiceTests.swift */; };
 		D28F759FEDBA4B1E71568B02 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1620CF81D724DC3279BCC97D /* FeatureFlags.swift */; };
 		D324A4D52CBF1C63B30D3816 /* RunTrackingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CD1E1D646849EADF918A43 /* RunTrackingManager.swift */; };
@@ -321,6 +321,7 @@
 		21429058A897EA054540CF78 /* ECGView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGView.swift; sourceTree = "<group>"; };
 		24567AB074A715ADECEE4EC6 /* LabsStateEligibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabsStateEligibilityTests.swift; sourceTree = "<group>"; };
 		25094CC0AAD6413921521FD0 /* GymListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymListView.swift; sourceTree = "<group>"; };
+		25495D7C5BE5BE059302E9C5 /* PostInstallReferralBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostInstallReferralBridge.swift; sourceTree = "<group>"; };
 		262EA565146C455B16AD63AD /* BLEStateObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEStateObserver.swift; sourceTree = "<group>"; };
 		270D9DD9964E6987742B699F /* UpdateRequiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateRequiredView.swift; sourceTree = "<group>"; };
 		282CC4FACBF2E0FA52081C4D /* RunHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunHistoryViewModel.swift; sourceTree = "<group>"; };
@@ -346,7 +347,6 @@
 		42009BC43B94A4D85AACE6A6 /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		43994928D28F3BFEBAACB47D /* HandPreferenceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandPreferenceManager.swift; sourceTree = "<group>"; };
 		455763F498CCF3712FE5C17B /* GearSnitchWatchWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GearSnitchWatchWidgets.entitlements; sourceTree = "<group>"; };
-		46C21E86E9093630621327BB /* WatchHRSamplePayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHRSamplePayload.swift; sourceTree = "<group>"; };
 		485597A9F21A8CB324F3A988 /* TermsOfServiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TermsOfServiceView.swift; sourceTree = "<group>"; };
 		497216D5518DFFDE5130E047 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4AADEB4E2DE2686C4781E1B7 /* CartViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModel.swift; sourceTree = "<group>"; };
@@ -741,7 +741,6 @@
 		5ACFDB0AFFEC683C60B62776 /* Watch */ = {
 			isa = PBXGroup;
 			children = (
-				46C21E86E9093630621327BB /* WatchHRSamplePayload.swift */,
 				AD48D1CCB503A4CAAC3CF267 /* WatchSyncManager.swift */,
 				FAAF4F40C3E69357C164C866 /* WatchSyncPayloads.swift */,
 			);
@@ -965,6 +964,7 @@
 		8871A8158674B1FEAC34909C /* Referrals */ = {
 			isa = PBXGroup;
 			children = (
+				25495D7C5BE5BE059302E9C5 /* PostInstallReferralBridge.swift */,
 				6B4A4958CFA3CCEE2AF18A94 /* QRCodeView.swift */,
 				8313119C4866B1111856FA61 /* ReferralAttributionStore.swift */,
 				F4EEA77CB6A15A2FA76D45C5 /* ReferralAttributionToast.swift */,
@@ -1669,6 +1669,7 @@
 				CBCA7EE167D06614ED285AD5 /* PaymentService.swift in Sources */,
 				C771426D99982CF60723DE02 /* PermissionGateManager.swift in Sources */,
 				CD709CBCE5BFFCBCA4A9D7C8 /* PermissionsRequestView.swift in Sources */,
+				818BABB1687AC7F4E2ABB279 /* PostInstallReferralBridge.swift in Sources */,
 				60AF420185D0F8C121905A36 /* PrimaryButton.swift in Sources */,
 				7036989AE3B88842746D9999 /* ProductDetailView.swift in Sources */,
 				766E625078E7DFDFFA6C84D9 /* ProfileView.swift in Sources */,
@@ -1715,7 +1716,6 @@
 				6ACD0C6987DB425A21F592BE /* UpdateRequiredView.swift in Sources */,
 				A66E9A1DACE3954AF9D666A7 /* User.swift in Sources */,
 				D583FA108DD2C41A75D2814C /* View+Modifiers.swift in Sources */,
-				D0BE86BB19680CBF2292AD3B /* WatchHRSamplePayload.swift in Sources */,
 				7E6B413466CFA339A5E8D891 /* WatchSyncManager.swift in Sources */,
 				8215606397D35CECD32D4C7A /* WatchSyncPayloads.swift in Sources */,
 				2DFA1A63E0A0C3B141EDA0B2 /* WaterTrackerView.swift in Sources */,
