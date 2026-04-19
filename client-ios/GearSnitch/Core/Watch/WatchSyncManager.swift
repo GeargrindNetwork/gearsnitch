@@ -142,7 +142,7 @@ final class WatchSyncManager: NSObject, ObservableObject {
         // insulated from the Watch agent's parallel changes. Intercept here
         // so they reach `HeartRateMonitor.ingestWatchSample` immediately.
         if let typeRaw = message["type"] as? String,
-           typeRaw == WatchHRSampleMessageKey.type {
+           typeRaw == WatchMessageType.watchHRSample.rawValue {
             handleWatchHRSample(message)
             return
         }
@@ -169,13 +169,13 @@ final class WatchSyncManager: NSObject, ObservableObject {
     /// and forward it to `HeartRateMonitor`. Shared by the `didReceiveMessage`
     /// and `didReceiveUserInfo` delegate paths so either transport works.
     private func handleWatchHRSample(_ message: [String: Any]) {
-        guard let payload = WatchHRSamplePayload.from(dictionary: message) else {
+        guard let payload = WatchHRSamplePayload.from(userInfo: message) else {
             logger.warning("Failed to decode WatchHRSamplePayload from WC message")
             return
         }
         HeartRateMonitor.shared.ingestWatchSample(
-            bpm: payload.bpm,
-            timestamp: payload.recordedAt
+            bpm: Int(payload.bpm.rounded()),
+            timestamp: payload.timestamp
         )
     }
 
