@@ -209,7 +209,30 @@ extension APIEndpoint {
         static var qr: APIEndpoint {
             APIEndpoint(path: "/api/v1/referrals/qr")
         }
+
+        /// Post-install referral attribution. The body carries the referral
+        /// code that the iOS app captured from a Universal Link (or the
+        /// `gs_ref` cookie via the SFSafariViewController bridge).
+        static func claim(code: String) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/referrals/claim",
+                method: .POST,
+                body: ClaimReferralBody(code: code)
+            )
+        }
     }
+}
+
+struct ClaimReferralBody: Encodable {
+    let code: String
+}
+
+/// Response payload of `POST /api/v1/referrals/claim`. The server returns
+/// either `claimed` (with the referrer's display name) or `already_attributed`
+/// when the user already has `referredBy` set on their account.
+struct ClaimReferralResponse: Decodable {
+    let status: String
+    let referrer: String?
 }
 
 // MARK: - Subscriptions Endpoints

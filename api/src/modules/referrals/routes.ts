@@ -10,6 +10,7 @@ import { User } from '../../models/User.js';
 import {
   REFERRAL_REWARD_DAYS,
   processReferralQualificationForReferredUser,
+  recordAttribution,
 } from './referralService.js';
 import { errorResponse, successResponse } from '../../utils/response.js';
 
@@ -17,6 +18,10 @@ const router = Router();
 
 const redeemSchema = z.object({
   referralCode: z.string().trim().min(4).max(32),
+});
+
+const claimSchema = z.object({
+  code: z.string().trim().min(4).max(32),
 });
 
 const REFERRAL_BASE_URL = 'https://gearsnitch.com/ref';
@@ -283,6 +288,81 @@ router.post('/redeem', isAuthenticated, async (req, res) => {
   }
 });
 
+// POST /referrals/claim
+// ---------------------------------------------------------------------------
+// Post-install referral attribution endpoint (item #2 in the referral
+// backlog). Used in two paths:
+//   1. The iOS app, on first launch after sign-in, sends the code that was
+//      stashed in UserDefaults by the Universal Link handler.
+//   2. The /r/claim.html bridge (below) hands off a `gs_ref` cookie that
+//      survived a deferred install — the SFSafariViewController flow shows
+//      the page, the page hands the code back via the Universal Link.
+//
+// Idempotent: once `User.referredBy` is set, repeat calls return
+// `already_attributed` so the iOS retry loop is safe to fire on every cold
+// start.
+// ---------------------------------------------------------------------------
+router.post('/claim', isAuthenticated, async (req, res) => {
+  try {
+    const parsed = claimSchema.safeParse(req.body);
+    if (!parsed.success) {
+      errorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        'Validation failed',
+        parsed.error.flatten().fieldErrors,
+      );
+      return;
+    }
+
+    const userId = getUserId(req);
+    const normalizedCode = parsed.data.code.toUpperCase();
+
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+      return;
+    }
+
+    if (currentUser.referredBy) {
+      successResponse(res, { status: 'already_attributed' });
+      return;
+    }
+
+    const referrer = await User.findOne({ referralCode: normalizedCode });
+    if (!referrer) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'Referral code not found');
+      return;
+    }
+
+    if (String(referrer._id) === String(currentUser._id)) {
+      errorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        'You cannot claim your own referral code',
+      );
+      return;
+    }
+
+    currentUser.referredBy = referrer._id;
+    await currentUser.save();
+
+    await recordAttribution(referrer, currentUser, normalizedCode);
+
+    successResponse(res, {
+      status: 'claimed',
+      referrer: referrer.displayName,
+    });
+  } catch (err) {
+    errorResponse(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to claim referral code',
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+});
+
 // ---------------------------------------------------------------------------
 // Universal Link landing — GET /r/:code
 // ---------------------------------------------------------------------------
@@ -404,6 +484,90 @@ function renderUniversalLinkBridgeHtml(code: string): string {
 </body>
 </html>`;
 }
+
+function renderClaimBridgeHtml(code: string): string {
+  const safeCode = escapeHtml(code);
+  const target = `${UNIVERSAL_LINK_BASE_URL}/${encodeURIComponent(code)}?claim=1`;
+  // Tiny page: meta-refresh hands control to the Universal Link, which iOS
+  // intercepts and routes back into the installed app along with the code.
+  // The page is rendered inside an SFSafariViewController on the iOS side, so
+  // it carries the user's Safari cookie jar and can read `gs_ref` set during
+  // /r/<code> landing.
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Restoring referral…</title>
+<meta http-equiv="refresh" content="0; url=${escapeHtml(target)}">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background:#0b0f12; color:#e6e9ec; margin:0;
+         display:flex; align-items:center; justify-content:center;
+         min-height:100vh; padding:24px; box-sizing:border-box; }
+  .card { max-width: 420px; text-align:center; }
+  p { line-height: 1.5; color:#9aa4ad; margin: 0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <p>Restoring your referral (${safeCode})…</p>
+  </div>
+</body>
+</html>`;
+}
+
+function renderEmptyClaimHtml(): string {
+  // No referral cookie present; render a self-closing page so the iOS
+  // SFSafariViewController is dismissed quickly and we waste no flow.
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>No referral</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background:#0b0f12; color:#9aa4ad; margin:0;
+         display:flex; align-items:center; justify-content:center;
+         min-height:100vh; padding:24px; box-sizing:border-box; }
+  .card { max-width: 420px; text-align:center; font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="card"><p>No referral to restore.</p></div>
+</body>
+</html>`;
+}
+
+// GET /r/claim.html — post-install fallback bridge. Mounted BEFORE /:code so
+// the literal path doesn't get gobbled by the catch-all parameter route.
+//
+// The iOS app opens this URL inside an SFSafariViewController on first
+// launch. Because that controller shares Safari's cookie jar, any `gs_ref`
+// cookie dropped during the original https://gearsnitch.com/r/<code> landing
+// is available here even though the App Store redirect happened in a fresh
+// Safari tab earlier. We hand the code back to the app via the canonical
+// Universal Link, which AASA reroutes back into the app with the ?claim=1
+// query parameter so we can distinguish "post-install claim" from "user
+// scanned a fresh QR".
+universalLinkRouter.get('/claim.html', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.type('html');
+
+  const cookieValue = req.cookies?.[REFERRAL_COOKIE_NAME];
+  const code = typeof cookieValue === 'string' ? cookieValue.trim().toUpperCase() : '';
+
+  if (!code || !REFERRAL_CODE_PATTERN.test(code)) {
+    res.status(StatusCodes.OK).send(renderEmptyClaimHtml());
+    return;
+  }
+
+  // Clear the cookie now that we've consumed it — we hand the code off to
+  // the app via the URL, so the cookie has done its job.
+  res.clearCookie(REFERRAL_COOKIE_NAME, { path: '/' });
+  res.status(StatusCodes.OK).send(renderClaimBridgeHtml(code));
+});
 
 universalLinkRouter.get('/:code', async (req, res) => {
   const rawCode = String(req.params.code ?? '').trim();
