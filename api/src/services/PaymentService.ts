@@ -212,6 +212,31 @@ export class PaymentService {
   }
 
   /**
+   * Look up an existing Stripe customer by email without creating one.
+   * Used by the Customer Portal flow to surface a clear 404 for users who
+   * have never transacted via Stripe (e.g. Apple-only subscribers).
+   */
+  async findStripeCustomerByEmail(email: string): Promise<string | null> {
+    const existing = await stripe.customers.list({ email, limit: 1 });
+    return existing.data.length > 0 ? existing.data[0].id : null;
+  }
+
+  /**
+   * Create a Stripe Billing Portal session so the user can self-serve
+   * subscription management (invoices, payment method, cancel / resume).
+   */
+  async createBillingPortalSession(
+    customerId: string,
+    returnUrl: string,
+  ): Promise<{ url: string }> {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: returnUrl,
+    });
+    return { url: session.url };
+  }
+
+  /**
    * List saved payment methods for a user.
    */
   async getPaymentMethods(

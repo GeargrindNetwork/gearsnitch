@@ -12,8 +12,13 @@ import {
   processOutstandingReferralRewardsForReferrer,
   processReferralQualificationForReferredUser,
 } from '../referrals/referralService.js';
+import { PaymentService } from '../../services/PaymentService.js';
+import { User } from '../../models/User.js';
 
 const router = Router();
+const paymentService = new PaymentService();
+
+const DEFAULT_PORTAL_RETURN_URL = 'https://gearsnitch.com/account';
 
 async function respondWithCurrentSubscription(req: Request, res: Response) {
   try {
@@ -175,6 +180,57 @@ router.patch('/', isAuthenticated, async (req: Request, res: Response) => {
     });
   } catch (err) {
     errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to upgrade subscription', (err as Error).message);
+  }
+});
+
+// POST /subscriptions/portal-session — open Stripe Billing Portal
+//
+// Lets Stripe-backed subscribers self-serve: view invoices, update payment
+// method, cancel or resume. Apple-platform subscribers continue to manage
+// through iOS Settings → Subscriptions.
+router.post('/portal-session', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.sub;
+    const { returnUrl } = (req.body ?? {}) as { returnUrl?: string };
+
+    const user = await User.findById(userId);
+    if (!user) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+      return;
+    }
+
+    // Reject if this user has no plausible Stripe history: neither an
+    // existing Stripe customer record nor an active non-Apple subscription.
+    const existingCustomerId = await paymentService.findStripeCustomerByEmail(user.email);
+    const currentSub = await getSubscriptionForUser(userId);
+    const hasActiveStripeSub =
+      currentSub?.status === 'active' && currentSub.provider && currentSub.provider !== 'apple';
+
+    if (!existingCustomerId && !hasActiveStripeSub) {
+      errorResponse(
+        res,
+        StatusCodes.NOT_FOUND,
+        'No Stripe billing account found. Subscribe via iOS first, then manage billing here.',
+      );
+      return;
+    }
+
+    // Ensure we have a customer ID — use-or-create. If the user had an
+    // active Stripe sub but no customer row (shouldn't happen in practice,
+    // but defend against it) the helper will create one keyed by userId.
+    const customerId =
+      existingCustomerId
+        ?? (await paymentService.getOrCreateStripeCustomer(userId, user.email));
+
+    const session = await paymentService.createBillingPortalSession(
+      customerId,
+      returnUrl && typeof returnUrl === 'string' ? returnUrl : DEFAULT_PORTAL_RETURN_URL,
+    );
+
+    successResponse(res, { url: session.url });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to create billing portal session';
+    errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, message);
   }
 });
 
