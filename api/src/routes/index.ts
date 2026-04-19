@@ -14,6 +14,7 @@ import healthRoutes from '../modules/health/routes.js';
 import caloriesRoutes from '../modules/calories/routes.js';
 import workoutsRoutes from '../modules/workouts/routes.js';
 import runsRoutes from '../modules/runs/routes.js';
+import gearRoutes from '../modules/gear/routes.js';
 import storeRoutes from '../modules/store/routes.js';
 import contentRoutes from '../modules/content/routes.js';
 import supportRoutes from '../modules/support/routes.js';
@@ -27,7 +28,6 @@ import cyclesRoutes from '../modules/cycles/routes.js';
 import medicationsRoutes from '../modules/medications/routes.js';
 import labsRoutes from '../modules/labs/routes.js';
 import emergencyContactsRoutes from '../modules/emergency-contacts/routes.js';
-import gearRoutes from '../modules/gear/routes.js';
 
 const router = Router();
 
@@ -81,6 +81,7 @@ router.use('/health-data', healthRoutes);
 router.use('/calories', caloriesRoutes);
 router.use('/workouts', workoutsRoutes);
 router.use('/runs', runsRoutes);
+router.use('/gear', gearRoutes);
 router.use('/store', storeRoutes);
 router.use('/content', contentRoutes);
 router.use('/support', supportRoutes);
@@ -94,6 +95,5 @@ router.use('/cycles', cyclesRoutes);
 router.use('/medications', medicationsRoutes);
 router.use('/labs', labsRoutes);
 router.use('/emergency-contacts', emergencyContactsRoutes);
-router.use('/gear', gearRoutes);
 
 export default router;

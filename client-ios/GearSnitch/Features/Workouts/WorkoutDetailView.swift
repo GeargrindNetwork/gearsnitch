@@ -149,7 +149,10 @@ struct WorkoutDetailView: View {
             gymName: "Iron Temple",
             source: "manual",
             createdAt: Date(),
-            updatedAt: Date()
+            updatedAt: Date(),
+            gearId: nil,
+            gearIds: nil,
+            activityType: nil
         ))
     }
     .preferredColorScheme(.dark)

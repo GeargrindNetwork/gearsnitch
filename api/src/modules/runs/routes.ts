@@ -5,6 +5,11 @@ import { StatusCodes } from 'http-status-codes';
 import { isAuthenticated, type JwtPayload } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate.js';
 import { Run, type IRunPoint } from '../../models/Run.js';
+import {
+  resolveDefaultGear,
+  logAutoGearAssigned,
+  incrementGearForWorkoutMetrics,
+} from '../gear/autoAttach.js';
 import { User } from '../../models/User.js';
 import { enqueuePushNotification } from '../../services/pushNotificationQueue.js';
 import logger from '../../utils/logger.js';
@@ -33,11 +38,15 @@ const runPointSchema = z.object({
   speedMetersPerSecond: z.number().finite().nullable().optional(),
 });
 
+const OBJECT_ID_REGEX = /^[a-fA-F0-9]{24}$/;
+
 const startRunSchema = z.object({
   startedAt: z.string().datetime().optional(),
   source: z.enum(['ios', 'manual']).optional().default('ios'),
   notes: z.string().trim().max(2_000).optional(),
   routePoints: z.array(runPointSchema).optional().default([]),
+  gearId: z.union([z.string().regex(OBJECT_ID_REGEX), z.null()]).optional(),
+  gearIds: z.array(z.string().regex(OBJECT_ID_REGEX)).max(8).optional(),
 });
 
 const completeRunSchema = z.object({
@@ -167,6 +176,10 @@ function serializeRunSummary(run: Record<string, any>) {
     averagePaceSecondsPerKm,
     source: run.source,
     notes: run.notes ?? null,
+    gearId: run.gearId ? String(run.gearId) : null,
+    gearIds: Array.isArray(run.gearIds)
+      ? run.gearIds.map((id: unknown) => String(id))
+      : [],
     route: {
       pointCount: routePoints.length,
       bounds: computeBounds(routePoints),
@@ -437,8 +450,40 @@ router.post(
       }
 
       const normalizedPoints = normalizeRoutePoints(routePoints);
+
+      // Backlog item #9 — runs are *always* HKWorkoutActivityType.running
+      // for auto-attach purposes. Explicit null from the client means
+      // "skip"; explicit id wins over the default; otherwise fall through
+      // to the user's `running` default.
+      const { gearId: requestedGearId, gearIds: requestedGearIds } = req.body as StartRunBody;
+      let primaryGearId: Types.ObjectId | null = null;
+      let autoAssigned = false;
+
+      if (requestedGearId === null) {
+        primaryGearId = null;
+      } else if (requestedGearId && Types.ObjectId.isValid(requestedGearId)) {
+        primaryGearId = new Types.ObjectId(requestedGearId);
+      } else {
+        const defaultGear = await resolveDefaultGear(userId, 'running');
+        if (defaultGear) {
+          primaryGearId = defaultGear._id;
+          autoAssigned = true;
+        }
+      }
+
+      const additionalGearIds: Types.ObjectId[] =
+        Array.isArray(requestedGearIds) && requestedGearIds.length > 0
+          ? requestedGearIds
+              .filter((id): id is string => typeof id === 'string' && Types.ObjectId.isValid(id))
+              .map((id) => new Types.ObjectId(id))
+          : primaryGearId
+            ? [primaryGearId]
+            : [];
+
       const run = await Run.create({
         userId,
+        gearId: primaryGearId,
+        gearIds: additionalGearIds,
         startedAt: startedAt ? new Date(startedAt) : new Date(),
         source,
         notes: notes ?? null,
@@ -447,6 +492,15 @@ router.post(
         durationSeconds: 0,
         averagePaceSecondsPerKm: null,
       });
+
+      if (autoAssigned && primaryGearId) {
+        await logAutoGearAssigned({
+          userId,
+          gearId: primaryGearId,
+          activityType: 'running',
+          runId: run._id,
+        });
+      }
 
       successResponse(res, serializeRunDetail(run.toObject()), StatusCodes.CREATED);
     } catch (error) {
@@ -539,6 +593,30 @@ router.post(
       }
 
       await run.save();
+
+      // Backlog item #9 — accrue mileage on attached gear (shoes typically).
+      // We pass distanceMeters to let the helper translate to miles/km based
+      // on the gear's `unit` field; sessions-unit gear gets +1.
+      const targets = new Set<string>();
+      if (run.gearId) {
+        targets.add(String(run.gearId));
+      }
+      for (const id of run.gearIds ?? []) {
+        targets.add(String(id));
+      }
+      for (const idStr of targets) {
+        if (!Types.ObjectId.isValid(idStr)) {
+          continue;
+        }
+        await incrementGearForWorkoutMetrics(
+          new Types.ObjectId(idStr),
+          userId,
+          {
+            distanceMeters: run.distanceMeters,
+            durationSeconds: run.durationSeconds,
+          },
+        );
+      }
 
       // Best-effort summary push (item #27). The earlier `run.endedAt`
       // guard above already prevents double-completion, so we don't need
