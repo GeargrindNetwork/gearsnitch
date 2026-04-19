@@ -28,6 +28,7 @@ import LabsPage from './pages/LabsPage';
 import ReferralsPage from './pages/ReferralsPage';
 import CaloriesPage from './pages/CaloriesPage';
 import AlertsPage from './pages/AlertsPage';
+import NotificationsPage from './pages/NotificationsPage';
 import AdminPage from './pages/AdminPage';
 import DashboardPage from './pages/DashboardPage';
 
@@ -148,6 +149,14 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <AlertsPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/notifications"
+                element={(
+                  <ProtectedAppRoute>
+                    <NotificationsPage />
                   </ProtectedAppRoute>
                 )}
               />
