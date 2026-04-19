@@ -74,6 +74,7 @@
 		4BBCBBF805DAD2B56F15E062 /* GymSessionActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4986742D0120BEACC4172AD /* GymSessionActivityAttributes.swift */; };
 		4C79B9E586525CAE0B4E335C /* DayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F727210E1B56639BE47E1E5 /* DayDetailView.swift */; };
 		4D1C19BCEF70A32F7B00F0F4 /* CalorieDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79569B64C87DB4A7411D0AB1 /* CalorieDashboardViewModel.swift */; };
+		4E2B9C4E150F4B903A617CA4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 9484094EE7C2DB3074423BE8 /* PrivacyInfo.xcprivacy */; };
 		4F0D4918B3FDBE038E627BA2 /* SocketEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECCC104090AC7F96D2D407E /* SocketEventHandler.swift */; };
 		4F1FC701363C0F990C8F2DE0 /* PaymentServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAFC815C23550A334820BF15 /* PaymentServiceTests.swift */; };
 		50CDC857CE88CA75ED9C1BE5 /* WorkoutListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 686919D6DA2B3CE85F3384C6 /* WorkoutListView.swift */; };
@@ -445,6 +446,7 @@
 		91E2CAF6F2B2843E3FAFDA81 /* AlertsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsViewModel.swift; sourceTree = "<group>"; };
 		9325AC6C409A2219EA8CBF23 /* ApplePayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayManager.swift; sourceTree = "<group>"; };
 		942B2AA3801B97D73525058B /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		9484094EE7C2DB3074423BE8 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		94B038489629E63048FE4C9A /* DevicePairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePairingView.swift; sourceTree = "<group>"; };
 		9865ACC598B773EBE5646783 /* HeatmapCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeatmapCalendarView.swift; sourceTree = "<group>"; };
 		9891D4E63956E6434AD903A2 /* DevicePairingFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePairingFlowView.swift; sourceTree = "<group>"; };
@@ -1180,6 +1182,7 @@
 			isa = PBXGroup;
 			children = (
 				D632ACA61A645F4E35EC3315 /* GearSnitch.entitlements */,
+				9484094EE7C2DB3074423BE8 /* PrivacyInfo.xcprivacy */,
 				70780FDD04A23C06F7CE05EC /* App */,
 				BBA67F808BE14070B782458E /* Configuration */,
 				87F5C9F7049A9215B9788171 /* Core */,
@@ -1508,6 +1511,7 @@
 			files = (
 				7E04278C553EA8D3F1C45847 /* Assets.xcassets in Resources */,
 				EF2664825895989401CE8026 /* GearSnitch.storekit in Resources */,
+				4E2B9C4E150F4B903A617CA4 /* PrivacyInfo.xcprivacy in Resources */,
 				CF443E352F433E5677219483 /* coverage.geojson in Resources */,
 				AA827AD9EE3687FC55BD8648 /* gs-eye-iris-master.pdf in Resources */,
 			);
