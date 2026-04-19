@@ -65,6 +65,15 @@ final class ActiveWorkoutViewModel: ObservableObject {
     /// Transient one-shot toast set by crash recovery.
     @Published var recoveryToast: WorkoutRecoveryToast?
 
+    /// Backlog item #9 — default gear pre-fetched for this workout's
+    /// activity type. Defaults to the user's `strengthTraining` preference
+    /// for the gym workouts this view powers today; the iPhone-native
+    /// HKWorkoutSession path (item #10) will plumb the real activity
+    /// type through here. User can override before tapping Start.
+    @Published var defaultGearId: String?
+    @Published var defaultGearName: String?
+    @Published var activityType: String = "strengthTraining"
+
     // MARK: Dependencies / state
 
     private var timer: Timer?
@@ -163,6 +172,30 @@ final class ActiveWorkoutViewModel: ObservableObject {
         )
     }
 
+    /// Pre-fetch the user's default gear for this activity type so the
+    /// UI can show "Will auto-attach: <gear name>" before the user taps
+    /// Start. Non-fatal — silently leaves defaults nil if the lookup fails.
+    func loadDefaultGear() async {
+        do {
+            let response: DefaultGearForActivityDTO = try await apiClient.request(
+                APIEndpoint.Gear.defaultForActivity(type: activityType)
+            )
+            defaultGearId = response.gear?.id
+            defaultGearName = response.gear?.name
+        } catch {
+            defaultGearId = nil
+            defaultGearName = nil
+        }
+    }
+
+    /// Clear the auto-attach for this workout (user tapped "No gear").
+    /// Server-side we send `gearId: null` at create time to disable the
+    /// auto-attach override.
+    func clearDefaultGear() {
+        defaultGearId = nil
+        defaultGearName = nil
+    }
+
     func endWorkout() async {
         timer?.invalidate()
         timer = nil
@@ -191,7 +224,7 @@ final class ActiveWorkoutViewModel: ObservableObject {
         let workoutName = exercises.first?.name.isEmpty == false
             ? "\(exercises[0].name) Session"
             : "Strength Workout"
-        let body = CreateWorkoutBody(
+        var body = CreateWorkoutBody(
             name: workoutName,
             gymId: nil,
             startedAt: start,
@@ -210,6 +243,14 @@ final class ActiveWorkoutViewModel: ObservableObject {
                 )
             }
         )
+        // Backlog item #9 — let the server resolve the default gear from
+        // the user's preferences. Passing activityType (without gearId)
+        // means "auto-attach the default for this activity". Explicit
+        // gearId wins when the user overrode the pre-filled selection.
+        body.activityType = activityType
+        if let gearId = defaultGearId {
+            body.gearId = gearId
+        }
 
         do {
             let _: WorkoutDTO = try await apiClient.request(APIEndpoint.Workouts.create(body))
