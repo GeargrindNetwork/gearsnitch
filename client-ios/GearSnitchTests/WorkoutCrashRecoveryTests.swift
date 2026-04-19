@@ -101,6 +101,13 @@ final class WorkoutCrashRecoveryTests: XCTestCase {
 
     // MARK: - ActiveWorkoutSnapshot
 
+    // iOS-26-only: the rich `ActiveWorkoutSnapshot` initializer
+    // (activityType / totalEnergyKcal / state) only exists under the
+    // Xcode 26 toolchain. Under Xcode 16.4 the file compiles the stub
+    // form (4 fields, see `iPhoneWorkoutSession.swift`'s `#else` branch),
+    // so gate the whole test at compile time — `@available` is runtime-
+    // only and doesn't hide the symbol reference from the compiler.
+    #if compiler(>=6.2) && os(iOS)
     @available(iOS 26.0, *)
     func testActiveWorkoutSnapshotEquality() {
         let now = Date()
@@ -124,4 +131,5 @@ final class WorkoutCrashRecoveryTests: XCTestCase {
         )
         XCTAssertEqual(a, b)
     }
+    #endif
 }
