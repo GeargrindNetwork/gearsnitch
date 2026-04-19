@@ -18,19 +18,19 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 
 | # | Title | Impact | Complexity | Tier | Layers | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| 4 | Gear retirement + component mileage alerts (shoe/chain/tire) | 9 | S | 2 | ios,api,worker | pr-open | Strava GAP per DC Rainmaker; push at user-set threshold. Core gear-tracking moat. PR pending. |
+| 4 | Gear retirement + component mileage alerts (shoe/chain/tire) | 9 | S | 2 | ios,api,worker | merged | Landed as [#55](https://github.com/GeargrindNetwork/gearsnitch/pull/55). |
 | 5 | Weekly reconciliation cron for subscription state drift | 8 | M | 2 | api,worker | merged | Landed as #50. |
-| 6 | AccessorySetupKit for one-tap BLE gear pairing | 8 | S | 2 | ios | pending | iOS 26.3 DMA expansion. Replaces CoreBluetooth permission prompt with AirPods-style sheet. |
-| 7 | HealthKit Medications API sync for peptide/dosing log | 8 | S | 2 | ios | pending | WWDC25. Bi-directional med log sync; differentiator vs Whoop/Strava. |
-| 8 | External HR sensor intake on iPhone (BLE HR profile + Powerbeats Pro 2) | 8 | S | 2 | ios | pending | iOS 26 HKLiveWorkoutDataSource. Expands Watch-less cohort. |
-| 9 | Strava-style auto-gear assignment by activity type | 8 | S | 2 | ios,api | pending | Default gear per workout + manual override. Table-stakes. |
-| 10 | iPhone-native workout session + crash recovery | 8 | M | 2 | ios | pr-open | WWDC25 HKWorkoutSession on iPhone. Retention win for non-Watch owners. PR [#64](https://github.com/GeargrindNetwork/gearsnitch/pull/64). |
-| 11 | App Intents for Lock Screen workout control | 7 | S | 2 | ios | pending | INStartWorkoutIntent family. Compounds with #10. |
-| 12 | Racquet-sport activity types (Padel, Pickleball) | 7 | XS | 3 | ios | pending | Strava shipped Padel/Basketball/Volleyball/Cricket/Dance 2025. |
-| 13 | Apple Pay capability in XcodeGen project.yml | 7 | XS | 2 | infra | pending | Prevents silent Apple Pay regression on pbxproj regen. |
-| 14 | tsconfig `ignoreDeprecations:5.0` vs TS 6 mismatch | 6 | XS | 2 | infra | pending | `npm run build` currently fails. Bump to `"6.0"`. |
-| 15 | Widget extension target — compile + ship | 6 | M | 2 | ios | pending | Widgets exist in source; target not regenerated via XcodeGen. |
-| 16 | Rest timer between sets | 6 | S | 2 | ios | pending | 30s/60s/90s/custom. Background audio cue. |
+| 6 | AccessorySetupKit for one-tap BLE gear pairing | 8 | S | 2 | ios | merged | Landed as [#56](https://github.com/GeargrindNetwork/gearsnitch/pull/56). |
+| 7 | HealthKit Medications API sync for peptide/dosing log | 8 | S | 2 | ios | merged | Landed as [#57](https://github.com/GeargrindNetwork/gearsnitch/pull/57). |
+| 8 | External HR sensor intake on iPhone (BLE HR profile + Powerbeats Pro 2) | 8 | S | 2 | ios | merged | Landed as [#58](https://github.com/GeargrindNetwork/gearsnitch/pull/58). |
+| 9 | Strava-style auto-gear assignment by activity type | 8 | S | 2 | ios,api | merged | Landed as [#59](https://github.com/GeargrindNetwork/gearsnitch/pull/59). |
+| 10 | iPhone-native workout session + crash recovery | 8 | M | 2 | ios | merged | Landed as [#64](https://github.com/GeargrindNetwork/gearsnitch/pull/64). |
+| 11 | App Intents for Lock Screen workout control | 7 | S | 2 | ios | merged | Landed as [#63](https://github.com/GeargrindNetwork/gearsnitch/pull/63). |
+| 12 | Racquet-sport activity types (Padel, Pickleball) | 7 | XS | 3 | ios | merged | Landed as [#66](https://github.com/GeargrindNetwork/gearsnitch/pull/66). |
+| 13 | Apple Pay capability in XcodeGen project.yml | 7 | XS | 2 | infra | merged | Landed as [#71](https://github.com/GeargrindNetwork/gearsnitch/pull/71). |
+| 14 | tsconfig `ignoreDeprecations:5.0` vs TS 6 mismatch | 6 | XS | 2 | infra | merged | Landed as [#73](https://github.com/GeargrindNetwork/gearsnitch/pull/73). |
+| 15 | Widget extension target — compile + ship | 6 | M | 2 | ios | merged | Landed as [#68](https://github.com/GeargrindNetwork/gearsnitch/pull/68). |
+| 16 | Rest timer between sets | 6 | S | 2 | ios | pr-open | 30s/60s/90s/custom. Background audio cue. PR: [#75](https://github.com/GeargrindNetwork/gearsnitch/pull/75) |
 | 17 | BLE battery level (0x180F) | 6 | S | 2 | ios | pending | Read + surface on DeviceDetailView. Low-battery push at <20%. Route through AccessorySetupKit (see #6). |
 | 18 | Auto-pause run on >60s inactivity | 6 | S | 2 | ios | pending | RunTrackingManager low-motion detection. |
 | 19 | Signal history chart (RSSI trends per device, 24h) | 5 | M | 2 | ios,api | pending | Store RSSI samples, render line chart. |
@@ -41,9 +41,9 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 24 | Web test framework (Vitest + RTL) | 5 | M | 2 | web | pending | Tier 1 surfaces first. |
 | 25 | Referral dashboard polish (referrer-side) | 4 | S | 2 | ios | pending | Earlier proposal from item #2 agent. |
 | 26 | App Store review prompting | 5 | S | 2 | ios | pending | SKStoreReviewController on 3rd workout / 5th device pair. |
-| 27 | Workout summary push after session end | 5 | M | 2 | api,worker,ios | pending | Uses new APNs sender. |
-| 28 | Stripe Checkout for web subscriptions | 5 | M | 2 | web,api | pending | External-web-only path; no iOS-initiated links (App Store 3.1.1). |
-| 29 | iOS CI workflow (macos-14 + xcodebuild test) | 4 | M | 2 | infra | pending | |
+| 27 | Workout summary push after session end | 5 | M | 2 | api,worker,ios | merged | Landed as [#69](https://github.com/GeargrindNetwork/gearsnitch/pull/69). |
+| 28 | Stripe Checkout for web subscriptions | 5 | M | 2 | web,api | merged | Landed as [#70](https://github.com/GeargrindNetwork/gearsnitch/pull/70). |
+| 29 | iOS CI workflow (macos-14 + xcodebuild test) | 4 | M | 2 | infra | merged | Landed as [#60](https://github.com/GeargrindNetwork/gearsnitch/pull/60). |
 | 30 | Cloud Run auto-rollback on deploy 5xx | 4 | M | 2 | infra | pending | Per guard rail #3. |
 | 31 | graphify-out/ housekeeping (gitignore) | 3 | XS | 2 | infra | pending | Currently modified every commit. |
 | 32 | Admin dashboard API (currently 501) | 4 | L | 2 | api,web | pending | Gated on `user.roles.includes('admin')`. |
