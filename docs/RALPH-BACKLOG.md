@@ -37,7 +37,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 19 | Signal history chart (RSSI trends per device, 24h) | 5 | M | 2 | ios,api | pending | Store RSSI samples, render line chart. |
 | 20 | Dashboard trend charts (week/month/year) | 5 | M | 2 | web,api | pr-open | Recharts + new `/api/v1/metrics/trends`. PR: [#82](https://github.com/GeargrindNetwork/gearsnitch/pull/82) |
 | 21 | Run pace coach — Watch haptic + headphone cadence tone | 7 | M | 2 | ios | pending | Watch haptic at drift >5%; metronome over music. |
-| 22 | Billing history page | 5 | S | 2 | web | pending | Lists Stripe invoices via `GET /subscriptions/invoices`. |
+| 22 | Billing history page | 5 | S | 2 | web | pr-open | Lists Stripe invoices via `GET /subscriptions/invoices`. PR: [#94](https://github.com/GeargrindNetwork/gearsnitch/pull/94) |
 | 23 | Notifications history page | 5 | S | 2 | web | pending | Surfaces APNs/push-log per user. |
 | 24 | Web test framework (Vitest + RTL) | 5 | M | 2 | web | pending | Tier 1 surfaces first. |
 | 25 | Referral dashboard polish (referrer-side) | 4 | S | 2 | ios | pending | Earlier proposal from item #2 agent. |

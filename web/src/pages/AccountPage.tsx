@@ -464,6 +464,13 @@ function ProfileTab({
                 <Button
                   variant="outline"
                   className="border-zinc-700 text-zinc-200 hover:text-white"
+                  onClick={() => window.location.assign('/account/billing')}
+                >
+                  Invoices
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-zinc-700 text-zinc-200 hover:text-white"
                   onClick={() => window.location.assign('/runs')}
                 >
                   Open Run Replay
