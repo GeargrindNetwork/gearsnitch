@@ -1,0 +1,221 @@
+name: iOS CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client-ios/**'
+      - '.github/workflows/ios.yml'
+      - 'scripts/check-launch-readiness.sh'
+      - 'scripts/tests/check-launch-readiness.test.sh'
+      - 'scripts/tests/fixtures/**'
+  push:
+    branches: [main]
+    paths:
+      - 'client-ios/**'
+      - '.github/workflows/ios.yml'
+      - 'scripts/check-launch-readiness.sh'
+      - 'scripts/tests/check-launch-readiness.test.sh'
+      - 'scripts/tests/fixtures/**'
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # launch-readiness gate. Runs on Ubuntu (fast) because the script has a
+  # PlistBuddy-free fallback. Also exercises the shell test suite.
+  # ---------------------------------------------------------------------------
+  launch-readiness:
+    name: Launch Readiness Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run launch-readiness tests
+        run: bash scripts/tests/check-launch-readiness.test.sh
+
+      - name: Check launch readiness against repo
+        run: bash scripts/check-launch-readiness.sh
+
+  # ---------------------------------------------------------------------------
+  # iOS build + test. macos-14 (Apple Silicon).
+  # ---------------------------------------------------------------------------
+  ios-build:
+    name: iOS Build & Test
+    runs-on: macos-14
+    needs: launch-readiness
+    env:
+      DERIVED_DATA: ${{ github.workspace }}/DerivedData
+      SCHEME: GearSnitch
+      PROJECT: client-ios/GearSnitch.xcodeproj
+      DESTINATION: 'platform=iOS Simulator,name=iPhone 17,OS=latest'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode + SDK versions
+        run: |
+          xcodebuild -version
+          xcrun --show-sdk-version --sdk iphonesimulator
+
+      - name: Cache Homebrew bottles
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew/downloads
+            /usr/local/Homebrew
+            /opt/homebrew
+          key: ${{ runner.os }}-brew-xcodegen-v1
+
+      - name: Install xcodegen
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Regenerate Xcode project
+        working-directory: client-ios
+        run: xcodegen generate
+
+      - name: Fail if pbxproj drifted from committed version
+        run: |
+          if ! git diff --exit-code client-ios/GearSnitch.xcodeproj/project.pbxproj; then
+            echo "::error::pbxproj differs from committed — run 'xcodegen generate' locally and commit the result."
+            exit 1
+          fi
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DERIVED_DATA }}
+          key: ${{ runner.os }}-xcode-deriveddata-${{ hashFiles('client-ios/project.yml', 'client-ios/GearSnitch.xcodeproj/project.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode-deriveddata-
+
+      - name: Build (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build | tee build.log
+
+      - name: Check for test target
+        id: check-tests
+        run: |
+          if [[ -d client-ios/GearSnitchTests ]] && \
+             ls client-ios/GearSnitchTests/*.swift >/dev/null 2>&1; then
+            echo "has_tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_tests=false" >> "$GITHUB_OUTPUT"
+            echo "note: no GearSnitchTests swift sources — skipping xcodebuild test"
+          fi
+
+      - name: Test
+        if: steps.check-tests.outputs.has_tests == 'true'
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA" \
+            -resultBundlePath "$DERIVED_DATA/GearSnitch.xcresult" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            test | tee test.log
+
+      - name: Upload xcresult on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-xcresult
+          path: |
+            ${{ env.DERIVED_DATA }}/GearSnitch.xcresult
+            build.log
+            test.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # watchOS build. Separate job so iPhone vs Watch failures are legible.
+  # ---------------------------------------------------------------------------
+  watch-build:
+    name: watchOS Build
+    runs-on: macos-14
+    needs: launch-readiness
+    env:
+      DERIVED_DATA: ${{ github.workspace }}/DerivedDataWatch
+      SCHEME: GearSnitchWatch
+      PROJECT: client-ios/GearSnitch.xcodeproj
+      DESTINATION: 'platform=watchOS Simulator,name=Apple Watch Series 10,OS=latest'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode + SDK versions
+        run: |
+          xcodebuild -version
+          xcrun --show-sdk-version --sdk watchsimulator
+
+      - name: Cache Homebrew bottles
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew/downloads
+            /usr/local/Homebrew
+            /opt/homebrew
+          key: ${{ runner.os }}-brew-xcodegen-v1
+
+      - name: Install xcodegen
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Regenerate Xcode project
+        working-directory: client-ios
+        run: xcodegen generate
+
+      - name: Cache DerivedData (watch)
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DERIVED_DATA }}
+          key: ${{ runner.os }}-xcode-watch-deriveddata-${{ hashFiles('client-ios/project.yml', 'client-ios/GearSnitch.xcodeproj/project.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-xcode-watch-deriveddata-
+
+      - name: Build watchOS (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -configuration Debug \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build | tee build-watch.log
+
+      - name: Upload watch build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watch-build-log
+          path: build-watch.log
+          if-no-files-found: ignore
+          retention-days: 7
