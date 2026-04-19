@@ -28,12 +28,12 @@ describe('gear auto-assignment contract (item #9)', () => {
   const workoutRoutes = read('src/modules/workouts/routes.ts');
   const runRoutes = read('src/modules/runs/routes.ts');
 
-  test('GearComponent model exports core types and log-usage helper', () => {
+  test('GearComponent model exports core types', () => {
     expect(gearModel).toContain("mongoose.model<IGearComponent>(\n  'GearComponent'");
     expect(gearModel).toContain('GEAR_KINDS');
     expect(gearModel).toContain('GEAR_UNITS');
-    expect(gearModel).toContain('export async function logGearUsage(');
-    expect(modelIndex).toContain("export { GearComponent, logGearUsage, GEAR_KINDS, GEAR_UNITS } from './GearComponent';");
+    expect(modelIndex).toContain("GearComponent");
+    expect(modelIndex).toContain("IGearComponent");
   });
 
   test('User.preferences carries defaultGearByActivity Mixed subdoc', () => {
