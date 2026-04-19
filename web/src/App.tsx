@@ -12,6 +12,8 @@ import LandingPage from './pages/LandingPage';
 import StorePage from './pages/StorePage';
 import AccountPage from './pages/AccountPage';
 import SignInPage from './pages/SignInPage';
+import SubscribePage from './pages/SubscribePage';
+import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import MetricsPage from './pages/MetricsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
@@ -57,6 +59,15 @@ export default function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/store/*" element={<StorePage />} />
               <Route path="/sign-in" element={<SignInPage />} />
+              <Route path="/subscribe" element={<SubscribePage />} />
+              <Route
+                path="/account/subscription/success"
+                element={(
+                  <ProtectedAppRoute>
+                    <SubscriptionSuccessPage />
+                  </ProtectedAppRoute>
+                )}
+              />
               <Route
                 path="/account/*"
                 element={(

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -88,7 +89,7 @@ export default function SubscriptionPanel() {
           </CardContent>
         </Card>
 
-        {/* iOS-first messaging for users without an active subscription */}
+        {/* Conversion CTA for users without an active subscription */}
         {!isActive && (
           <Card className="border-white/5 bg-zinc-900/70">
             <CardHeader className="pb-2">
@@ -97,12 +98,19 @@ export default function SubscriptionPanel() {
             <CardContent className="space-y-3 pb-4">
               <div className="rounded-lg border border-white/5 bg-zinc-950 p-4">
                 <p className="text-sm font-semibold text-zinc-100">
-                  GearSnitch subscriptions are purchased in the iOS app.
+                  Unlock the full Pro experience.
                 </p>
                 <p className="mt-2 text-xs text-zinc-400">
-                  Open the app → Settings → Upgrade to Pro.
+                  Three tiers: monthly, annual, or lifetime. Subscribe on the web with Stripe,
+                  or buy through the iOS app for managed Apple billing.
                 </p>
               </div>
+
+              <Link to="/subscribe" className="block">
+                <Button size="lg" className="w-full bg-emerald-400 text-black hover:bg-emerald-300">
+                  View Pro plans
+                </Button>
+              </Link>
 
               <button
                 type="button"
@@ -110,15 +118,14 @@ export default function SubscriptionPanel() {
                 onClick={() => setShowWebHelper((prev) => !prev)}
                 aria-expanded={showWebHelper}
               >
-                Why can&apos;t I subscribe on the web?
+                Web vs iOS — what's the difference?
               </button>
 
               {showWebHelper && (
                 <p className="rounded-md border border-white/5 bg-zinc-950/60 p-3 text-xs leading-relaxed text-zinc-400">
-                  GearSnitch uses Apple&apos;s in-app purchase system for iOS subscriptions so your
-                  billing, renewals, and family sharing stay managed inside your Apple ID. Web
-                  checkout (Stripe) is on the roadmap — for now, please complete your purchase in
-                  the iPhone app.
+                  Web subscriptions are billed via Stripe and managed from your account here.
+                  iOS subscriptions are billed via Apple and managed through Settings → Apple ID
+                  → Subscriptions. Both unlock identical Pro features.
                 </p>
               )}
             </CardContent>

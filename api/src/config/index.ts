@@ -97,6 +97,13 @@ const config = {
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
   stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
 
+  // Stripe — web subscription Price IDs (created via scripts/setup-stripe-products.sh).
+  // Each `price_xxx` corresponds to one tier surfaced on the public /subscribe page.
+  // Env vars are the source of truth so live IDs never land in the repo.
+  stripePriceHustle: process.env.STRIPE_PRICE_HUSTLE ?? '',
+  stripePriceHwmf: process.env.STRIPE_PRICE_HWMF ?? '',
+  stripePriceBabyMomma: process.env.STRIPE_PRICE_BABY_MOMMA ?? '',
+
   // CORS
   corsOrigins: process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()) ?? [
     'http://localhost:3000',

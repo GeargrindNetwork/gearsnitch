@@ -4,6 +4,7 @@ import { Subscription, type ISubscription } from '../../models/Subscription.js';
 import { User } from '../../models/User.js';
 import { ProcessedWebhookEvent } from '../../models/ProcessedWebhookEvent.js';
 import logger from '../../utils/logger.js';
+import { handleCheckoutSessionCompleted } from './checkoutService.js';
 
 /**
  * Stripe subscription lifecycle webhook handlers.
@@ -23,6 +24,7 @@ import logger from '../../utils/logger.js';
  */
 
 const HANDLED_EVENT_TYPES = new Set<string>([
+  'checkout.session.completed',
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
@@ -403,6 +405,12 @@ export async function dispatchStripeSubscriptionEvent(
   event: Stripe.Event,
 ): Promise<void> {
   switch (event.type) {
+    case 'checkout.session.completed': {
+      await handleCheckoutSessionCompleted(
+        event.data.object as Stripe.Checkout.Session,
+      );
+      return;
+    }
     case 'customer.subscription.created': {
       await handleSubscriptionCreated(
         event.data.object as SubscriptionLike,
