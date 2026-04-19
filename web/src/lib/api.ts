@@ -1037,6 +1037,47 @@ export async function deleteEmergencyContact(id: string): Promise<void> {
   if (!response.success) throw new Error(response.error?.message || 'Failed to delete contact');
 }
 
+// ─── Metrics Trends (item #20) ────────────────────────────────────────────
+
+export type TrendRange = 'week' | 'month' | 'year';
+
+export interface TrendBucket {
+  ts: string;
+  workouts: number;
+  workoutMinutes: number;
+  runs: number;
+  runMeters: number;
+  calories: number;
+  weightKg: number | null;
+}
+
+export interface TrendSummary {
+  totalWorkouts: number;
+  totalRuns: number;
+  totalCalories: number;
+  avgWorkoutsPerWeek: number;
+}
+
+export interface TrendResponse {
+  range: TrendRange;
+  timezone: string;
+  buckets: TrendBucket[];
+  summary: TrendSummary;
+}
+
+export async function getMetricsTrends(
+  range: TrendRange,
+  timezone?: string,
+): Promise<TrendResponse> {
+  const tz = timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+  const qs = new URLSearchParams({ range, timezone: tz }).toString();
+  const response = await api.get<TrendResponse>(`/metrics/trends?${qs}`);
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to load metrics trends');
+  }
+  return response.data;
+}
+
 // ─── Health Dashboard ─────────────────────────────────────────────────────
 
 export async function getHealthDashboard(): Promise<HealthDashboardResponse> {

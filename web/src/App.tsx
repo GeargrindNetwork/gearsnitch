@@ -27,6 +27,7 @@ import ReferralsPage from './pages/ReferralsPage';
 import CaloriesPage from './pages/CaloriesPage';
 import AlertsPage from './pages/AlertsPage';
 import AdminPage from './pages/AdminPage';
+import DashboardPage from './pages/DashboardPage';
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,14 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <MetricsPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/dashboard"
+                element={(
+                  <ProtectedAppRoute>
+                    <DashboardPage />
                   </ProtectedAppRoute>
                 )}
               />
