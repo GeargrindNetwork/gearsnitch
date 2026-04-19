@@ -283,8 +283,16 @@ struct RootView: View {
         forceOnboardingReset = true
         onboardingComplete = false
         showFixPermissions = false
-        onboardingViewModel.syncAuthenticationState(isAuthenticated: authManager.isAuthenticated)
-        onboardingViewModel.resetForTesting(startStep: step)
+        // Sign the user out BEFORE syncing onboarding state so the first step
+        // evaluates with isAuthenticated=false. Previously this reused the
+        // existing Keychain tokens and the user landed mid-flow still signed in.
+        Task { @MainActor in
+            await authManager.logout()
+            onboardingViewModel.syncAuthenticationState(
+                isAuthenticated: authManager.isAuthenticated
+            )
+            onboardingViewModel.resetForTesting(startStep: step)
+        }
     }
 
     // MARK: - Splash
