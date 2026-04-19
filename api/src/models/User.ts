@@ -21,6 +21,13 @@ export interface IUser extends Document {
   heightCm?: number;
   weightKg?: number;
   defaultGymId: Types.ObjectId | null;
+  /**
+   * Stripe customer ID, persisted on first payment-flow invocation.
+   * Avoids a global `stripe.customers.list({ email })` lookup that was
+   * race-unsafe and could return the wrong customer if two users ever
+   * shared an email. See PaymentService.getOrCreateStripeCustomer.
+   */
+  stripeCustomerId?: string;
   onboardingCompletedAt: Date | null;
   permissionsState: {
     bluetooth: PermissionStateValue | boolean;
@@ -70,6 +77,7 @@ const UserSchema = new Schema<IUser>(
     heightCm: { type: Number, default: null },
     weightKg: { type: Number, default: null },
     defaultGymId: { type: Schema.Types.ObjectId, ref: 'Gym', default: null },
+    stripeCustomerId: { type: String, default: undefined },
     onboardingCompletedAt: { type: Date, default: null },
     permissionsState: {
       bluetooth: { type: Schema.Types.Mixed, default: 'not_determined' },
