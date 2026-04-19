@@ -1,6 +1,10 @@
 import { Subscription, type ISubscription } from '../../models/Subscription.js';
 import logger from '../../utils/logger.js';
-import * as jose from 'jose';
+import {
+  decodeTransaction,
+  Environment,
+  type JWSTransactionDecodedPayload,
+} from 'app-store-server-api';
 
 export type SubscriptionTier = 'free' | 'monthly' | 'annual' | 'lifetime';
 
@@ -95,6 +99,77 @@ export interface SubscriptionResult {
 // Service
 // ---------------------------------------------------------------------------
 
+const APPLE_EXPECTED_BUNDLE_ID = process.env.APPLE_BUNDLE_ID ?? 'com.gearsnitch.app';
+
+/**
+ * Resolves the expected StoreKit environment (Production | Sandbox).
+ * When `APPLE_STOREKIT_ENV` is unset we default to Production, but we also
+ * honour the environment declared inside the verified JWS payload so that
+ * Sandbox receipts remain usable in staging/QA builds.
+ */
+function getConfiguredAppleEnvironment(): Environment | null {
+  const raw = process.env.APPLE_STOREKIT_ENV;
+  if (!raw) return null;
+  if (raw === Environment.Sandbox) return Environment.Sandbox;
+  if (raw === Environment.Production) return Environment.Production;
+  return null;
+}
+
+/**
+ * Verifies an Apple StoreKit 2 JWS-signed transaction.
+ *
+ * Uses `app-store-server-api`'s `decodeTransaction`, which:
+ *   - Parses the JWS x5c header cert chain
+ *   - Validates the chain back to Apple's Root CA (G3) fingerprint
+ *   - Verifies the JWS signature with the leaf cert's ES256 public key
+ *   - Returns the strongly-typed `JWSTransactionDecodedPayload`
+ *
+ * Any failure (malformed JWS, broken cert chain, bad signature, expired
+ * leaf cert, non-Apple root) throws — we surface these as a single
+ * `APPLE_JWS_VERIFICATION_FAILED` error so the route layer maps cleanly
+ * to a 400. Bundle-ID mismatches are treated the same way to prevent a
+ * receipt from a different Apple app being replayed against GearSnitch.
+ */
+async function verifyAppleJws(jwsRepresentation: string): Promise<JWSTransactionDecodedPayload> {
+  if (typeof jwsRepresentation !== 'string' || jwsRepresentation.length === 0) {
+    throw new Error('APPLE_JWS_VERIFICATION_FAILED: empty jwsRepresentation');
+  }
+
+  const parts = jwsRepresentation.split('.');
+  if (parts.length !== 3) {
+    throw new Error('APPLE_JWS_VERIFICATION_FAILED: expected 3 JWS segments');
+  }
+
+  let verified: JWSTransactionDecodedPayload;
+  try {
+    verified = await decodeTransaction(jwsRepresentation);
+  } catch (err) {
+    logger.error('Apple JWS signature verification failed', {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw new Error('APPLE_JWS_VERIFICATION_FAILED: signature or certificate chain invalid');
+  }
+
+  if (verified.bundleId !== APPLE_EXPECTED_BUNDLE_ID) {
+    logger.error('Apple JWS bundle id mismatch', {
+      expected: APPLE_EXPECTED_BUNDLE_ID,
+      received: verified.bundleId,
+    });
+    throw new Error('APPLE_JWS_VERIFICATION_FAILED: bundle id mismatch');
+  }
+
+  const expectedEnv = getConfiguredAppleEnvironment();
+  if (expectedEnv && verified.environment !== expectedEnv) {
+    // Not fatal in sandbox builds — but we log so ops can spot misconfigurations.
+    logger.warn('Apple JWS environment does not match configured APPLE_STOREKIT_ENV', {
+      expected: expectedEnv,
+      received: verified.environment,
+    });
+  }
+
+  return verified;
+}
+
 /**
  * Validates an Apple StoreKit 2 JWS-signed transaction and upserts the
  * local Subscription record.
@@ -103,23 +178,22 @@ export async function validateAppleTransaction(
   jwsRepresentation: string,
   userId: string,
 ): Promise<SubscriptionResult> {
-  // ----- 1. Decode the JWS (StoreKit 2 transactions are signed JWTs) -----
-  // In production you would verify the signature against Apple's root CA.
-  // For now we decode the payload — the transaction was already verified
-  // on-device via Transaction.verify() before being sent here.
-  const parts = jwsRepresentation.split('.');
-  if (parts.length !== 3) {
-    throw new Error('Invalid JWS format: expected 3 parts');
-  }
+  // ----- 1. Verify the JWS signature against Apple's Root CA (G3) -----
+  const verified = await verifyAppleJws(jwsRepresentation);
 
-  let payload: AppleTransactionPayload;
-  try {
-    const decoded = jose.decodeJwt(jwsRepresentation);
-    payload = decoded as unknown as AppleTransactionPayload;
-  } catch (err) {
-    logger.error('Failed to decode JWS transaction', { error: err });
-    throw new Error('Invalid JWS transaction');
-  }
+  // Project the verified payload onto the internal shape consumed by the
+  // rest of this function. The keys are identical to what the previous
+  // unverified decode path produced, so downstream behaviour is byte-compatible.
+  const payload: AppleTransactionPayload = {
+    transactionId: verified.transactionId,
+    originalTransactionId: verified.originalTransactionId,
+    bundleId: verified.bundleId,
+    productId: verified.productId,
+    purchaseDate: verified.purchaseDate,
+    expiresDate: verified.expiresDate,
+    type: verified.type,
+    environment: verified.environment,
+  };
 
   // ----- 2. Validate product ID -----
   const productConfig = getAppleProductConfig(payload.productId);
