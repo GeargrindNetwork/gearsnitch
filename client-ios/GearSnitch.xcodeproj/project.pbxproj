@@ -67,6 +67,7 @@
 		34A78B5370C92303B55123C8 /* GearSnitchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED7E00D84F51A63E31E167D5 /* GearSnitchApp.swift */; };
 		34B06D32FDA4A09081BDCD42 /* PushNotificationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3685DC0D9F363BEE0B9CE350 /* PushNotificationHandler.swift */; };
 		34D7EC1B67657A38032307B9 /* ReferralQRModalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC700522257A90E6A2C18919 /* ReferralQRModalTests.swift */; };
+		1BE1804BC430AB6911E84195 /* ReferralViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CABB548CE445617CEE8DF1 /* ReferralViewModelTests.swift */; };
 		3569A34C6AA60FC12BC066E7 /* ReferralAttributionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C68718D476500139C14BAC9 /* ReferralAttributionStoreTests.swift */; };
 		3692ED051B1CF1EEFDF3C674 /* Color+GearSnitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3505130765F6628D9FD17C33 /* Color+GearSnitch.swift */; };
 		36C6F6901483D9D4CFB58F91 /* DeviceStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F654EDC6D283F1CFA8D355F /* DeviceStatusBadge.swift */; };
@@ -643,6 +644,7 @@
 		CAB3D9CA4DC58FA6C10E16BA /* RestTimerOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerOverlayView.swift; sourceTree = "<group>"; };
 		CB013F4ED78E99B9669CBE4F /* HeartRateMonitorCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateMonitorCard.swift; sourceTree = "<group>"; };
 		CC700522257A90E6A2C18919 /* ReferralQRModalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralQRModalTests.swift; sourceTree = "<group>"; };
+		A2CABB548CE445617CEE8DF1 /* ReferralViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralViewModelTests.swift; sourceTree = "<group>"; };
 		CC9CFC2797AD596756034BBE /* TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStore.swift; sourceTree = "<group>"; };
 		CD19563C1D39090E31D62B9D /* iCloudProfileSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iCloudProfileSync.swift; sourceTree = "<group>"; };
 		CD89151B30A746AEEFE223E3 /* WatchHRDispatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHRDispatcher.swift; sourceTree = "<group>"; };
@@ -1052,6 +1054,7 @@
 				AAFC815C23550A334820BF15 /* PaymentServiceTests.swift */,
 				6C68718D476500139C14BAC9 /* ReferralAttributionStoreTests.swift */,
 				CC700522257A90E6A2C18919 /* ReferralQRModalTests.swift */,
+				A2CABB548CE445617CEE8DF1 /* ReferralViewModelTests.swift */,
 				58E1451727196C98AB732061 /* ReleaseGateManagerTests.swift */,
 				8BC5E7BD7D09E97C49A0C967 /* RequestBuilderTests.swift */,
 				C48810DB5F6525DFBA03BCBC /* ResponseDecoderTests.swift */,
@@ -1863,6 +1866,7 @@
 				4F1FC701363C0F990C8F2DE0 /* PaymentServiceTests.swift in Sources */,
 				3569A34C6AA60FC12BC066E7 /* ReferralAttributionStoreTests.swift in Sources */,
 				34D7EC1B67657A38032307B9 /* ReferralQRModalTests.swift in Sources */,
+				1BE1804BC430AB6911E84195 /* ReferralViewModelTests.swift in Sources */,
 				25C8F3CB7B9B74757F12FEF0 /* ReleaseGateManagerTests.swift in Sources */,
 				8B2915D2D437967F466C8858 /* RequestBuilderTests.swift in Sources */,
 				1286F1B362522B5B8795E690 /* ResponseDecoderTests.swift in Sources */,
