@@ -16,6 +16,7 @@ struct GearSnitchApp: App {
     @StateObject private var eventBus = RealtimeEventBus()
     @StateObject private var featureFlags = FeatureFlags()
     @StateObject private var coordinator = AppCoordinator()
+    @StateObject private var referralAttribution = ReferralAttributionStore()
 
     // MARK: - Body
 
@@ -28,16 +29,32 @@ struct GearSnitchApp: App {
                 .environmentObject(eventBus)
                 .environmentObject(featureFlags)
                 .environmentObject(coordinator)
+                .environmentObject(referralAttribution)
                 .onOpenURL { url in
                     if GIDSignIn.sharedInstance.handle(url) {
                         return
                     }
+                    referralAttribution.recordIfReferralLink(url)
                     coordinator.handle(url: url)
                 }
                 .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
                     guard let url = activity.webpageURL else { return }
+                    // Universal Link landed here — attribute first, then route.
+                    referralAttribution.recordIfReferralLink(url)
                     coordinator.handle(url: url)
                 }
+                .overlay(alignment: .top) {
+                    if referralAttribution.pendingToast,
+                       let code = referralAttribution.attributedCode {
+                        ReferralAttributionToast(code: code) {
+                            referralAttribution.acknowledgeToast()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+                .animation(.easeInOut(duration: 0.25), value: referralAttribution.pendingToast)
                 .task {
                     await authManager.restoreSession()
                 }

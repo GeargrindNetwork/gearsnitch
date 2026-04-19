@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TUZYDM227C.com.gearsnitch.app"],
+        "components": [
+          { "/": "/r/*", "comment": "Referral codes" }
+        ]
+      }
+    ]
+  }
+}
