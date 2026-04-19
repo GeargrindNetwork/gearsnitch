@@ -17,7 +17,6 @@
 - stopwatch
 - calendar
 - dosing calculator
-- mesh chat
 - device map
 - widgets and live activity
 

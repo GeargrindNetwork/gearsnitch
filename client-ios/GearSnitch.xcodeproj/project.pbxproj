@@ -14,7 +14,6 @@
 		042DCDC4DC5F44ABEE17E7DE /* GearSnitchWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E085B3DDB1F0BF38788EE3DE /* GearSnitchWidget.swift */; };
 		0577BED20E66EA417647DF71 /* NetworkError.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC35C052F10625C479C9BC70 /* NetworkError.swift */; };
 		05E456BCB7A8A44BF90811DE /* GymRegionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 336679F15832921BE8598D24 /* GymRegionMonitor.swift */; };
-		06456364887CBB61FE611BED /* MeshNetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2DFF65221701A95E77180 /* MeshNetworkManager.swift */; };
 		075129B7401762674CF5FAC6 /* WorkoutLiveActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7553FA88B668DE5029DF7324 /* WorkoutLiveActivityAttributes.swift */; };
 		08BC0E13055AAB3F26F37B48 /* ReferralAttributionToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4EEA77CB6A15A2FA76D45C5 /* ReferralAttributionToast.swift */; };
 		08DA622044AEF4807C017FAD /* WatchHRComplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ACFF0267AFB59A9FB29C9E4 /* WatchHRComplicationTests.swift */; };
@@ -71,7 +70,6 @@
 		3B69AAE4AE0195DE1A9FF687 /* BLEScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED90ED47B2C7532C3950E45 /* BLEScanner.swift */; };
 		3B9590D069122E717D0AF0C0 /* StoreHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA07F4455FC91DFEBF1E9057 /* StoreHomeView.swift */; };
 		3C236926E06C3ADC097C67AC /* BLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65040AD89C646F2EB1439629 /* BLEManager.swift */; };
-		3D14B5644E74520403A211CA /* MeshChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6BFD5D2EE043E841AA7B600 /* MeshChatView.swift */; };
 		3E46A1E1677DA39F4243EFC7 /* GearSnitchWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 81A23D3E4D1F46C1FB0CA7D8 /* GearSnitchWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3FEA11D8F5C845EE76310F6F /* ECGViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B1DFDA81A53E400021833A /* ECGViewModelTests.swift */; };
 		45034E6EAA33F8B9ABBDC9D2 /* DeviceListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EBE9A263604C413029119F /* DeviceListView.swift */; };
@@ -79,7 +77,6 @@
 		46D92FAEBC06B5FC26FD9B05 /* Date+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2969551DF2A3FCCBB44CF308 /* Date+Formatting.swift */; };
 		47305583E45517E74B8205A7 /* ECGViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74978A4A8A7E3AE809C25A91 /* ECGViewModel.swift */; };
 		48B6830EE581C6B7CC65DB86 /* ECGEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F3BF628F9F68180D7B3545 /* ECGEntryView.swift */; };
-		4934714B0AFAD6AFDC4539C8 /* MeshChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55C5CE24F4D0356582F849DD /* MeshChatViewModel.swift */; };
 		49D4892DC5732FC34C1F41D7 /* AutoPauseBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4938A0638AC071BE1134AF37 /* AutoPauseBannerView.swift */; };
 		4BBCBBF805DAD2B56F15E062 /* GymSessionActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4986742D0120BEACC4172AD /* GymSessionActivityAttributes.swift */; };
 		4C79B9E586525CAE0B4E335C /* DayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F727210E1B56639BE47E1E5 /* DayDetailView.swift */; };
@@ -436,7 +433,6 @@
 		518B69DE4EEB05013965BA16 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDatabase.swift; sourceTree = "<group>"; };
 		51F8ECC85FFF28067D2FAB81 /* WorkoutActivityType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutActivityType.swift; sourceTree = "<group>"; };
 		5241335D99037461E4A79108 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		55C5CE24F4D0356582F849DD /* MeshChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshChatViewModel.swift; sourceTree = "<group>"; };
 		568284F031C76C144A411E78 /* SocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketClient.swift; sourceTree = "<group>"; };
 		56898CE55871136E842BEC60 /* BLEAlarmSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEAlarmSoundPlayer.swift; sourceTree = "<group>"; };
 		5856FAFF0D498D396E96CE48 /* ExternalHRSensorAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalHRSensorAdapter.swift; sourceTree = "<group>"; };
@@ -529,7 +525,6 @@
 		A2F3BF628F9F68180D7B3545 /* ECGEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGEntryView.swift; sourceTree = "<group>"; };
 		A4986742D0120BEACC4172AD /* GymSessionActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymSessionActivityAttributes.swift; sourceTree = "<group>"; };
 		A59B1B4911EBB77E915FC314 /* WorkoutSessionRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSessionRouterTests.swift; sourceTree = "<group>"; };
-		A5E2DFF65221701A95E77180 /* MeshNetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshNetworkManager.swift; sourceTree = "<group>"; };
 		A710FE23636DE160423B76C2 /* RestTimerStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerStateTests.swift; sourceTree = "<group>"; };
 		A71772E62CED642AC9F4DEA9 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		A718BC94514C6867EFD94D1A /* GearActivityCompatibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearActivityCompatibilityTests.swift; sourceTree = "<group>"; };
@@ -545,7 +540,6 @@
 		AFCE813887395F69511F0DF4 /* PanicAlarmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanicAlarmManager.swift; sourceTree = "<group>"; };
 		B3B4FD86275B132DA96B5D8A /* ReferralView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralView.swift; sourceTree = "<group>"; };
 		B48D06C677D5B698F1139C6A /* WorkoutLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivityWidget.swift; sourceTree = "<group>"; };
-		B6BFD5D2EE043E841AA7B600 /* MeshChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshChatView.swift; sourceTree = "<group>"; };
 		B6DE5A0A80CC9E7C547F0676 /* WorkoutCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCoordinator.swift; sourceTree = "<group>"; };
 		B9CF17771E707F32C8ECA907 /* ReferralViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralViewModel.swift; sourceTree = "<group>"; };
 		BA49247C750E6389D6540415 /* SignalHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalHistoryViewModel.swift; sourceTree = "<group>"; };
@@ -710,15 +704,6 @@
 				1F698EA7D1CDA146902DD6DB /* View+Modifiers.swift */,
 			);
 			path = Extensions;
-			sourceTree = "<group>";
-		};
-		24101B7A4A21ED111F3FF5EE /* MeshChat */ = {
-			isa = PBXGroup;
-			children = (
-				B6BFD5D2EE043E841AA7B600 /* MeshChatView.swift */,
-				55C5CE24F4D0356582F849DD /* MeshChatViewModel.swift */,
-			);
-			path = MeshChat;
 			sourceTree = "<group>";
 		};
 		25FF401788D77C7B25C81950 /* BLE */ = {
@@ -1040,7 +1025,6 @@
 				1201E993AC582A8A9771ED7A /* Gear */,
 				70D0B0725B728022781506A4 /* Gyms */,
 				7AAF396F55DB44D3CD9F0BB1 /* Health */,
-				24101B7A4A21ED111F3FF5EE /* MeshChat */,
 				34E5E4649638B2F5D73B0B1E /* Onboarding */,
 				5A1BC6EF24C073B6C2A0AAC1 /* Profile */,
 				8871A8158674B1FEAC34909C /* Referrals */,
@@ -1108,7 +1092,6 @@
 				ED2DC679C42DA0511805588E /* Config */,
 				4A031D39A2C8F88BF8E344D9 /* HealthKit */,
 				A43C94D20C664D42092E1625 /* Location */,
-				FF6CC28723BA8F72F9186B16 /* MeshChat */,
 				FF71BBAE20D02B90AC97799E /* Network */,
 				674C1C36E24532F75142699D /* Notifications */,
 				F7CE106CD6BC7ECD9798B395 /* Payments */,
@@ -1425,14 +1408,6 @@
 			);
 			name = Widgets;
 			path = GearSnitch/Features/Widgets;
-			sourceTree = "<group>";
-		};
-		FF6CC28723BA8F72F9186B16 /* MeshChat */ = {
-			isa = PBXGroup;
-			children = (
-				A5E2DFF65221701A95E77180 /* MeshNetworkManager.swift */,
-			);
-			path = MeshChat;
 			sourceTree = "<group>";
 		};
 		FF71BBAE20D02B90AC97799E /* Network */ = {
@@ -1885,9 +1860,6 @@
 				3229912722BD93481B14730D /* MainTabView.swift in Sources */,
 				9B9E529520997CE0A3F86F36 /* MapSearchManager.swift in Sources */,
 				8C1E2ECEA83FE459EA3A4896 /* MedicationsSyncSettingsView.swift in Sources */,
-				3D14B5644E74520403A211CA /* MeshChatView.swift in Sources */,
-				4934714B0AFAD6AFDC4539C8 /* MeshChatViewModel.swift in Sources */,
-				06456364887CBB61FE611BED /* MeshNetworkManager.swift in Sources */,
 				BA214A124C701E9705A97225 /* MetricsLogView.swift in Sources */,
 				8138C287B1DBBD8EF40C5AD1 /* NearestHospitalsView.swift in Sources */,
 				0577BED20E66EA417647DF71 /* NetworkError.swift in Sources */,
