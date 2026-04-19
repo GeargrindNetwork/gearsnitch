@@ -9,6 +9,7 @@ import { DeviceService, DeviceServiceError } from './deviceService.js';
 import { DeviceShare } from '../../models/DeviceShare.js';
 import { Device } from '../../models/Device.js';
 import { User } from '../../models/User.js';
+import { enqueuePushNotification } from '../../services/pushNotificationQueue.js';
 
 const router = Router();
 const deviceService = new DeviceService();
@@ -82,6 +83,30 @@ const recordDeviceEventSchema = z.object({
   source: z.enum(['ios', 'web', 'system']).optional(),
   metadata: z.record(z.unknown()).nullable().optional(),
 });
+
+// Battery level endpoint (backlog item #17).
+// Body carries the 0–100 percentage decoded by the iOS `BatteryLevelReader`
+// from GATT char 0x2A19 (Battery Level) on service 0x180F.
+const updateBatterySchema = z.object({
+  level: z.number().int().min(0).max(100),
+  readAt: z.coerce.date().optional(),
+});
+
+// Server-side 12h cooldown between low-battery pushes per device. Tied to
+// `device.lastLowBatteryNotifiedAt` so a device that flaps below 20% every
+// minute doesn't spam the user. Threshold is 20% per PRD.
+export const LOW_BATTERY_THRESHOLD = 20;
+export const LOW_BATTERY_COOLDOWN_MS = 12 * 60 * 60 * 1000;
+
+export function shouldSendLowBatteryPush(
+  level: number,
+  lastNotifiedAt: Date | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (level >= LOW_BATTERY_THRESHOLD) return false;
+  if (!lastNotifiedAt) return true;
+  return now.getTime() - new Date(lastNotifiedAt).getTime() >= LOW_BATTERY_COOLDOWN_MS;
+}
 
 function getUserId(req: Request): string {
   return (req.user as JwtPayload).sub;
@@ -244,6 +269,77 @@ router.patch(
     } catch (err) {
       handleDeviceError(req, res, err, 'Failed to update device status', {
         operation: 'updateDeviceStatus',
+        deviceId: getRouteParam(req, 'id'),
+      });
+    }
+  },
+);
+
+// PATCH /devices/:id/battery — iOS `BatteryLevelReader` POSTs the decoded
+// BLE Battery Level characteristic (0x2A19) here. We persist the reading
+// and enqueue a low-battery push (respecting a 12h per-device cooldown)
+// when the level crosses under 20%.
+router.patch(
+  '/:id/battery',
+  isAuthenticated,
+  validateBody(updateBatterySchema),
+  async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const deviceId = getRouteParam(req, 'id');
+      const { level, readAt } = req.body as z.infer<typeof updateBatterySchema>;
+      const now = readAt ?? new Date();
+
+      const device = await Device.findOne({ _id: deviceId, userId });
+      if (!device) {
+        errorResponse(res, StatusCodes.NOT_FOUND, 'Device not found');
+        return;
+      }
+
+      device.lastBatteryLevel = level;
+      device.lastBatteryReadAt = now;
+
+      let lowBatteryNotified = false;
+      if (shouldSendLowBatteryPush(level, device.lastLowBatteryNotifiedAt ?? null, now)) {
+        try {
+          await enqueuePushNotification({
+            userId: String(userId),
+            type: 'device_low_battery',
+            title: `Low battery on ${device.name}`,
+            body: `Battery at ${level}%. Tap to dismiss.`,
+            data: {
+              type: 'device_low_battery',
+              deviceId: String(device._id),
+              level,
+            },
+            // Scoped to 12h window so retries/replays don't refire within
+            // the cooldown even if the client re-POSTs the same reading.
+            dedupeKey: `device-low-battery:${String(device._id)}:${Math.floor(
+              now.getTime() / LOW_BATTERY_COOLDOWN_MS,
+            )}`,
+          });
+          device.lastLowBatteryNotifiedAt = now;
+          lowBatteryNotified = true;
+        } catch (pushErr) {
+          logger.warn('Failed to enqueue low-battery push', {
+            deviceId,
+            userId,
+            error: pushErr instanceof Error ? pushErr.message : String(pushErr),
+          });
+        }
+      }
+
+      await device.save();
+
+      successResponse(res, {
+        _id: String(device._id),
+        lastBatteryLevel: device.lastBatteryLevel ?? null,
+        lastBatteryReadAt: device.lastBatteryReadAt ?? null,
+        lowBatteryNotified,
+      });
+    } catch (err) {
+      handleDeviceError(req, res, err, 'Failed to update device battery level', {
+        operation: 'updateDeviceBattery',
         deviceId: getRouteParam(req, 'id'),
       });
     }

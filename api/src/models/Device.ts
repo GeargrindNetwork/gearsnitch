@@ -26,6 +26,15 @@ export interface IDevice extends Document {
     coordinates: [number, number];
   };
   lastSignalStrength?: number;
+  // BLE Battery Service (0x180F) telemetry. Written by
+  // `PATCH /devices/:id/battery` from the iOS `BatteryLevelReader`
+  // (backlog item #17). `lastBatteryLevel` is a 0–100 percentage,
+  // `lastBatteryReadAt` the time the reading arrived at the server, and
+  // `lastLowBatteryNotifiedAt` marks the last time we enqueued a
+  // low-battery push so we can apply a 12h per-device cooldown.
+  lastBatteryLevel?: number | null;
+  lastBatteryReadAt?: Date | null;
+  lastLowBatteryNotifiedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +97,14 @@ const DeviceSchema = new Schema<IDevice>(
       default: undefined,
     },
     lastSignalStrength: { type: Number },
+    lastBatteryLevel: {
+      type: Number,
+      default: null,
+      min: 0,
+      max: 100,
+    },
+    lastBatteryReadAt: { type: Date, default: null },
+    lastLowBatteryNotifiedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

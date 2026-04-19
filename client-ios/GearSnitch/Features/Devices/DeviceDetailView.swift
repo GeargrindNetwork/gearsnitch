@@ -4,6 +4,7 @@ import SwiftUI
 struct DeviceDetailView: View {
     @StateObject private var viewModel: DeviceDetailViewModel
     @ObservedObject private var bleManager = BLEManager.shared
+    @ObservedObject private var batteryReader = BLEManager.shared.batteryLevelReader
     @Environment(\.dismiss) private var dismiss
     @State private var shareEmail = ""
     @State private var showShareSheet = false
@@ -92,7 +93,9 @@ struct DeviceDetailView: View {
     // MARK: - Status Header
 
     private func statusHeader(_ device: DeviceDetailDTO) -> some View {
-        VStack(spacing: 12) {
+        let batteryReading = batteryReading(for: device)
+
+        return VStack(spacing: 12) {
             Image(systemName: device.isConnected ? "checkmark.shield.fill" : "shield.slash.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(
@@ -110,6 +113,16 @@ struct DeviceDetailView: View {
                             .font(.caption)
                             .foregroundColor(.gsWarning)
                     }
+
+                    if let reading = batteryReading {
+                        batteryBadge(reading)
+                    }
+                }
+
+                if let reading = batteryReading, isStale(reading) {
+                    Text("Battery last read \(minutesAgoLabel(reading.timestamp))")
+                        .font(.caption2)
+                        .foregroundColor(.gsTextSecondary)
                 }
 
                 if let nickname = device.nickname,
@@ -444,6 +457,53 @@ struct DeviceDetailView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    // MARK: - Battery (item #17)
+
+    /// Resolves the latest `BatteryReading` for a given device by mapping
+    /// the DTO's Bluetooth identifier to the published readings keyed by
+    /// peripheral UUID. Returns `nil` if the device has never reported a
+    /// battery level — we deliberately do *not* fake a value.
+    private func batteryReading(for device: DeviceDetailDTO) -> BatteryReading? {
+        guard let uuid = UUID(uuidString: device.bluetoothIdentifier) else { return nil }
+        return batteryReader.readings[uuid]
+    }
+
+    private func batteryBadge(_ reading: BatteryReading) -> some View {
+        HStack(spacing: 2) {
+            Image(systemName: batterySymbol(for: reading.level))
+                .font(.caption)
+            Text("\(reading.level)%")
+                .font(.caption.weight(.semibold))
+        }
+        .foregroundColor(batteryColor(for: reading.level))
+    }
+
+    private func batterySymbol(for level: Int) -> String {
+        switch level {
+        case 88...100: return "battery.100"
+        case 63..<88: return "battery.75"
+        case 38..<63: return "battery.50"
+        case 13..<38: return "battery.25"
+        case 1..<13: return "battery.0"
+        default: return "battery.0percent"
+        }
+    }
+
+    private func batteryColor(for level: Int) -> Color {
+        if level >= 50 { return .gsEmerald }
+        if level >= 20 { return .gsWarning }
+        return .gsDanger
+    }
+
+    private func isStale(_ reading: BatteryReading) -> Bool {
+        Date().timeIntervalSince(reading.timestamp) > 5 * 60
+    }
+
+    private func minutesAgoLabel(_ timestamp: Date) -> String {
+        let minutes = max(1, Int(Date().timeIntervalSince(timestamp) / 60))
+        return "\(minutes)min ago"
     }
 
     private func signalLabel(_ rssi: Int?) -> String {
