@@ -48,6 +48,14 @@ export interface IUser extends Document {
     panicAlertsEnabled: boolean;
     disconnectAlertsEnabled: boolean;
     custom?: Record<string, string>;
+    /**
+     * Strava-style "default gear per activity type" (backlog item #9).
+     * Keyed by HKWorkoutActivityType rawValue (string) — e.g. 'running',
+     * 'cycling', 'walking', 'hiking', 'strengthTraining'. Values are
+     * GearComponent._id references. Stored as Mixed because the key set
+     * is open-ended (Apple adds new activity types each WWDC).
+     */
+    defaultGearByActivity?: Record<string, Types.ObjectId | null>;
   };
   deletionRequestedAt: Date | null;
   deletionScheduledFor: Date | null;
@@ -99,6 +107,10 @@ const UserSchema = new Schema<IUser>(
       panicAlertsEnabled: { type: Boolean, default: false },
       disconnectAlertsEnabled: { type: Boolean, default: false },
       custom: { type: Schema.Types.Mixed, default: {} },
+      // Backlog item #9: per-HKWorkoutActivityType default GearComponent.
+      // Open-ended key set, ObjectId values. Writes are validated against
+      // the caller's GearComponent ownership in the route layer.
+      defaultGearByActivity: { type: Schema.Types.Mixed, default: {} },
     },
     deletionRequestedAt: { type: Date, default: null },
     deletionScheduledFor: { type: Date, default: null },

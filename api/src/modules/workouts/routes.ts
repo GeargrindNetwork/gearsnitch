@@ -8,6 +8,11 @@ import { Workout } from '../../models/Workout.js';
 import { GymSession } from '../../models/GymSession.js';
 import { Run } from '../../models/Run.js';
 import { Device } from '../../models/Device.js';
+import {
+  resolveDefaultGear,
+  logAutoGearAssigned,
+  incrementGearForWorkoutMetrics,
+} from '../gear/autoAttach.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
 
 const router = Router();
@@ -23,6 +28,9 @@ const workoutExerciseSchema = z.object({
   sets: z.array(workoutSetSchema).default([]),
 });
 
+const ACTIVITY_TYPE_REGEX = /^[a-zA-Z][a-zA-Z0-9_]{0,63}$/;
+const OBJECT_ID_REGEX = /^[a-fA-F0-9]{24}$/;
+
 const createWorkoutSchema = z.object({
   name: z.string().trim().min(1).max(120),
   gymId: z.string().trim().min(1).optional(),
@@ -31,6 +39,9 @@ const createWorkoutSchema = z.object({
   notes: z.string().trim().max(4000).optional(),
   source: z.enum(['manual', 'apple_health']).optional().default('manual'),
   exercises: z.array(workoutExerciseSchema).default([]),
+  activityType: z.string().regex(ACTIVITY_TYPE_REGEX).optional(),
+  gearId: z.union([z.string().regex(OBJECT_ID_REGEX), z.null()]).optional(),
+  gearIds: z.array(z.string().regex(OBJECT_ID_REGEX)).max(8).optional(),
 }).superRefine((value, ctx) => {
   if (value.endedAt && new Date(value.endedAt) < new Date(value.startedAt)) {
     ctx.addIssue({
@@ -166,6 +177,11 @@ function serializeWorkout(workout: Record<string, any>) {
       : [],
     notes: workout.notes ?? null,
     source: workout.source,
+    activityType: workout.activityType ?? null,
+    gearId: workout.gearId ? String(workout.gearId) : null,
+    gearIds: Array.isArray(workout.gearIds)
+      ? workout.gearIds.map((id: unknown) => String(id))
+      : [],
     createdAt: workout.createdAt,
     updatedAt: workout.updatedAt,
   };
@@ -532,9 +548,40 @@ router.post(
       const startedAt = new Date(body.startedAt);
       const endedAt = body.endedAt ? new Date(body.endedAt) : null;
 
+      // Backlog item #9 — resolve the primary gear for this workout.
+      // Priority: explicit client value > user's default for activityType.
+      // If the client sends an explicit `null`, treat as deliberate opt-out
+      // and do NOT auto-attach. The auto-assign path emits AutoGearAssigned.
+      let primaryGearId: Types.ObjectId | null = null;
+      let additionalGearIds: Types.ObjectId[] = [];
+      let autoAssigned = false;
+
+      if (body.gearId === null) {
+        primaryGearId = null;
+      } else if (body.gearId) {
+        primaryGearId = parseOptionalObjectId(body.gearId);
+      } else if (body.activityType) {
+        const defaultGear = await resolveDefaultGear(userId, body.activityType);
+        if (defaultGear) {
+          primaryGearId = defaultGear._id;
+          autoAssigned = true;
+        }
+      }
+
+      if (Array.isArray(body.gearIds) && body.gearIds.length > 0) {
+        additionalGearIds = body.gearIds
+          .map((id) => parseOptionalObjectId(id))
+          .filter((id): id is Types.ObjectId => id !== null);
+      } else if (primaryGearId) {
+        additionalGearIds = [primaryGearId];
+      }
+
       const workout = await Workout.create({
         userId,
         gymId,
+        gearId: primaryGearId,
+        gearIds: additionalGearIds,
+        activityType: body.activityType ?? null,
         name: body.name,
         startedAt,
         endedAt,
@@ -543,6 +590,15 @@ router.post(
         notes: body.notes,
         source: body.source ?? 'manual',
       });
+
+      if (autoAssigned && primaryGearId && body.activityType) {
+        await logAutoGearAssigned({
+          userId,
+          gearId: primaryGearId,
+          activityType: body.activityType,
+          workoutId: workout._id,
+        });
+      }
 
       const createdWorkout = await Workout.findById(workout._id)
         .populate('gymId', 'name')
@@ -743,6 +799,29 @@ router.post(
       workout.endedAt = endedAt;
       workout.durationMinutes = computeDurationMinutes(workout.startedAt, endedAt);
       await workout.save();
+
+      // Backlog item #9 — on completion, increment mileage/hours/sessions
+      // on every attached GearComponent so retirement alerts (#4) fire
+      // without manual tracking. Errors are logged but do not fail the
+      // completion response: the workout itself is durable.
+      const durationSeconds = workout.durationMinutes * 60;
+      const gearTargets = new Set<string>();
+      if (workout.gearId) {
+        gearTargets.add(String(workout.gearId));
+      }
+      for (const id of workout.gearIds ?? []) {
+        gearTargets.add(String(id));
+      }
+      for (const idStr of gearTargets) {
+        if (!Types.ObjectId.isValid(idStr)) {
+          continue;
+        }
+        await incrementGearForWorkoutMetrics(
+          new Types.ObjectId(idStr),
+          userId,
+          { durationSeconds },
+        );
+      }
 
       const completedWorkout = await Workout.findById(workout._id)
         .populate('gymId', 'name')

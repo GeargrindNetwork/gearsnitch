@@ -21,7 +21,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 6 | AccessorySetupKit for one-tap BLE gear pairing | 8 | S | 2 | ios | pending | iOS 26.3 DMA expansion. Replaces CoreBluetooth permission prompt with AirPods-style sheet. |
 | 7 | HealthKit Medications API sync for peptide/dosing log | 8 | S | 2 | ios | pending | WWDC25. Bi-directional med log sync; differentiator vs Whoop/Strava. |
 | 8 | External HR sensor intake on iPhone (BLE HR profile + Powerbeats Pro 2) | 8 | S | 2 | ios | pending | iOS 26 HKLiveWorkoutDataSource. Expands Watch-less cohort. |
-| 9 | Strava-style auto-gear assignment by activity type | 8 | S | 2 | ios,api | pending | Default gear per workout + manual override. Table-stakes. |
+| 9 | Strava-style auto-gear assignment by activity type | 8 | S | 2 | ios,api | pr-open | Default gear per workout + manual override. Table-stakes. PR pending push. |
 | 10 | iPhone-native workout session + crash recovery | 8 | M | 2 | ios | pending | WWDC25 HKWorkoutSession on iPhone. Retention win for non-Watch owners. |
 | 11 | App Intents for Lock Screen workout control | 7 | S | 2 | ios | pending | INStartWorkoutIntent family. Compounds with #10. |
 | 12 | Racquet-sport activity types (Padel, Pickleball) | 7 | XS | 3 | ios | pending | Strava shipped Padel/Basketball/Volleyball/Cricket/Dance 2025. |
