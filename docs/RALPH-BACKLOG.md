@@ -27,7 +27,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 12 | Racquet-sport activity types (Padel, Pickleball) | 7 | XS | 3 | ios | pending | Strava shipped Padel/Basketball/Volleyball/Cricket/Dance 2025. |
 | 13 | Apple Pay capability in XcodeGen project.yml | 7 | XS | 2 | infra | pending | Prevents silent Apple Pay regression on pbxproj regen. |
 | 14 | tsconfig `ignoreDeprecations:5.0` vs TS 6 mismatch | 6 | XS | 2 | infra | pending | `npm run build` currently fails. Bump to `"6.0"`. |
-| 15 | Widget extension target — compile + ship | 6 | M | 2 | ios | pending | Widgets exist in source; target not regenerated via XcodeGen. |
+| 15 | Widget extension target — compile + ship | 6 | M | 2 | ios | pr-open ([#68](https://github.com/GeargrindNetwork/gearsnitch/pull/68)) | Audit case A: target already in project.yml + pbxproj; xcodegen regen aligned drift. Both schemes build, widget appex embeds w/ App Intents metadata. |
 | 16 | Rest timer between sets | 6 | S | 2 | ios | pending | 30s/60s/90s/custom. Background audio cue. |
 | 17 | BLE battery level (0x180F) | 6 | S | 2 | ios | pending | Read + surface on DeviceDetailView. Low-battery push at <20%. Route through AccessorySetupKit (see #6). |
 | 18 | Auto-pause run on >60s inactivity | 6 | S | 2 | ios | pending | RunTrackingManager low-motion detection. |
