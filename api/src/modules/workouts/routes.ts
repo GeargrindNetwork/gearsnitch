@@ -1035,6 +1035,11 @@ router.post(
       // Only fire the summary push on the *first* completion. Re-completing
       // a workout (e.g. user editing endedAt on an already-finished one)
       // should not spam them with another push.
+      //
+      // Follow-up: wire `generateWorkoutInsight` from ../../services/geminiClient
+      // into `maybeEnqueueWorkoutSummaryPush` so the push body includes a
+      // Gemini-generated coaching sentence. The geminiClient is feature-flagged
+      // via GEMINI_INSIGHTS_ENABLED and fails closed, so wiring it is safe.
       if (!wasAlreadyCompleted) {
         await maybeEnqueueWorkoutSummaryPush(
           {
@@ -1048,6 +1053,7 @@ router.post(
           req.requestId,
         );
       }
+
 
       successResponse(res, serializeWorkout(completedWorkout ?? workout.toObject()));
     } catch (err) {
