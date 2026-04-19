@@ -6,11 +6,15 @@ export interface ISubscription extends Document {
   provider: string;
   providerOriginalTransactionId: string;
   productId: string;
-  status: 'active' | 'expired' | 'grace_period' | 'cancelled';
+  status: 'active' | 'expired' | 'grace_period' | 'cancelled' | 'past_due';
   purchaseDate: Date;
   expiryDate: Date;
   lastValidatedAt: Date;
   extensionDays: number;
+  autoRenew: boolean;
+  stripeSubscriptionId?: string | null;
+  stripeCustomerId?: string | null;
+  cancelledAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,13 +27,17 @@ const SubscriptionSchema = new Schema<ISubscription>(
     productId: { type: String, required: true },
     status: {
       type: String,
-      enum: ['active', 'expired', 'grace_period', 'cancelled'],
+      enum: ['active', 'expired', 'grace_period', 'cancelled', 'past_due'],
       required: true,
     },
     purchaseDate: { type: Date, required: true },
     expiryDate: { type: Date, required: true },
     lastValidatedAt: { type: Date, required: true },
     extensionDays: { type: Number, default: 0 },
+    autoRenew: { type: Boolean, default: true },
+    stripeSubscriptionId: { type: String, default: null, sparse: true },
+    stripeCustomerId: { type: String, default: null },
+    cancelledAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -40,6 +48,7 @@ SubscriptionSchema.index(
 );
 SubscriptionSchema.index({ userId: 1, status: 1 });
 SubscriptionSchema.index({ expiryDate: 1 });
+SubscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
 
 export const Subscription = mongoose.model<ISubscription>(
   'Subscription',

@@ -5,6 +5,12 @@ import config from '../config/index.js';
 import { StoreCart } from '../models/StoreCart.js';
 import { StoreOrder, type IStoreOrder } from '../models/StoreOrder.js';
 import { User } from '../models/User.js';
+import logger from '../utils/logger.js';
+import {
+  claimWebhookEvent,
+  dispatchStripeSubscriptionEvent,
+  isStripeSubscriptionEvent,
+} from '../modules/subscriptions/stripeSubscriptionWebhookService.js';
 
 const TAX_RATE = 0.0825; // 8.25%
 const FLAT_SHIPPING = 599; // $5.99 in cents
@@ -150,13 +156,38 @@ export class PaymentService {
 
   /**
    * Process a Stripe webhook event.
+   *
+   * Handles both store-order events (payment_intent.*, charge.refunded) and
+   * subscription lifecycle events (customer.subscription.*, invoice.*).
+   * Duplicate deliveries are suppressed via a ProcessedWebhookEvent record
+   * keyed on event.id with a 7-day TTL.
    */
   async handleWebhookEvent(event: Stripe.Event): Promise<void> {
+    // Idempotency — short-circuit on duplicate deliveries.
+    try {
+      const claimed = await claimWebhookEvent(event);
+      if (!claimed) {
+        logger.info('Stripe webhook duplicate — skipping', {
+          eventId: event.id,
+          type: event.type,
+        });
+        return;
+      }
+    } catch (err) {
+      // If the idempotency store is unavailable we still process the event;
+      // duplicate writes are bounded by Stripe's retry window and our
+      // individual handlers are written to be idempotent at the Mongo level.
+      logger.error('Failed to claim Stripe webhook event — processing anyway', {
+        eventId: event.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         await this.finalizeConfirmedIntent(paymentIntent);
-        break;
+        return;
       }
 
       case 'payment_intent.payment_failed': {
@@ -165,7 +196,7 @@ export class PaymentService {
           { paymentIntentId: paymentIntent.id },
           { status: 'cancelled' },
         );
-        break;
+        return;
       }
 
       case 'charge.refunded': {
@@ -177,38 +208,60 @@ export class PaymentService {
             { status: 'refunded' },
           );
         }
-        break;
+        return;
       }
 
       default:
-        // Unhandled event type -- ignore silently
         break;
     }
+
+    if (isStripeSubscriptionEvent(event.type)) {
+      await dispatchStripeSubscriptionEvent(event);
+      return;
+    }
+
+    // Unhandled event type -- ignore silently. We've already recorded it in
+    // ProcessedWebhookEvent so Stripe retries remain idempotent.
   }
 
   /**
-   * Get or create a Stripe customer for the user.
+   * Get or create a Stripe customer for the user. Persists the Stripe
+   * customer ID on the User record so subscription webhooks can resolve
+   * back to our user via `stripeCustomerId`.
    */
   async getOrCreateStripeCustomer(
     userId: string,
     email: string,
   ): Promise<string> {
-    // Search for existing customer by metadata
+    // Prefer the ID already persisted on the user.
+    const user = await User.findById(userId).select('stripeCustomerId').lean();
+    if (user?.stripeCustomerId) {
+      return user.stripeCustomerId;
+    }
+
+    // Search for existing customer by email
     const existing = await stripe.customers.list({
       email,
       limit: 1,
     });
 
+    let customerId: string;
     if (existing.data.length > 0) {
-      return existing.data[0].id;
+      customerId = existing.data[0].id;
+    } else {
+      const customer = await stripe.customers.create({
+        email,
+        metadata: { userId },
+      });
+      customerId = customer.id;
     }
 
-    const customer = await stripe.customers.create({
-      email,
-      metadata: { userId },
-    });
+    await User.updateOne(
+      { _id: new Types.ObjectId(userId) },
+      { $set: { stripeCustomerId: customerId } },
+    );
 
-    return customer.id;
+    return customerId;
   }
 
   /**

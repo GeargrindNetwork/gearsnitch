@@ -13,6 +13,7 @@ export interface IUser extends Document {
   authProviders: string[];
   roles: string[];
   status: string;
+  stripeCustomerId?: string | null;
   firstName?: string;
   lastName?: string;
   dateOfBirth?: Date;
@@ -54,6 +55,7 @@ const UserSchema = new Schema<IUser>(
     authProviders: { type: [String], default: [] },
     roles: { type: [String], default: ['user'] },
     status: { type: String, default: 'active' },
+    stripeCustomerId: { type: String, default: null, sparse: true },
     firstName: { type: String, default: null },
     lastName: { type: String, default: null },
     dateOfBirth: { type: Date, default: null },
@@ -100,5 +102,6 @@ UserSchema.index({ createdAt: 1 });
 UserSchema.index({ email: 1 });
 UserSchema.index({ status: 1 });
 UserSchema.index({ deletedAt: 1 });
+UserSchema.index({ stripeCustomerId: 1 }, { sparse: true });
 
 export const User = mongoose.model<IUser>('User', UserSchema);
