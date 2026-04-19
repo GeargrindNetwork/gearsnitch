@@ -83,6 +83,11 @@ final class BLEManager: NSObject, ObservableObject {
     /// need BLE don't allocate it.
     let batteryLevelReader = BatteryLevelReader()
 
+    /// Buffers per-device RSSI samples captured during discovery /
+    /// reads and POSTs them to the backend in 5-min / 20-sample
+    /// batches. See `RssiSampleBuffer.swift` + backlog item #19.
+    let rssiSampleBuffer = RssiSampleBuffer()
+
     /// Tracks reconnection timers per device identifier.
     private var reconnectionTimers: [UUID: ReconnectionState] = [:]
     private var persistedMetadataByIdentifier: [String: PersistedBLEDeviceMetadata] = [:]
@@ -505,9 +510,18 @@ extension BLEManager: CBCentralManagerDelegate {
                 advertisementData: advertisementData,
                 rssi: RSSI
             )
-            if device != nil {
+            if let device {
                 self.discoveredDevices = self.scanner.discoveredDevices
                 self.syncKnownDeviceMetadata()
+
+                // Backlog item #19: buffer RSSI samples for paired
+                // devices so the 24h signal-history chart has data to
+                // render. Unpaired (non-persisted) discoveries are
+                // dropped by the buffer.
+                self.rssiSampleBuffer.record(
+                    rssi: RSSI.intValue,
+                    persistedDeviceId: device.persistedId
+                )
             }
         }
     }
@@ -747,6 +761,13 @@ extension BLEManager: CBPeripheralDelegate {
                 device.rssi = rssiValue
                 device.lastSeenAt = Date()
                 BLESignalMonitor.shared.reportRSSI(rssiValue, for: device)
+                // Item #19: feed connected-peripheral RSSI reads into
+                // the signal-history buffer as well so connected-only
+                // devices still produce chart data.
+                self.rssiSampleBuffer.record(
+                    rssi: rssiValue,
+                    persistedDeviceId: device.persistedId
+                )
                 self.sortKnownDevices()
             }
         }
