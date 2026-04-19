@@ -44,7 +44,7 @@ jobs:
   # ---------------------------------------------------------------------------
   ios-build:
     name: iOS Build & Test
-    runs-on: macos-14
+    runs-on: macos-15
     needs: launch-readiness
     env:
       DERIVED_DATA: ${{ github.workspace }}/DerivedData
@@ -54,6 +54,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select latest Xcode (pbxproj objectVersion 77 requires Xcode 16.4+)
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app
 
       - name: Show Xcode + SDK versions
         run: |
@@ -153,7 +156,7 @@ jobs:
   # ---------------------------------------------------------------------------
   watch-build:
     name: watchOS Build
-    runs-on: macos-14
+    runs-on: macos-15
     needs: launch-readiness
     env:
       DERIVED_DATA: ${{ github.workspace }}/DerivedDataWatch
@@ -163,6 +166,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select latest Xcode (pbxproj objectVersion 77 requires Xcode 16.4+)
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app
 
       - name: Show Xcode + SDK versions
         run: |
