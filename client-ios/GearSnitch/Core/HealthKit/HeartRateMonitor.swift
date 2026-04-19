@@ -53,6 +53,43 @@ struct HeartRateSample: Identifiable {
     let sourceDeviceName: String?
 }
 
+// MARK: - Heart Rate Source Kind
+
+/// Classification of the device that emitted a heart rate sample. Used by the
+/// Dashboard HR card to show a helpful attribution label (e.g. "via AirPods").
+enum HeartRateSourceKind: String {
+    case airpods
+    case watch
+    case phone
+    case other
+    case unknown
+
+    static func classify(sourceName: String?) -> HeartRateSourceKind {
+        guard let name = sourceName?.lowercased(), !name.isEmpty else { return .unknown }
+        if name.contains("airpod") { return .airpods }
+        if name.contains("watch") { return .watch }
+        if name.contains("iphone") { return .phone }
+        return .other
+    }
+}
+
+// MARK: - Health Store Protocol (for tests)
+
+/// Narrow protocol over `HKHealthStore` so unit tests can inject a fake store
+/// that emits canned `HKQuantitySample` instances without touching real
+/// HealthKit state.
+protocol HeartRateHealthStore: AnyObject {
+    func execute(_ query: HKQuery)
+    func stop(_ query: HKQuery)
+    func isHealthDataAvailableOnDevice() -> Bool
+}
+
+extension HKHealthStore: HeartRateHealthStore {
+    func isHealthDataAvailableOnDevice() -> Bool {
+        HKHealthStore.isHealthDataAvailable()
+    }
+}
+
 // MARK: - Heart Rate Monitor
 
 @MainActor
@@ -63,10 +100,11 @@ final class HeartRateMonitor: ObservableObject {
     @Published private(set) var currentBPM: Int?
     @Published private(set) var currentZone: HeartRateZone?
     @Published private(set) var sourceDeviceName: String?
+    @Published private(set) var sourceKind: HeartRateSourceKind = .unknown
     @Published private(set) var isMonitoring = false
     @Published private(set) var lastUpdated: Date?
 
-    private let healthStore = HKHealthStore()
+    private let healthStore: HeartRateHealthStore
     private let logger = Logger(subsystem: "com.gearsnitch", category: "HeartRateMonitor")
 
     private var anchoredQuery: HKAnchoredObjectQuery?
@@ -78,13 +116,21 @@ final class HeartRateMonitor: ObservableObject {
     private let batchSyncInterval: TimeInterval = 30
     private let liveActivityThrottleInterval: TimeInterval = 2
 
-    private init() {}
+    /// How far back to look for a seed sample when monitoring starts. This
+    /// lets the Dashboard card render the most recent HR immediately after
+    /// pairing AirPods, rather than staying blank until the next sample lands.
+    private static let backfillLookback: TimeInterval = 15 * 60
+
+    /// Designated initializer used by tests. Production code should use `shared`.
+    init(healthStore: HeartRateHealthStore = HKHealthStore()) {
+        self.healthStore = healthStore
+    }
 
     // MARK: - Public API
 
     func startMonitoring() {
         guard !isMonitoring else { return }
-        guard HKHealthStore.isHealthDataAvailable() else {
+        guard healthStore.isHealthDataAvailableOnDevice() else {
             logger.warning("HealthKit not available — cannot monitor heart rate")
             return
         }
@@ -96,10 +142,15 @@ final class HeartRateMonitor: ObservableObject {
         isMonitoring = true
         logger.info("Starting heart rate monitoring")
 
+        // Predicate spans from (now - backfillLookback) forward, so that the
+        // anchored query's initial handler returns any recent samples (e.g.
+        // the most recent AirPods reading) AND future samples flow through
+        // the updateHandler as HealthKit writes them.
+        let start = Date(timeIntervalSinceNow: -Self.backfillLookback)
         let query = HKAnchoredObjectQuery(
             type: heartRateType,
             predicate: HKQuery.predicateForSamples(
-                withStart: Date(),
+                withStart: start,
                 end: nil,
                 options: .strictStartDate
             ),
@@ -107,13 +158,13 @@ final class HeartRateMonitor: ObservableObject {
             limit: HKObjectQueryNoLimit
         ) { [weak self] _, samples, _, _, error in
             Task { @MainActor in
-                self?.handleNewSamples(samples, error: error)
+                self?.handleNewSamples(samples, error: error, isBackfill: true)
             }
         }
 
         query.updateHandler = { [weak self] _, samples, _, _, error in
             Task { @MainActor in
-                self?.handleNewSamples(samples, error: error)
+                self?.handleNewSamples(samples, error: error, isBackfill: false)
             }
         }
 
@@ -141,6 +192,7 @@ final class HeartRateMonitor: ObservableObject {
         currentBPM = nil
         currentZone = nil
         sourceDeviceName = nil
+        sourceKind = .unknown
         lastUpdated = nil
 
         logger.info("Stopped heart rate monitoring")
@@ -148,7 +200,8 @@ final class HeartRateMonitor: ObservableObject {
 
     // MARK: - Sample Handling
 
-    private func handleNewSamples(_ samples: [HKSample]?, error: Error?) {
+    /// Visible for tests — callable with a canned list of samples.
+    func handleNewSamples(_ samples: [HKSample]?, error: Error?, isBackfill: Bool) {
         if let error {
             logger.error("Heart rate query error: \(error.localizedDescription)")
             return
@@ -159,6 +212,25 @@ final class HeartRateMonitor: ObservableObject {
         }
 
         let bpmUnit = HKUnit.count().unitDivided(by: .minute())
+
+        // For backfill (initial snapshot on startMonitoring), we only publish
+        // the single most recent sample and do NOT enqueue all historical
+        // samples for upload — they've likely already been synced and would
+        // duplicate the backend's heart-rate series.
+        if isBackfill {
+            guard let latest = quantitySamples.max(by: { $0.endDate < $1.endDate }) else {
+                return
+            }
+            let bpm = Int(latest.quantity.doubleValue(for: bpmUnit))
+            let sourceName = extractSourceDeviceName(from: latest)
+            currentBPM = bpm
+            currentZone = HeartRateZone.from(bpm: bpm)
+            sourceDeviceName = sourceName
+            sourceKind = HeartRateSourceKind.classify(sourceName: sourceName)
+            lastUpdated = latest.endDate
+            logger.info("Heart rate backfill: \(bpm) BPM from \(sourceName ?? "unknown source")")
+            return
+        }
 
         for sample in quantitySamples {
             let bpm = Int(sample.quantity.doubleValue(for: bpmUnit))
@@ -176,28 +248,34 @@ final class HeartRateMonitor: ObservableObject {
             currentBPM = bpm
             currentZone = HeartRateZone.from(bpm: bpm)
             sourceDeviceName = sourceName ?? sourceDeviceName
+            sourceKind = HeartRateSourceKind.classify(sourceName: sourceName ?? sourceDeviceName)
             lastUpdated = sample.endDate
         }
 
         throttledLiveActivityUpdate()
     }
 
-    private func extractSourceDeviceName(from sample: HKQuantitySample) -> String? {
+    /// Extract a human-readable source name for a heart rate sample. Prefers
+    /// the advertised device name (e.g. "Shawn's AirPods Pro"), falls back to
+    /// the device model, and finally the sample's source revision name (the
+    /// name of the app or system surface that wrote the sample).
+    ///
+    /// NOTE: AirPods Pro 3 heart rate is only exposed through HealthKit — it
+    /// is NOT available on a BLE GATT service. Apple sets the sample's source
+    /// name to something containing "AirPods" when the sample originates from
+    /// AirPods' onboard PPG sensor.
+    func extractSourceDeviceName(from sample: HKQuantitySample) -> String? {
         if let device = sample.device {
-            if let name = device.name {
+            if let name = device.name, !name.isEmpty {
                 return name
             }
-            if let model = device.model {
+            if let model = device.model, !model.isEmpty {
                 return model
             }
         }
 
         let sourceName = sample.sourceRevision.source.name
-        if sourceName.lowercased().contains("airpods") {
-            return sourceName
-        }
-
-        return sourceName
+        return sourceName.isEmpty ? nil : sourceName
     }
 
     // MARK: - Live Activity Updates
@@ -248,7 +326,7 @@ final class HeartRateMonitor: ObservableObject {
                     HeartRateBatchPayload(
                         bpm: sample.bpm,
                         recordedAt: ISO8601DateFormatter().string(from: sample.recordedAt),
-                        source: "airpods_pro"
+                        source: Self.backendSourceTag(for: sample.sourceDeviceName)
                     )
                 }
 
@@ -268,6 +346,18 @@ final class HeartRateMonitor: ObservableObject {
                     }
                 }
             }
+        }
+    }
+
+    /// Map a HealthKit source name to a short backend tag. Keeps the wire
+    /// protocol stable while letting the UI display the full device name.
+    nonisolated static func backendSourceTag(for sourceName: String?) -> String {
+        switch HeartRateSourceKind.classify(sourceName: sourceName) {
+        case .airpods: return "airpods_pro"
+        case .watch: return "apple_watch"
+        case .phone: return "iphone"
+        case .other: return "healthkit"
+        case .unknown: return "unknown"
         }
     }
 }

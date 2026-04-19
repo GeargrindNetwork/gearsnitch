@@ -146,6 +146,7 @@
 		B9132BE19983FED0AB1F25E9 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 866D40788493E59429903BBA /* ActiveWorkoutView.swift */; };
 		BA214A124C701E9705A97225 /* MetricsLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67FDD9EA8D9439FA5BFE3EEC /* MetricsLogView.swift */; };
 		BA52359135FCB3F40C6348A2 /* ActiveRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1912FE4772AD939ECEABD7E8 /* ActiveRunView.swift */; };
+		BB8C3F0C06FD7FDC73123743 /* HeartRateMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF12374DD51BE2EAF44F6BA6 /* HeartRateMonitorTests.swift */; };
 		BDBDD74BED82A64BAB80C8BF /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0BA53BABC6105198FBDF25 /* WatchSessionManager.swift */; };
 		C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */; };
 		C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */; };
@@ -397,6 +398,7 @@
 		CC9CFC2797AD596756034BBE /* TokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStore.swift; sourceTree = "<group>"; };
 		CD9B62A46083DE5FF5D829AD /* NutritionGoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionGoalsView.swift; sourceTree = "<group>"; };
 		CE0D681BE7AEA87B7C6B073F /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		CF12374DD51BE2EAF44F6BA6 /* HeartRateMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateMonitorTests.swift; sourceTree = "<group>"; };
 		D0E1A45B997811D066252B2D /* DeviceMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceMapView.swift; sourceTree = "<group>"; };
 		D632ACA61A645F4E35EC3315 /* GearSnitch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GearSnitch.entitlements; sourceTree = "<group>"; };
 		D929C599AC0FE4E0FBCC10F1 /* PaymentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentService.swift; sourceTree = "<group>"; };
@@ -688,6 +690,7 @@
 				FFA8FABA9830E62E74262966 /* ApplePayManagerTests.swift */,
 				30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */,
 				4B66AE0569C6234BEA5970F5 /* HandPreferenceManagerTests.swift */,
+				CF12374DD51BE2EAF44F6BA6 /* HeartRateMonitorTests.swift */,
 				C94404D4B90C54109A3CE63B /* HeartRateZoneTests.swift */,
 				24567AB074A715ADECEE4EC6 /* LabsStateEligibilityTests.swift */,
 				AAFC815C23550A334820BF15 /* PaymentServiceTests.swift */,
@@ -1334,6 +1337,7 @@
 				B623512F5AB5EE1AA5385ECF /* ApplePayManagerTests.swift in Sources */,
 				B03D91635654732CA98894AE /* GymSessionAttributesTests.swift in Sources */,
 				B3B38C22B5D6DFF2D1FDC562 /* HandPreferenceManagerTests.swift in Sources */,
+				BB8C3F0C06FD7FDC73123743 /* HeartRateMonitorTests.swift in Sources */,
 				6D4B6143F26731AA501C2CBD /* HeartRateZoneTests.swift in Sources */,
 				53C3AB50D35FCF9D85C214B7 /* LabsStateEligibilityTests.swift in Sources */,
 				4F1FC701363C0F990C8F2DE0 /* PaymentServiceTests.swift in Sources */,

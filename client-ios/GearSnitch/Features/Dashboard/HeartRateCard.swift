@@ -3,6 +3,18 @@ import SwiftUI
 struct HeartRateCard: View {
     @ObservedObject private var monitor = HeartRateMonitor.shared
 
+    /// Render "via AirPods Pro" / "via Apple Watch" / "via iPhone" when the
+    /// source is known. AirPods Pro 3 heart rate is surfaced through HealthKit
+    /// (not BLE), and the source name on the HKSample carries "AirPods".
+    private func sourceAttribution(for source: String) -> String {
+        switch monitor.sourceKind {
+        case .airpods, .watch, .phone, .other:
+            return "via \(source)"
+        case .unknown:
+            return source
+        }
+    }
+
     var body: some View {
         Group {
             if let bpm = monitor.currentBPM, let zone = monitor.currentZone {
@@ -31,7 +43,7 @@ struct HeartRateCard: View {
                         .foregroundColor(.gsTextSecondary)
 
                     if let source = monitor.sourceDeviceName {
-                        Text(source)
+                        Text(sourceAttribution(for: source))
                             .font(.caption2)
                             .foregroundColor(.gsTextSecondary)
                     }

@@ -2,14 +2,25 @@ import SwiftUI
 
 struct HeartRateMonitorCard: View {
     @ObservedObject private var monitor = HeartRateMonitor.shared
+    @ObservedObject private var permissions = HealthKitPermissions.shared
     @State private var isPulsing = false
+    @State private var hasTriggeredAutoStart = false
+    @State private var showHealthSettingsHint = false
 
-    private var hasHRCapableDevice: Bool {
+    /// Whether a BLE-paired device in the nearby list looks like AirPods.
+    /// Used only to display a helpful "AirPods HR is via HealthKit" hint —
+    /// AirPods HR does NOT come through the BLE GATT stack.
+    private var hasPairedAirPodsLikeDevice: Bool {
         let ble = BLEManager.shared
         let allDevices = ble.connectedDevices + ble.discoveredDevices
-        return allDevices.contains { device in
-            let name = device.name.lowercased()
-            return name.contains("airpods") || name.contains("watch")
+        return allDevices.contains { $0.name.lowercased().contains("airpods") }
+    }
+
+    /// Whether any HR-capable consumer device is around. AirPods Pro 3 expose
+    /// HR via HealthKit only; Apple Watch writes HR directly to HealthKit.
+    private var hasHRCapableDevice: Bool {
+        hasPairedAirPodsLikeDevice || BLEManager.shared.connectedDevices.contains { device in
+            device.name.lowercased().contains("watch")
         }
     }
 
@@ -19,6 +30,8 @@ struct HeartRateMonitorCard: View {
                 activeBPMView(bpm: bpm, zone: zone)
             } else if monitor.isMonitoring {
                 waitingView
+            } else if permissions.state == .denied {
+                healthPermissionDeniedView
             } else if !hasHRCapableDevice {
                 unavailableView
             } else {
@@ -37,6 +50,26 @@ struct HeartRateMonitorCard: View {
             withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
                 isPulsing = true
             }
+            autoStartMonitoringIfNeeded()
+        }
+        .alert("AirPods Heart Rate", isPresented: $showHealthSettingsHint) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("AirPods Pro heart rate is read automatically through Apple Health. Open Settings → Health → Data Access & Devices → GearSnitch to confirm read access for Heart Rate is enabled.")
+        }
+    }
+
+    /// AirPods Pro 3 don't expose HR over BLE — they write HR into HealthKit.
+    /// So as long as HealthKit read auth is granted, we can start the observer
+    /// query the moment the Dashboard appears and surface samples from whatever
+    /// source HealthKit has (AirPods, Watch, iPhone).
+    private func autoStartMonitoringIfNeeded() {
+        guard !hasTriggeredAutoStart else { return }
+        hasTriggeredAutoStart = true
+
+        guard permissions.canQuery else { return }
+        if !monitor.isMonitoring {
+            monitor.startMonitoring()
         }
     }
 
@@ -101,7 +134,7 @@ struct HeartRateMonitorCard: View {
             }
 
             if let source = monitor.sourceDeviceName {
-                Text(source)
+                Text(sourceAttribution(for: source))
                     .font(.caption)
                     .foregroundColor(.gsTextSecondary)
             }
@@ -114,6 +147,17 @@ struct HeartRateMonitorCard: View {
                         .frame(height: 6)
                 }
             }
+        }
+    }
+
+    /// Render "via AirPods Pro" / "via Apple Watch" / "via iPhone" when the
+    /// source is known, falling back to the raw source name for clarity.
+    private func sourceAttribution(for source: String) -> String {
+        switch monitor.sourceKind {
+        case .airpods, .watch, .phone, .other:
+            return "via \(source)"
+        case .unknown:
+            return source
         }
     }
 
@@ -137,9 +181,21 @@ struct HeartRateMonitorCard: View {
                 .font(.headline)
                 .foregroundColor(.gsText)
 
-            Text("Waiting for data from AirPods Pro...")
+            Text("Waiting for data from AirPods, Apple Watch, or iPhone…")
                 .font(.caption)
                 .foregroundColor(.gsTextSecondary)
+                .multilineTextAlignment(.center)
+
+            if hasPairedAirPodsLikeDevice {
+                Button {
+                    showHealthSettingsHint = true
+                } label: {
+                    Text("Not seeing your AirPods heart rate?")
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(.gsEmerald)
+                }
+                .buttonStyle(.plain)
+            }
 
             ProgressView()
                 .tint(.gsEmerald)
@@ -190,10 +246,63 @@ struct HeartRateMonitorCard: View {
                 .font(.headline)
                 .foregroundColor(.gsText)
 
-            Text("Start a gym session or connect AirPods Pro 3 to see your live heart rate")
+            Text("Start a gym session or wear AirPods Pro 3 to see your live heart rate")
                 .font(.caption)
                 .foregroundColor(.gsTextSecondary)
                 .multilineTextAlignment(.center)
+
+            if hasPairedAirPodsLikeDevice {
+                Button {
+                    monitor.startMonitoring()
+                } label: {
+                    Text("Start Monitoring")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(Color.gsEmerald)
+                        .cornerRadius(8)
+                }
+            }
+        }
+    }
+
+    // MARK: - Permission Denied
+
+    private var healthPermissionDeniedView: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.gsWarning.opacity(0.12))
+                    .frame(width: 80, height: 80)
+
+                Image(systemName: "heart.text.square.fill")
+                    .font(.system(size: 36))
+                    .foregroundColor(.gsWarning)
+            }
+
+            Text("Health Access Needed")
+                .font(.headline)
+                .foregroundColor(.gsText)
+
+            Text("AirPods Pro 3 heart rate comes through Apple Health. Enable Heart Rate read access in Settings → Health → Data Access & Devices → GearSnitch.")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+                .multilineTextAlignment(.center)
+
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Text("Open Settings")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(Color.gsEmerald)
+                    .cornerRadius(8)
+            }
         }
     }
 
