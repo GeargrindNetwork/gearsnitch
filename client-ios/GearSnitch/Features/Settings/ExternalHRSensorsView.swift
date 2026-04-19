@@ -1,0 +1,101 @@
+import SwiftUI
+
+/// Settings → Health → External heart-rate sensors. Lists BLE HR Profile
+/// peripherals (service 0x180D) the app has discovered and lets the user
+/// toggle each as an HR source. Enabled sensors connect and subscribe to
+/// 0x2A37 notifications via `ExternalHRSensorAdapter`, which forwards
+/// decoded samples to `HeartRateMonitor.ingestExternalSample(...)`.
+///
+/// This UI never touches the Watch or AirPods ingestion paths — it only
+/// adds a third input channel for users who don't have an Apple Watch
+/// (or whose Watch isn't in play for a given session).
+struct ExternalHRSensorsView: View {
+    @ObservedObject private var adapter = ExternalHRSensorAdapter.shared
+
+    var body: some View {
+        List {
+            Section {
+                if adapter.sensors.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("No heart-rate sensors found yet")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(.gsText)
+                        Text("Power on a chest strap, optical armband, or similar BLE HR sensor near your iPhone. It will appear here once it advertises the Heart Rate Service (0x180D).")
+                            .font(.caption)
+                            .foregroundColor(.gsTextSecondary)
+                    }
+                    .padding(.vertical, 6)
+                } else {
+                    ForEach(adapter.sensors) { sensor in
+                        sensorRow(for: sensor)
+                    }
+                }
+            } header: {
+                Text("Available Sensors")
+                    .foregroundColor(.gsTextSecondary)
+            } footer: {
+                Text("Apple Watch and AirPods Pro continue to work as before. External sensors only supplement those sources and never replace them.")
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+            }
+            .listRowBackground(Color.gsSurface)
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(Color.gsBackground.ignoresSafeArea())
+        .navigationTitle("External HR Sensors")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            adapter.startScanning()
+        }
+    }
+
+    @ViewBuilder
+    private func sensorRow(for sensor: ExternalHRSensor) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "sensor.tag.radiowaves.forward")
+                .font(.title3)
+                .foregroundColor(sensor.isStreaming ? .gsEmerald : .gsTextSecondary)
+                .frame(width: 32, height: 32)
+                .background(Color.gsSurfaceRaised)
+                .cornerRadius(8)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(sensor.displayName)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.gsText)
+
+                Text(statusText(for: sensor))
+                    .font(.caption2)
+                    .foregroundColor(.gsTextSecondary)
+            }
+
+            Spacer()
+
+            Toggle("", isOn: Binding(
+                get: { adapter.isEnabled(sensorID: sensor.id) },
+                set: { adapter.setSensorEnabled($0, sensorID: sensor.id) }
+            ))
+            .labelsHidden()
+            .tint(.gsEmerald)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func statusText(for sensor: ExternalHRSensor) -> String {
+        if let bpm = sensor.lastBPM, sensor.isStreaming {
+            return "Streaming · \(bpm) BPM"
+        }
+        if sensor.isConnected {
+            return "Connected · waiting for data"
+        }
+        return "Available"
+    }
+}
+
+#Preview {
+    NavigationStack {
+        ExternalHRSensorsView()
+    }
+    .preferredColorScheme(.dark)
+}
