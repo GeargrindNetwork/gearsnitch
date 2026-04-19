@@ -89,10 +89,12 @@ describe('dashboard reorganization', () => {
     expect(bodySection).not.toContain('deviceStatusSection');
   });
 
-  test('dashboard has disarm button in toolbar', () => {
-    expect(dashboard).toContain('isDisconnectProtectionArmed');
-    expect(dashboard).toContain('"Disarm"');
-    expect(dashboard).toContain('lock.open.fill');
+  // NOTE: Disarm moved out of DashboardView toolbar in PR #95 — it now
+  // lives in the shared `TopNavBar` overlay component, rendered by
+  // RootTabView. See client-ios/GearSnitch/App/TopNavBar.swift.
+  test('disarm button lives in shared TopNavBar', () => {
+    const topNavBar = readRepo('client-ios/GearSnitch/App/TopNavBar.swift');
+    expect(topNavBar).toContain('Disarm');
   });
 
   test('profile screen has devices section with See All', () => {
