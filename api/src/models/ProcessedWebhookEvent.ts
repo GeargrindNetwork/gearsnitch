@@ -2,32 +2,44 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 /**
  * Tracks webhook events (Apple App Store Server Notifications v2,
- * Stripe, etc.) that have already been processed so we can reject
- * duplicates and guarantee idempotency on retries.
+ * Stripe, etc.) that have already been processed so duplicate deliveries
+ * become idempotent no-ops.
+ *
+ * TTL: documents expire ~7 days after insert. Stripe retries for up to
+ * 3 days; Apple retries for up to 5 days. 7 days gives headroom without
+ * bloating the collection.
  */
 export interface IProcessedWebhookEvent extends Document {
-  provider: string; // 'apple' | 'stripe'
-  eventId: string; // Apple's notificationUUID, Stripe event.id, etc.
-  notificationType?: string;
-  processedAt: Date;
+  eventId: string;       // Stripe event.id OR Apple notificationUUID
+  provider: string;      // 'stripe' | 'apple'
+  type: string;          // Stripe event type OR Apple notificationType
+  createdAt: Date;
 }
 
 const ProcessedWebhookEventSchema = new Schema<IProcessedWebhookEvent>(
   {
-    provider: { type: String, required: true },
     eventId: { type: String, required: true },
-    notificationType: { type: String },
-    processedAt: { type: Date, default: () => new Date() },
+    provider: { type: String, required: true, default: 'stripe' },
+    type: { type: String, required: true },
+    createdAt: { type: Date, default: () => new Date() },
   },
-  { timestamps: true },
+  { versionKey: false }
 );
 
+// Unique on (provider, eventId) — duplicate inserts throw E11000 which we
+// interpret as "already processed".
 ProcessedWebhookEventSchema.index(
   { provider: 1, eventId: 1 },
-  { unique: true },
+  { unique: true }
+);
+
+// TTL: purge after 7 days (604800 seconds).
+ProcessedWebhookEventSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 60 * 60 * 24 * 7 }
 );
 
 export const ProcessedWebhookEvent = mongoose.model<IProcessedWebhookEvent>(
   'ProcessedWebhookEvent',
-  ProcessedWebhookEventSchema,
+  ProcessedWebhookEventSchema
 );

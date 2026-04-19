@@ -111,7 +111,7 @@ router.post(
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: true,
-        sameSite: 'strict',
+        sameSite: 'none',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: '/api/v1/auth',
       });
@@ -152,7 +152,7 @@ router.post(
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
         secure: true,
-        sameSite: 'strict',
+        sameSite: 'none',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/api/v1/auth',
       });
@@ -196,7 +196,7 @@ router.post(
       res.cookie('refreshToken', tokenPair.refreshToken, {
         httpOnly: true,
         secure: true,
-        sameSite: 'strict',
+        sameSite: 'none',
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: '/api/v1/auth',
       });
@@ -224,7 +224,7 @@ router.post('/logout', isAuthenticated, async (req: Request, res: Response) => {
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: true,
-      sameSite: 'strict',
+      sameSite: 'none',
       path: '/api/v1/auth',
     });
 

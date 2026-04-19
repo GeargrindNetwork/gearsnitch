@@ -9,6 +9,11 @@ import { LabAppointment } from '../../models/LabAppointment.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
 import logger from '../../utils/logger.js';
 import {
+  isRestricted,
+  LAB_STATE_RESTRICTED_ERROR_CODE,
+  stateRestrictedMessage,
+} from './stateEligibility.js';
+import {
   labProviderFactory,
   NotImplementedError,
   type LabProvider,
@@ -22,10 +27,26 @@ router.use(labAuditMiddleware);
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
+/**
+ * Shipping address schema for lab orders. The `state` field is gated by
+ * `isRestricted` before any provider/Stripe/Mongo side-effects (mirrors iOS
+ * PR #27).
+ */
+const shippingAddressSchema = z.object({
+  name: z.string().min(1).optional(),
+  line1: z.string().min(1).optional(),
+  line2: z.string().optional(),
+  city: z.string().min(1).optional(),
+  state: z.string().min(2).max(2),
+  postalCode: z.string().min(1).optional(),
+  country: z.string().optional(),
+});
+
 const scheduleLabSchema = z.object({
   date: z.string().datetime(),
   paymentToken: z.string().min(1),
   productId: z.string().min(1),
+  shippingAddress: shippingAddressSchema.optional(),
 });
 
 const collectionMethodSchema = z.enum(['phlebotomy_site', 'mobile_phleb', 'self_collect']);
@@ -99,6 +120,25 @@ function serializeAppointment(appt: Record<string, any>) {
 }
 
 /**
+ * Writes the canonical state-eligibility rejection response.
+ *
+ * Uses a raw JSON body (not the standard envelope) so iOS + backend speak the
+ * exact shape PR #27 keys off of:
+ *   { error: 'LAB_NOT_AVAILABLE_IN_STATE', state: '<XX>', message: '<copy>' }
+ *
+ * The audit middleware from PR #26 observes the 400 status and logs the
+ * rejection automatically — no extra instrumentation needed here.
+ */
+function sendStateRestrictedResponse(res: Response, stateCode: string): void {
+  const normalized = String(stateCode).trim().toUpperCase();
+  res.status(StatusCodes.BAD_REQUEST).json({
+    error: LAB_STATE_RESTRICTED_ERROR_CODE,
+    state: normalized,
+    message: stateRestrictedMessage(normalized),
+  });
+}
+
+/**
  * Translates provider-side errors into safe client responses without
  * leaking stack traces or vendor internals (both PHI-adjacent and
  * vendor-confidential). Details are written to the server log only.
@@ -145,7 +185,20 @@ async function handleGetBloodworkProduct(_req: Request, res: Response) {
 async function handleScheduleLab(req: Request, res: Response) {
   try {
     const user = req.user as JwtPayload;
-    const { date, paymentToken: _paymentToken, productId } = req.body as z.infer<typeof scheduleLabSchema>;
+    const {
+      date,
+      paymentToken: _paymentToken,
+      productId,
+      shippingAddress,
+    } = req.body as z.infer<typeof scheduleLabSchema>;
+
+    // State-eligibility gate (Rupa Health: NY/NJ/RI restricted). Must fire
+    // BEFORE product lookup, Stripe charge, or Mongo write. Mirrors iOS PR #27.
+    const shippingState = shippingAddress?.state;
+    if (isRestricted(shippingState)) {
+      sendStateRestrictedResponse(res, shippingState as string);
+      return;
+    }
 
     if (productId !== BLOODWORK_PRODUCT.id) {
       errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid product', `Product ${productId} not found`);
@@ -270,11 +323,19 @@ async function handleListDrawSites(req: Request, res: Response) {
   }
 }
 
-// POST /labs/orders
+// POST /labs/orders — gated on state eligibility BEFORE any provider call
+// or Stripe charge. Paired with iOS PR #27 client-side gate.
 async function handleCreateOrder(req: Request, res: Response) {
   const provider = labProviderFactory();
   const body = req.body as z.infer<typeof createOrderSchema>;
   const user = req.user as JwtPayload;
+
+  // State-eligibility gate (Rupa Health: NY/NJ/RI restricted). Fires before
+  // any side-effect so we never charge Stripe or hit the provider.
+  if (isRestricted(body.patient.address.state)) {
+    sendStateRestrictedResponse(res, body.patient.address.state);
+    return;
+  }
 
   try {
     const order = await provider.createOrder({

@@ -13,6 +13,7 @@ export interface IUser extends Document {
   authProviders: string[];
   roles: string[];
   status: string;
+  stripeCustomerId?: string | null;
   firstName?: string;
   lastName?: string;
   dateOfBirth?: Date;
@@ -21,6 +22,13 @@ export interface IUser extends Document {
   heightCm?: number;
   weightKg?: number;
   defaultGymId: Types.ObjectId | null;
+  /**
+   * Stripe customer ID, persisted on first payment-flow invocation.
+   * Avoids a global `stripe.customers.list({ email })` lookup that was
+   * race-unsafe and could return the wrong customer if two users ever
+   * shared an email. See PaymentService.getOrCreateStripeCustomer.
+   */
+  stripeCustomerId?: string;
   onboardingCompletedAt: Date | null;
   permissionsState: {
     bluetooth: PermissionStateValue | boolean;
@@ -54,6 +62,7 @@ const UserSchema = new Schema<IUser>(
     authProviders: { type: [String], default: [] },
     roles: { type: [String], default: ['user'] },
     status: { type: String, default: 'active' },
+    stripeCustomerId: { type: String, default: null, sparse: true },
     firstName: { type: String, default: null },
     lastName: { type: String, default: null },
     dateOfBirth: { type: Date, default: null },
@@ -70,6 +79,7 @@ const UserSchema = new Schema<IUser>(
     heightCm: { type: Number, default: null },
     weightKg: { type: Number, default: null },
     defaultGymId: { type: Schema.Types.ObjectId, ref: 'Gym', default: null },
+    stripeCustomerId: { type: String, default: undefined },
     onboardingCompletedAt: { type: Date, default: null },
     permissionsState: {
       bluetooth: { type: Schema.Types.Mixed, default: 'not_determined' },
@@ -100,5 +110,6 @@ UserSchema.index({ createdAt: 1 });
 UserSchema.index({ email: 1 });
 UserSchema.index({ status: 1 });
 UserSchema.index({ deletedAt: 1 });
+UserSchema.index({ stripeCustomerId: 1 }, { sparse: true });
 
 export const User = mongoose.model<IUser>('User', UserSchema);

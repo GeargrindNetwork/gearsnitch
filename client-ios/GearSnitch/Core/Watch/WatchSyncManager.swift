@@ -137,6 +137,16 @@ final class WatchSyncManager: NSObject, ObservableObject {
     // MARK: - Handle Watch Commands
 
     private func handleWatchMessage(_ message: [String: Any]) {
+        // Fast-path: heart-rate sample payloads use their own message type
+        // that lives outside the `WatchMessageType` enum to keep that enum
+        // insulated from the Watch agent's parallel changes. Intercept here
+        // so they reach `HeartRateMonitor.ingestWatchSample` immediately.
+        if let typeRaw = message["type"] as? String,
+           typeRaw == WatchHRSampleMessageKey.type {
+            handleWatchHRSample(message)
+            return
+        }
+
         guard let typeRaw = message["type"] as? String,
               let type = WatchMessageType(rawValue: typeRaw) else {
             logger.warning("Received unknown Watch message type")
@@ -153,6 +163,20 @@ final class WatchSyncManager: NSObject, ObservableObject {
         default:
             logger.info("Received unexpected message type from Watch: \(typeRaw)")
         }
+    }
+
+    /// Decode a WatchConnectivity payload carrying a `WatchHRSamplePayload`
+    /// and forward it to `HeartRateMonitor`. Shared by the `didReceiveMessage`
+    /// and `didReceiveUserInfo` delegate paths so either transport works.
+    private func handleWatchHRSample(_ message: [String: Any]) {
+        guard let payload = WatchHRSamplePayload.from(dictionary: message) else {
+            logger.warning("Failed to decode WatchHRSamplePayload from WC message")
+            return
+        }
+        HeartRateMonitor.shared.ingestWatchSample(
+            bpm: payload.bpm,
+            timestamp: payload.recordedAt
+        )
     }
 
     private func handleSessionCommand(_ message: [String: Any]) {
@@ -302,6 +326,16 @@ extension WatchSyncManager: WCSessionDelegate {
             if let phoneContext = PhoneAppContext.from(dictionary: applicationContext) {
                 logger.info("Received Phone context from Watch: active=\(phoneContext.watchActive)")
             }
+        }
+    }
+
+    /// `transferUserInfo` is the Watch's queued-delivery path for samples
+    /// pushed while the iPhone app isn't in the foreground. Route those
+    /// through the same handler as live messages so heart-rate samples
+    /// always land in the split-chart buffer.
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+        Task { @MainActor in
+            handleWatchMessage(userInfo)
         }
     }
 }

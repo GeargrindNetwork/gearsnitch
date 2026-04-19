@@ -21,8 +21,10 @@ export interface ISubscription extends Document {
   expiryDate: Date;
   lastValidatedAt: Date;
   extensionDays: number;
-  autoRenew?: boolean;
-  cancelledAt?: Date;
+  autoRenew: boolean;
+  stripeSubscriptionId?: string | null;
+  stripeCustomerId?: string | null;
+  cancelledAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,8 +53,10 @@ const SubscriptionSchema = new Schema<ISubscription>(
     expiryDate: { type: Date, required: true },
     lastValidatedAt: { type: Date, required: true },
     extensionDays: { type: Number, default: 0 },
-    autoRenew: { type: Boolean },
-    cancelledAt: { type: Date },
+    autoRenew: { type: Boolean, default: true },
+    stripeSubscriptionId: { type: String, default: null, sparse: true },
+    stripeCustomerId: { type: String, default: null },
+    cancelledAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -64,6 +68,7 @@ SubscriptionSchema.index(
 SubscriptionSchema.index({ userId: 1, status: 1 });
 SubscriptionSchema.index({ expiryDate: 1 });
 SubscriptionSchema.index({ originalTransactionId: 1 });
+SubscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
 
 export const Subscription = mongoose.model<ISubscription>(
   'Subscription',

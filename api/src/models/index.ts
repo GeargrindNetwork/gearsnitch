@@ -13,6 +13,9 @@ export type { ISubscription, SubscriptionStatus } from './Subscription';
 export { ProcessedWebhookEvent } from './ProcessedWebhookEvent';
 export type { IProcessedWebhookEvent } from './ProcessedWebhookEvent';
 
+export { ProcessedWebhookEvent } from './ProcessedWebhookEvent';
+export type { IProcessedWebhookEvent } from './ProcessedWebhookEvent';
+
 export { Device } from './Device';
 export type { IDevice } from './Device';
 
