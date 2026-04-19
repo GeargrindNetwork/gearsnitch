@@ -10,11 +10,15 @@ import { Subscription } from '../../models/Subscription.js';
 import { HealthMetric } from '../../models/HealthMetric.js';
 import { LabAppointment } from '../../models/LabAppointment.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
+import reconciliationRouter from './reconciliation.js';
 
 const router = Router();
 
 // All admin routes require authentication + admin role
 router.use(isAuthenticated, hasRole(['admin']));
+
+// Subscription reconciliation cron admin endpoints.
+router.use('/reconciliation', reconciliationRouter);
 
 const updateUserSchema = z.object({
   roles: z.array(z.string()).optional(),

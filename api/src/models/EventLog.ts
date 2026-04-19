@@ -14,13 +14,18 @@ export const EVENT_TYPES = [
   'workout_started',
   'workout_ended',
   'profile_updated',
+  // Subscription reconciliation (weekly cron, see worker/src/jobs/subscriptionReconciliation.ts)
+  'SubscriptionDriftHealed',
+  'SubscriptionNotAtProvider',
+  'ReconciliationFailed',
+  'ReconciliationRunComplete',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
 
 export interface IEventLog extends Document {
   _id: Types.ObjectId;
-  userId: Types.ObjectId;
+  userId?: Types.ObjectId;
   eventType: EventType;
   metadata?: unknown;
   source: 'ios' | 'web' | 'system' | 'widget' | 'watchos';
@@ -29,7 +34,10 @@ export interface IEventLog extends Document {
 
 const EventLogSchema = new Schema<IEventLog>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    // `userId` is required for user-scoped events but optional for system
+    // events such as `ReconciliationRunComplete` where no single user is
+    // attributable. User-scoped routes continue to always supply one.
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
     eventType: {
       type: String,
       required: true,
