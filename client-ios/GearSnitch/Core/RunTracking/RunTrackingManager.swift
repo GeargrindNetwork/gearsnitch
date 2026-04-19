@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import CoreLocation
 import os
 
@@ -168,13 +169,87 @@ struct ActiveRunSession: Codable {
     var notes: String?
     let source: String
 
+    // MARK: - Auto-pause (Backlog item #18)
+    //
+    // When the inactivity detector flips to `.paused` we stamp
+    // `pausedAt` with the transition time. On resume we roll that
+    // delta into `accumulatedPausedSeconds` and clear `pausedAt`.
+    // `elapsedTime` subtracts paused time so the pace average stays
+    // honest — this is the whole point of the feature.
+    var pausedAt: Date?
+    var accumulatedPausedSeconds: TimeInterval
+
+    // Custom CodingKeys so older persisted sessions (without the
+    // two pause fields) still decode cleanly after the app updates.
+    private enum CodingKeys: String, CodingKey {
+        case backendRunId
+        case startedAt
+        case pendingEndAt
+        case routePoints
+        case distanceMeters
+        case notes
+        case source
+        case pausedAt
+        case accumulatedPausedSeconds
+    }
+
+    init(
+        backendRunId: String?,
+        startedAt: Date,
+        pendingEndAt: Date?,
+        routePoints: [RunRoutePoint],
+        distanceMeters: Double,
+        notes: String?,
+        source: String,
+        pausedAt: Date? = nil,
+        accumulatedPausedSeconds: TimeInterval = 0
+    ) {
+        self.backendRunId = backendRunId
+        self.startedAt = startedAt
+        self.pendingEndAt = pendingEndAt
+        self.routePoints = routePoints
+        self.distanceMeters = distanceMeters
+        self.notes = notes
+        self.source = source
+        self.pausedAt = pausedAt
+        self.accumulatedPausedSeconds = accumulatedPausedSeconds
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.backendRunId = try c.decodeIfPresent(String.self, forKey: .backendRunId)
+        self.startedAt = try c.decode(Date.self, forKey: .startedAt)
+        self.pendingEndAt = try c.decodeIfPresent(Date.self, forKey: .pendingEndAt)
+        self.routePoints = try c.decode([RunRoutePoint].self, forKey: .routePoints)
+        self.distanceMeters = try c.decode(Double.self, forKey: .distanceMeters)
+        self.notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        self.source = try c.decode(String.self, forKey: .source)
+        self.pausedAt = try c.decodeIfPresent(Date.self, forKey: .pausedAt)
+        self.accumulatedPausedSeconds = try c.decodeIfPresent(TimeInterval.self, forKey: .accumulatedPausedSeconds) ?? 0
+    }
+
     var isEndingPending: Bool {
         pendingEndAt != nil
     }
 
+    /// True while the inactivity detector has the run auto-paused.
+    /// View code uses this to show the "Auto-paused" banner and to
+    /// freeze the elapsed-time display.
+    var isPaused: Bool {
+        pausedAt != nil
+    }
+
+    /// Elapsed time minus paused time — the value that drives the
+    /// pace calculation. While paused, the clock freezes.
     var elapsedTime: TimeInterval {
         let endReference = pendingEndAt ?? Date()
-        return max(0, endReference.timeIntervalSince(startedAt))
+        let gross = max(0, endReference.timeIntervalSince(startedAt))
+        let currentPauseDelta: TimeInterval = {
+            guard let pausedAt, pendingEndAt == nil else { return 0 }
+            return max(0, Date().timeIntervalSince(pausedAt))
+        }()
+        let paused = accumulatedPausedSeconds + currentPauseDelta
+        return max(0, gross - paused)
     }
 
     var durationString: String {
@@ -277,6 +352,30 @@ final class RunTrackingManager: NSObject, ObservableObject {
     private let apiClient = APIClient.shared
     private var refreshTimer: Timer?
 
+    // MARK: - Auto-pause (Backlog item #18)
+    //
+    // The inactivity detector watches GPS + motion for a 60s stretch
+    // of "not moving" and flips `state` to `.paused`. We subscribe to
+    // that state here and call `pause()` / `resume()` which flip the
+    // session's `pausedAt` field. `autoPauseBanner` is a one-shot flag
+    // the active-run view binds to for its "Auto-paused" indicator.
+
+    let inactivityDetector = InactivityDetector()
+    private let motionService = RunMotionService.shared
+    private let autoPausePreferences = RunAutoPausePreferences()
+    private let locationSubject = PassthroughSubject<CLLocation, Never>()
+    private var detectorStateSub: AnyCancellable?
+
+    /// Bannered state: `true` briefly after the detector auto-pauses
+    /// or auto-resumes. The ActiveRunView shows a transient banner and
+    /// clears this on its own 3s timer.
+    @Published var autoPauseBanner: AutoPauseBannerState?
+
+    enum AutoPauseBannerState: Equatable {
+        case paused
+        case resumed
+    }
+
     private static let persistenceDirectory = "RunTracking"
     private static let persistenceFileName = "active-run.json"
 
@@ -293,16 +392,104 @@ final class RunTrackingManager: NSObject, ObservableObject {
 
         restoreActiveRun()
 
+        // Backlog item #18 — wire the inactivity detector to the
+        // manager's location + motion streams. We honor the user
+        // setting (default ON) here; the detector itself refuses to
+        // flip state when disabled.
+        inactivityDetector.setEnabled(autoPausePreferences.isEnabled)
+        observeDetectorState()
+
         if let activeRun {
             startRefreshTimer()
             if activeRun.pendingEndAt == nil, isAuthorizedForTracking {
                 locationManager.startUpdatingLocation()
+                startInactivityDetector()
             }
         }
 
         Task {
             await recoverRemoteActiveRunIfNeeded()
         }
+    }
+
+    /// Called by the settings toggle. Immediately enables / disables
+    /// the detector and updates the persisted preference.
+    func setAutoPauseEnabled(_ enabled: Bool) {
+        autoPausePreferences.isEnabled = enabled
+        inactivityDetector.setEnabled(enabled)
+        if !enabled, activeRun?.isPaused == true {
+            // If we disable while currently auto-paused, resume so the
+            // user isn't stuck on a frozen timer.
+            resume()
+        }
+    }
+
+    private func observeDetectorState() {
+        detectorStateSub?.cancel()
+        detectorStateSub = inactivityDetector.$state
+            .removeDuplicates()
+            .sink { [weak self] state in
+                guard let self else { return }
+                switch state {
+                case .paused:
+                    self.pause()
+                case .active:
+                    if self.activeRun?.isPaused == true {
+                        self.resume()
+                    }
+                }
+            }
+    }
+
+    private func startInactivityDetector() {
+        motionService.start()
+        inactivityDetector.start(
+            locationPublisher: locationSubject.eraseToAnyPublisher(),
+            motionPublisher: motionService.publisher
+        )
+    }
+
+    private func stopInactivityDetector() {
+        inactivityDetector.stop()
+        motionService.stop()
+        inactivityDetector.reset()
+    }
+
+    /// Auto-pause the run. Idempotent — does nothing when there's no
+    /// active run or it's already paused.
+    func pause() {
+        guard var session = activeRun, !session.isPaused, session.pendingEndAt == nil else { return }
+        session.pausedAt = Date()
+        activeRun = session
+        persistActiveRun()
+        autoPauseBanner = .paused
+        logger.info("Run auto-paused (inactivity detector).")
+    }
+
+    /// Resume a paused run. Idempotent. Rolls the pause delta into
+    /// `accumulatedPausedSeconds` so `elapsedTime` stays honest.
+    func resume() {
+        guard var session = activeRun, let pausedAt = session.pausedAt else { return }
+        let delta = max(0, Date().timeIntervalSince(pausedAt))
+        session.accumulatedPausedSeconds += delta
+        session.pausedAt = nil
+        activeRun = session
+        persistActiveRun()
+        autoPauseBanner = .resumed
+        logger.info("Run resumed after \(delta)s pause.")
+    }
+
+    /// User tapped the banner / manual-resume affordance. Forces
+    /// state back to active and suppresses re-pause for 30s so they
+    /// aren't immediately auto-paused again.
+    func forceResume() {
+        inactivityDetector.forceResume()
+        resume()
+    }
+
+    /// Called by the banner view after it finishes its 3s display.
+    func clearAutoPauseBanner() {
+        autoPauseBanner = nil
     }
 
     var isAuthorizedForTracking: Bool {
@@ -346,6 +533,7 @@ final class RunTrackingManager: NSObject, ObservableObject {
         persistActiveRun()
         startRefreshTimer()
         locationManager.startUpdatingLocation()
+        startInactivityDetector()
 
         defer { isStarting = false }
 
@@ -379,9 +567,19 @@ final class RunTrackingManager: NSObject, ObservableObject {
             session.pendingEndAt = Date()
         }
 
+        // If we were auto-paused when the user stopped the run, roll
+        // the final pause delta in so the stored duration is correct.
+        if let pausedAt = session.pausedAt {
+            let delta = max(0, (session.pendingEndAt ?? Date()).timeIntervalSince(pausedAt))
+            session.accumulatedPausedSeconds += delta
+            session.pausedAt = nil
+        }
+
         activeRun = session
         persistActiveRun()
         locationManager.stopUpdatingLocation()
+        stopInactivityDetector()
+        autoPauseBanner = nil
 
         defer { isStopping = false }
 
@@ -450,6 +648,7 @@ final class RunTrackingManager: NSObject, ObservableObject {
 
             if isAuthorizedForTracking {
                 locationManager.startUpdatingLocation()
+                startInactivityDetector()
             }
         } catch {
             logger.error("Failed to recover remote active run: \(error.localizedDescription)")
@@ -460,7 +659,11 @@ final class RunTrackingManager: NSObject, ObservableObject {
         stopRefreshTimer()
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.objectWillChange.send()
+                guard let self else { return }
+                // Give the detector a chance to flip to paused even
+                // when no fresh GPS fix has arrived in a while.
+                self.inactivityDetector.tick()
+                self.objectWillChange.send()
             }
         }
     }
@@ -549,7 +752,17 @@ extension RunTrackingManager: CLLocationManagerDelegate {
             guard let self, var session = self.activeRun, session.pendingEndAt == nil else { return }
 
             for location in locations {
-                self.append(location: location, to: &session)
+                // Forward every fix to the inactivity detector — we
+                // want it to see the full stream, not the
+                // accuracy-filtered subset used for the polyline.
+                self.locationSubject.send(location)
+
+                // Skip route-point accumulation while auto-paused so
+                // distance doesn't drift from GPS noise at a stand
+                // (traffic light, shoelace, etc).
+                if !session.isPaused {
+                    self.append(location: location, to: &session)
+                }
             }
 
             self.activeRun = session
