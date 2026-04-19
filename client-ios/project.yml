@@ -131,7 +131,12 @@ targets:
           - group.com.gearsnitch.app
         aps-environment: development
         com.apple.developer.healthkit: true
-        com.apple.developer.healthkit.access: []
+        # com.apple.developer.healthkit.access (Verifiable Health Records)
+        # is an Apple-gated entitlement that requires separate approval
+        # per team + bundle ID. We DON'T use VHR features; standard
+        # com.apple.developer.healthkit is sufficient for HR / ECG / workout
+        # read+write. If VHR is ever needed, request it at:
+        # https://developer.apple.com/contact/request/health-record-read
     dependencies:
       - target: GearSnitchWatchWidgets
         embed: true
