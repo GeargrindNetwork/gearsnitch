@@ -46,6 +46,7 @@
 		24F8AEE809C5DB264EE42B6E /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F732D9E9ECE794CBE91F2A0D /* SignInView.swift */; };
 		2583FC386F409025824226D3 /* ECGView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21429058A897EA054540CF78 /* ECGView.swift */; };
 		25C8F3CB7B9B74757F12FEF0 /* ReleaseGateManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E1451727196C98AB732061 /* ReleaseGateManagerTests.swift */; };
+		25DA1F30725B3362D4D103FB /* BatteryLevelReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CC8591FC1DE0A78BAC3497C /* BatteryLevelReader.swift */; };
 		2799CDCBC9862857FE8F7C94 /* WorkoutListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE08B599CA8A0C737DA0D935 /* WorkoutListViewModel.swift */; };
 		27B3208F6002CC34702B3CE6 /* WatchSyncPayloadsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 830CEE37A4D930EDF494F88A /* WatchSyncPayloadsTests.swift */; };
 		28607A7C5EA7F09E5F394986 /* GymListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25094CC0AAD6413921521FD0 /* GymListView.swift */; };
@@ -387,6 +388,7 @@
 		38A15AAE9D0FBF0FA32364F0 /* GearSnitchWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = GearSnitchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		3959CA7AFA9A9CBAF71B6572 /* WorkoutSessionRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSessionRouter.swift; sourceTree = "<group>"; };
 		39816E569B3E18B77A216951 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3CC8591FC1DE0A78BAC3497C /* BatteryLevelReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryLevelReader.swift; sourceTree = "<group>"; };
 		3CD22CD4B31D02B131404A0A /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
 		3D53AA63E59A17D49FA9B8FC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3EE29CA9BC70E2FAFEB84C00 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
@@ -681,6 +683,7 @@
 			isa = PBXGroup;
 			children = (
 				908C21CDF2519F4003CCAA6A /* AccessorySetupController.swift */,
+				3CC8591FC1DE0A78BAC3497C /* BatteryLevelReader.swift */,
 				56898CE55871136E842BEC60 /* BLEAlarmSoundPlayer.swift */,
 				FF38A290D64009E04FD4D16B /* BLEDevice.swift */,
 				65040AD89C646F2EB1439629 /* BLEManager.swift */,
@@ -1726,6 +1729,7 @@
 				C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */,
 				E27E6E7226C8549C3A1C3EA5 /* BLEStateObserver.swift in Sources */,
 				EA3B60AED7DB06423FF6DA62 /* BMICalculatorView.swift in Sources */,
+				25DA1F30725B3362D4D103FB /* BatteryLevelReader.swift in Sources */,
 				1E737A07CBAEDB12D0954EDD /* CalendarSyncService.swift in Sources */,
 				E51FD70233766D95E4F77199 /* CalorieDashboardView.swift in Sources */,
 				4D1C19BCEF70A32F7B00F0F4 /* CalorieDashboardViewModel.swift in Sources */,

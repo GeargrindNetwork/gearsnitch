@@ -77,6 +77,12 @@ final class BLEManager: NSObject, ObservableObject {
     private let scanner = BLEScanner()
     private let logger = Logger(subsystem: "com.gearsnitch", category: "BLEManager")
 
+    /// Reads the standard BLE Battery Service (0x180F) on every connected
+    /// peripheral and surfaces readings for `DeviceDetailView`. See
+    /// `BatteryLevelReader.swift`. Lazily initialised so tests that don't
+    /// need BLE don't allocate it.
+    let batteryLevelReader = BatteryLevelReader()
+
     /// Tracks reconnection timers per device identifier.
     private var reconnectionTimers: [UUID: ReconnectionState] = [:]
     private var persistedMetadataByIdentifier: [String: PersistedBLEDeviceMetadata] = [:]
@@ -538,6 +544,11 @@ extension BLEManager: CBCentralManagerDelegate {
                 Task {
                     await DeviceEventSyncService.shared.record(action: .connect, for: device)
                 }
+
+                // Kick off BLE Battery Service (0x180F) discovery.
+                // `BatteryLevelReader` will subscribe to the Battery Level
+                // characteristic (0x2A19) once the characteristic surfaces.
+                self.batteryLevelReader.observe(peripheral: peripheral)
             }
         }
     }
@@ -569,6 +580,10 @@ extension BLEManager: CBCentralManagerDelegate {
 
             if let device = self.findDevice(for: peripheral) {
                 self.connectedDevices.removeAll { $0.identifier == device.identifier }
+
+                // Drop any cached battery state for the peripheral so a
+                // subsequent reconnect re-primes via the discovery path.
+                self.batteryLevelReader.stopObserving(peripheralIdentifier: peripheral.identifier)
 
                 Task {
                     await DeviceEventSyncService.shared.record(action: .disconnect, for: device)
@@ -634,6 +649,85 @@ extension BLEManager: CBCentralManagerDelegate {
 // MARK: - CBPeripheralDelegate (RSSI)
 
 extension BLEManager: CBPeripheralDelegate {
+
+    // MARK: - Battery Service (0x180F)
+
+    nonisolated func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: (any Error)?) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            if let error {
+                self.logger.warning("Service discovery failed for \(peripheral.name ?? "unknown"): \(error.localizedDescription)")
+                return
+            }
+
+            for service in peripheral.services ?? [] where service.uuid == BatteryLevelReader.batteryServiceUUID {
+                peripheral.discoverCharacteristics(
+                    [BatteryLevelReader.batteryLevelCharacteristicUUID],
+                    for: service
+                )
+            }
+        }
+    }
+
+    nonisolated func peripheral(
+        _ peripheral: CBPeripheral,
+        didDiscoverCharacteristicsFor service: CBService,
+        error: (any Error)?
+    ) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            if let error {
+                self.logger.warning("Characteristic discovery failed on \(peripheral.name ?? "unknown"): \(error.localizedDescription)")
+                return
+            }
+
+            guard service.uuid == BatteryLevelReader.batteryServiceUUID else { return }
+
+            for characteristic in service.characteristics ?? []
+            where characteristic.uuid == BatteryLevelReader.batteryLevelCharacteristicUUID {
+                // Prefer notifications; fall back to a one-shot read for
+                // peripherals that only expose the characteristic as Read
+                // (some cheap trackers advertise .read but not .notify).
+                if characteristic.properties.contains(.notify) {
+                    peripheral.setNotifyValue(true, for: characteristic)
+                }
+                if characteristic.properties.contains(.read) {
+                    peripheral.readValue(for: characteristic)
+                }
+            }
+        }
+    }
+
+    nonisolated func peripheral(
+        _ peripheral: CBPeripheral,
+        didUpdateValueFor characteristic: CBCharacteristic,
+        error: (any Error)?
+    ) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            if let error {
+                self.logger.warning("Value update failed on \(characteristic.uuid.uuidString): \(error.localizedDescription)")
+                return
+            }
+
+            guard
+                characteristic.uuid == BatteryLevelReader.batteryLevelCharacteristicUUID,
+                let value = characteristic.value
+            else {
+                return
+            }
+
+            let device = self.findDevice(for: peripheral)
+            self.batteryLevelReader.handleValue(
+                value,
+                peripheralIdentifier: peripheral.identifier,
+                persistedDeviceId: device?.persistedId
+            )
+        }
+    }
 
     nonisolated func peripheral(_ peripheral: CBPeripheral, didReadRSSI RSSI: NSNumber, error: (any Error)?) {
         Task { @MainActor [weak self] in
