@@ -36,6 +36,23 @@ struct GearComponentDTO: Identifiable, Decodable, Equatable {
     var isRetired: Bool {
         status == "retired"
     }
+
+    /// Human-readable usage label (e.g. "142.3 miles", "08:42 hours").
+    var usageLabel: String {
+        switch unit {
+        case "miles":
+            return String(format: "%.1f mi", currentValue)
+        case "km":
+            return String(format: "%.1f km", currentValue)
+        case "hours":
+            return String(format: "%.1f hr", currentValue)
+        case "sessions":
+            let int = Int(currentValue.rounded())
+            return "\(int) session\(int == 1 ? "" : "s")"
+        default:
+            return String(format: "%.1f", currentValue)
+        }
+    }
 }
 
 /// Usage band — drives the gear list color coding.
@@ -98,34 +115,9 @@ struct LogGearUsageResponse: Decodable {
 }
 
 // MARK: - Endpoints
-
-extension APIEndpoint {
-    enum Gear {
-        static var list: APIEndpoint {
-            APIEndpoint(path: "/api/v1/gear")
-        }
-
-        static func create(_ body: CreateGearBody) -> APIEndpoint {
-            APIEndpoint(path: "/api/v1/gear", method: .POST, body: body)
-        }
-
-        static func update(id: String, body: UpdateGearBody) -> APIEndpoint {
-            APIEndpoint(path: "/api/v1/gear/\(id)", method: .PATCH, body: body)
-        }
-
-        static func logUsage(id: String, amount: Double) -> APIEndpoint {
-            APIEndpoint(
-                path: "/api/v1/gear/\(id)/log-usage",
-                method: .POST,
-                body: LogGearUsageBody(amount: amount),
-            )
-        }
-
-        static func retire(id: String) -> APIEndpoint {
-            APIEndpoint(path: "/api/v1/gear/\(id)/retire", method: .POST)
-        }
-    }
-}
+// The `APIEndpoint.Gear` enum lives in `Core/Network/APIEndpoint.swift`.
+// The CRUD methods below are added there so all endpoint declarations stay
+// in a single file.
 
 // MARK: - Service
 

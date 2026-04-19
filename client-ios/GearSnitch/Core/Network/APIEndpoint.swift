@@ -576,6 +576,26 @@ extension APIEndpoint {
                 body: SetDefaultGearBody(activityType: activityType, gearId: gearId)
             )
         }
+
+        static func create(_ body: CreateGearBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/gear", method: .POST, body: body)
+        }
+
+        static func update(id: String, body: UpdateGearBody) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/gear/\(id)", method: .PATCH, body: body)
+        }
+
+        static func logUsage(id: String, amount: Double) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/gear/\(id)/log-usage",
+                method: .POST,
+                body: LogGearUsageBody(amount: amount)
+            )
+        }
+
+        static func retire(id: String) -> APIEndpoint {
+            APIEndpoint(path: "/api/v1/gear/\(id)/retire", method: .POST)
+        }
     }
 }
 

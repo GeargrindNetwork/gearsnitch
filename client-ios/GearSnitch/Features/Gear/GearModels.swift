@@ -1,43 +1,9 @@
 import Foundation
 
 // MARK: - Gear DTOs (backlog item #9)
-
-/// Minimal shape returned by `GET /api/v1/gear` and embedded in
-/// `GET /api/v1/gear/default-for-activity`. The richer GearComponent
-/// surface (usage history, retirement meta) ships with PR #55.
-struct GearComponentDTO: Identifiable, Decodable, Hashable {
-    let id: String
-    let name: String
-    let kind: String
-    let unit: String
-    let currentValue: Double
-    let retirementThreshold: Double?
-    let retiredAt: Date?
-
-    enum CodingKeys: String, CodingKey {
-        case id = "_id"
-        case name, kind, unit, currentValue, retirementThreshold, retiredAt
-    }
-
-    var isRetired: Bool { retiredAt != nil }
-
-    /// Human-readable usage label (e.g. "142.3 miles", "08:42 hours").
-    var usageLabel: String {
-        switch unit {
-        case "miles":
-            return String(format: "%.1f mi", currentValue)
-        case "km":
-            return String(format: "%.1f km", currentValue)
-        case "hours":
-            return String(format: "%.1f hr", currentValue)
-        case "sessions":
-            let int = Int(currentValue.rounded())
-            return "\(int) session\(int == 1 ? "" : "s")"
-        default:
-            return String(format: "%.1f", currentValue)
-        }
-    }
-}
+// GearComponentDTO itself lives in `Core/Services/GearService.swift`
+// (richer shape matching server `serializeComponent`). This file only
+// adds feature-specific types for the activity → gear picker.
 
 /// Response shape for `GET /api/v1/gear/default-for-activity?type=...`.
 struct DefaultGearForActivityDTO: Decodable {

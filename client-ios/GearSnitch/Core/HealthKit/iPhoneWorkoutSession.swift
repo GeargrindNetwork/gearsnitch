@@ -1,3 +1,9 @@
+// iOS-26-only: HKLiveWorkoutBuilder on iPhone was added in iOS 26.
+// Xcode 16.4 (CI runner) ships iOS 18 SDK and doesn't expose the type
+// on iPhone yet. Gate at compile time so the code compiles on both
+// Xcode 16 (skip — feature dormant) and Xcode 26+ (include — active).
+#if compiler(>=6.2) && os(iOS)
+
 import Combine
 import Foundation
 import HealthKit
@@ -338,3 +344,45 @@ enum IPhoneWorkoutSessionError: LocalizedError {
         }
     }
 }
+
+#else
+
+// Stub surface for Xcode <26 (iOS <26 SDK). The feature is dormant at
+// runtime (WorkoutSessionRouter never returns .iPhoneHealthKit on iOS <26
+// per its #available check), so none of these code paths execute — they
+// exist solely to keep callers compiling on the older toolchain.
+
+import Combine
+import Foundation
+import HealthKit
+
+@MainActor
+final class IPhoneWorkoutSession: NSObject, ObservableObject {
+    @Published private(set) var state: HKWorkoutSessionState = .notStarted
+    @Published private(set) var bpm: Int?
+    @Published private(set) var distanceMeters: Double?
+
+    init(activityType: HKWorkoutActivityType, locationType: HKWorkoutSessionLocationType) throws {
+        throw IPhoneWorkoutSessionError.builderBeginFailed
+    }
+
+    init(recovered: HKWorkoutSession, healthStore: HKHealthStore = HKHealthStore()) {
+        super.init()
+    }
+
+    func start() async throws { throw IPhoneWorkoutSessionError.builderBeginFailed }
+    func pause() {}
+    func resume() {}
+    func end() async throws -> HKWorkout? { nil }
+    var elapsedTime: TimeInterval { 0 }
+    var snapshot: ActiveWorkoutSnapshot { ActiveWorkoutSnapshot() }
+}
+
+struct ActiveWorkoutSnapshot: Equatable {}
+
+enum IPhoneWorkoutSessionError: LocalizedError {
+    case builderBeginFailed
+    var errorDescription: String? { "iPhone-native workout requires iOS 26." }
+}
+
+#endif // compiler(>=6.2) && os(iOS)

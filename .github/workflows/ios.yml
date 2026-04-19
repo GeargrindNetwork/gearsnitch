@@ -50,7 +50,7 @@ jobs:
       DERIVED_DATA: ${{ github.workspace }}/DerivedData
       SCHEME: GearSnitch
       PROJECT: client-ios/GearSnitch.xcodeproj
-      DESTINATION: 'platform=iOS Simulator,name=iPhone 17,OS=latest'
+      DESTINATION: 'generic/platform=iOS Simulator'
 
     steps:
       - uses: actions/checkout@v4
@@ -123,15 +123,39 @@ jobs:
             echo "note: no GearSnitchTests swift sources — skipping xcodebuild test"
           fi
 
+      - name: Find a bootable iOS simulator
+        id: ios-sim
+        run: |
+          set -o pipefail
+          SIM_NAME=$(xcrun simctl list devices available --json \
+            | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for runtime, devices in sorted(data.get('devices', {}).items(), reverse=True):
+    if 'iOS' not in runtime: continue
+    for d in devices:
+        if d.get('isAvailable') and d.get('name', '').startswith('iPhone'):
+            print(d['name'])
+            sys.exit(0)
+")
+          if [[ -z "$SIM_NAME" ]]; then
+            echo "no_sim=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::No iOS simulator available on this runner; skipping test step."
+          else
+            echo "no_sim=false" >> "$GITHUB_OUTPUT"
+            echo "sim_name=$SIM_NAME" >> "$GITHUB_OUTPUT"
+            echo "Selected iOS sim: $SIM_NAME"
+          fi
+
       - name: Test (unit only — UI tests need auth state, run manually)
-        if: steps.check-tests.outputs.has_tests == 'true'
+        if: steps.check-tests.outputs.has_tests == 'true' && steps.ios-sim.outputs.no_sim != 'true'
         run: |
           set -o pipefail
           rm -rf "$DERIVED_DATA/GearSnitch.xcresult"
           xcodebuild \
             -project "$PROJECT" \
             -scheme "$SCHEME" \
-            -destination "$DESTINATION" \
+            -destination "platform=iOS Simulator,name=${{ steps.ios-sim.outputs.sim_name }},OS=latest" \
             -configuration Debug \
             -derivedDataPath "$DERIVED_DATA" \
             -resultBundlePath "$DERIVED_DATA/GearSnitch.xcresult" \
