@@ -233,6 +233,8 @@
 		C2BFF2DAA4C4B99464D75C09 /* GearSnitchWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CA95213EDCE919F70CDCBCD8 /* GearSnitchWatch.app */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C2C54017F71B796A166C970B /* DeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196547EBE5AAE728369FB79D /* DeviceDetailView.swift */; };
 		C37297D5DDEDDAA1FF8786DF /* GearService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82C8AF98938A9BB5A17236D /* GearService.swift */; };
+		FF34BF01A0A0A0A0A0A0A001 /* FeatureFlagService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF34BF00B0B0B0B0B0B0B001 /* FeatureFlagService.swift */; };
+		FF34BF01A0A0A0A0A0A0A002 /* FeatureFlagServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF34BF00B0B0B0B0B0B0B002 /* FeatureFlagServiceTests.swift */; };
 		C3EE28D661821251B2E6258C /* WorkoutCalorieEstimateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAB3C586E15B277A3C81D2BE /* WorkoutCalorieEstimateTests.swift */; };
 		C4F9992300C1ADF555B3BBE2 /* ECGWaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B73D0CE9524E0D839041F233 /* ECGWaveformView.swift */; };
 		C5C6633A7173DEF37BFE723D /* ExternalHRSensorAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */; };
@@ -693,6 +695,8 @@
 		F7447513075EF893EBB81204 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		F7E6883A9A303D7BFAC83E26 /* GearSnitchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearSnitchUITests.swift; sourceTree = "<group>"; };
 		F82C8AF98938A9BB5A17236D /* GearService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearService.swift; sourceTree = "<group>"; };
+		FF34BF00B0B0B0B0B0B0B001 /* FeatureFlagService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlagService.swift; sourceTree = "<group>"; };
+		FF34BF00B0B0B0B0B0B0B002 /* FeatureFlagServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureFlagServiceTests.swift; sourceTree = "<group>"; };
 		F8CD7598811AF36A137595A6 /* DosingCalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosingCalculatorView.swift; sourceTree = "<group>"; };
 		F96AEA4AB904C01FED7EC5F3 /* MedicationsSyncSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationsSyncSettingsView.swift; sourceTree = "<group>"; };
 		F9F8A90961F4111121B41589 /* BatteryLevelReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryLevelReaderTests.swift; sourceTree = "<group>"; };
@@ -844,6 +848,7 @@
 		2A4C2681E56939FCAA99ABC3 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				FF34BF00B0B0B0B0B0B0B001 /* FeatureFlagService.swift */,
 				F82C8AF98938A9BB5A17236D /* GearService.swift */,
 				CD19563C1D39090E31D62B9D /* iCloudProfileSync.swift */,
 				2EEA8D89C2EA5513E1EA8172 /* ReviewPromptController.swift */,
@@ -1039,6 +1044,7 @@
 				FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */,
 				30C1DE53A384AF785E1999E2 /* ExternalHRSourceDetectionTests.swift */,
 				A718BC94514C6867EFD94D1A /* GearActivityCompatibilityTests.swift */,
+				FF34BF00B0B0B0B0B0B0B002 /* FeatureFlagServiceTests.swift */,
 				7D2A43F9B9D41EC035383125 /* GearServiceTests.swift */,
 				30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */,
 				4B66AE0569C6234BEA5970F5 /* HandPreferenceManagerTests.swift */,
@@ -1851,6 +1857,7 @@
 				C5C6633A7173DEF37BFE723D /* ExternalHRSensorAdapterTests.swift in Sources */,
 				B800757CDA3C62EE52FE4082 /* ExternalHRSourceDetectionTests.swift in Sources */,
 				ABDC25394538F613D9F84E56 /* GearActivityCompatibilityTests.swift in Sources */,
+				FF34BF01A0A0A0A0A0A0A002 /* FeatureFlagServiceTests.swift in Sources */,
 				DBC36520BE30FBD68C21D437 /* GearServiceTests.swift in Sources */,
 				B03D91635654732CA98894AE /* GymSessionAttributesTests.swift in Sources */,
 				B3B38C22B5D6DFF2D1FDC562 /* HandPreferenceManagerTests.swift in Sources */,
@@ -1979,6 +1986,7 @@
 				DC1AE9BB0535BB07BAEF2E44 /* GearDetailView.swift in Sources */,
 				DE6CE1FD494CCCE5AE69CC17 /* GearListView.swift in Sources */,
 				4D9C2BF15E82AE8554574E1C /* GearModels.swift in Sources */,
+				FF34BF01A0A0A0A0A0A0A001 /* FeatureFlagService.swift in Sources */,
 				C37297D5DDEDDAA1FF8786DF /* GearService.swift in Sources */,
 				34A78B5370C92303B55123C8 /* GearSnitchApp.swift in Sources */,
 				BC1AEA82F04DCF5DDA8A96AF /* GearTabView.swift in Sources */,
