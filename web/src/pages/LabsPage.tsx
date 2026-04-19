@@ -100,7 +100,7 @@ export default function LabsPage() {
   const minDate = tomorrow.toISOString().slice(0, 10);
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="dark min-h-screen bg-black text-white">
       <Header />
       <main className="mx-auto max-w-3xl space-y-6 px-4 pb-16 pt-28 sm:px-6">
         <section className="relative overflow-hidden rounded-[2rem] border border-white/5 bg-zinc-900/70 px-6 py-8">

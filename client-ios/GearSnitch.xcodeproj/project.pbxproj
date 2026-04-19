@@ -123,6 +123,7 @@
 		824EE2DEBC27F8F00B14DC94 /* AlertDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B36B16C524620D9F19754CA /* AlertDetailView.swift */; };
 		845364FE9437917618A9C406 /* AlertsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91E2CAF6F2B2843E3FAFDA81 /* AlertsViewModel.swift */; };
 		84B6F8FA19AEF0FEFF7C2AFE /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CA7CFF26481534981434DED /* LoadingView.swift */; };
+		85343C617455112876109FCF /* AccessorySetupController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 908C21CDF2519F4003CCAA6A /* AccessorySetupController.swift */; };
 		85759552153562314380E06F /* HeartRateCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D4B3EA544CB999DE793A80 /* HeartRateCard.swift */; };
 		85BBA8AA90A6F84A7F713C59 /* HeatmapCalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B045FB188519FA9F441365A /* HeatmapCalendarViewModel.swift */; };
 		89DA5F46F0D3E1CA8FF7A425 /* WidgetSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F206AF9F1EC948435DEE0768 /* WidgetSyncStore.swift */; };
@@ -152,12 +153,14 @@
 		A41CAC0B43D07A42C3B4B505 /* RemoteConfigClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE6FCEFFBB75B66F4A88EC2A /* RemoteConfigClient.swift */; };
 		A586513D674B93B3919901F1 /* GymSessionIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C849859FCFFD79143A5DBCF /* GymSessionIntent.swift */; };
 		A66E9A1DACE3954AF9D666A7 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE29CA9BC70E2FAFEB84C00 /* User.swift */; };
+		A6DAE48085467F603453747F /* BLEPairingCapabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21FA3F9F049B975A2FEE6B04 /* BLEPairingCapabilityTests.swift */; };
 		A7E97424A54DE88371032325 /* WatchHRComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC14E40328A8F4FE0E27D7C /* WatchHRComplication.swift */; };
 		A84770BBF3ABD09CF001A346 /* GymDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 338F134A72D75AFA915EF027 /* GymDetailView.swift */; };
 		A8C24287C6F7488EB9006995 /* NotificationPermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 154B191CC69DFF3B28E36D37 /* NotificationPermissionManager.swift */; };
 		AA827AD9EE3687FC55BD8648 /* gs-eye-iris-master.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 068EFCAE20763E29C80EF6FB /* gs-eye-iris-master.pdf */; };
 		AAD1177CFCEE6D1091030D52 /* CycleTrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AFD1011CD6348200610EBA3 /* CycleTrackingView.swift */; };
 		AB6408C3F61982FF8C019496 /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9CFC2797AD596756034BBE /* TokenStore.swift */; };
+		AE80AA57C26BD4BF7C7DB41A /* ExternalHRSensorAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5856FAFF0D498D396E96CE48 /* ExternalHRSensorAdapter.swift */; };
 		AF5DC2AD87FD47A53460F11D /* LabsStateEligibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E39ABE4E646B6D84EE70EC /* LabsStateEligibility.swift */; };
 		B03D91635654732CA98894AE /* GymSessionAttributesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */; };
 		B3950DA42F34BC5505C45199 /* WatchHRComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BC14E40328A8F4FE0E27D7C /* WatchHRComplication.swift */; };
@@ -166,6 +169,7 @@
 		B5A8125C7C60A96FE26940BC /* DisconnectProtectionLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D8A5EDDA636D919BAD1EAA /* DisconnectProtectionLiveActivityWidget.swift */; };
 		B5C854334FABEF07A5FB39C7 /* DeviceMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E1A45B997811D066252B2D /* DeviceMapView.swift */; };
 		B623512F5AB5EE1AA5385ECF /* ApplePayManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFA8FABA9830E62E74262966 /* ApplePayManagerTests.swift */; };
+		B800757CDA3C62EE52FE4082 /* ExternalHRSourceDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C1DE53A384AF785E1999E2 /* ExternalHRSourceDetectionTests.swift */; };
 		B9132BE19983FED0AB1F25E9 /* ActiveWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 866D40788493E59429903BBA /* ActiveWorkoutView.swift */; };
 		BA214A124C701E9705A97225 /* MetricsLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67FDD9EA8D9439FA5BFE3EEC /* MetricsLogView.swift */; };
 		BA52359135FCB3F40C6348A2 /* ActiveRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1912FE4772AD939ECEABD7E8 /* ActiveRunView.swift */; };
@@ -175,6 +179,7 @@
 		C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */; };
 		C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */; };
 		C2C54017F71B796A166C970B /* DeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196547EBE5AAE728369FB79D /* DeviceDetailView.swift */; };
+		C5C6633A7173DEF37BFE723D /* ExternalHRSensorAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */; };
 		C771426D99982CF60723DE02 /* PermissionGateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E5B10371664AD313AD389E2 /* PermissionGateManager.swift */; };
 		C7BCED7BF8563DB9B2EA0E74 /* HandPreferenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43994928D28F3BFEBAACB47D /* HandPreferenceManager.swift */; };
 		C9BB294870C4F331E926E7AC /* WatchHealthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C974765D23F30F50E860126 /* WatchHealthManager.swift */; };
@@ -203,6 +208,7 @@
 		E27E6E7226C8549C3A1C3EA5 /* BLEStateObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 262EA565146C455B16AD63AD /* BLEStateObserver.swift */; };
 		E51FD70233766D95E4F77199 /* CalorieDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACA51E64EAF81AEFD81AAEA /* CalorieDashboardView.swift */; };
 		E8647049DB928986E657E76E /* CartViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AADEB4E2DE2686C4781E1B7 /* CartViewModel.swift */; };
+		E9BB2C2F9893F01971E150AC /* BLEPairingCapability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FFDC5283F95A193593BFAA5 /* BLEPairingCapability.swift */; };
 		EA3B60AED7DB06423FF6DA62 /* BMICalculatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC366A48A139E8E12577C17 /* BMICalculatorView.swift */; };
 		EAA7A89ED77E4E13A634DC0E /* WatchHealthManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1AC7094E3CAF2633BE5E61 /* WatchHealthManagerTests.swift */; };
 		EB6DDAF8056E408BA49857D0 /* HeatmapCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9865ACC598B773EBE5646783 /* HeatmapCalendarView.swift */; };
@@ -214,6 +220,7 @@
 		F085C3A9EB1ACADE41784C58 /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC4503FD69B7AD8694A9DCA /* ErrorView.swift */; };
 		F0DA7AD286B5A3BF2E2C87F9 /* CheckoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44012CC8C69A572397415B6 /* CheckoutView.swift */; };
 		F1CC5FC68F6201B3F82437D4 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7447513075EF893EBB81204 /* KeychainStore.swift */; };
+		F1F2663889480A84734B9AD0 /* ExternalHRSensorsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 251931EDB0BA4DA1ECE982B4 /* ExternalHRSensorsView.swift */; };
 		F36D288912DEB77D0A4C88F8 /* BLEAlarmSoundPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56898CE55871136E842BEC60 /* BLEAlarmSoundPlayer.swift */; };
 		F5E99B110ED3A204F3F0E8F1 /* BLEDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF38A290D64009E04FD4D16B /* BLEDevice.swift */; };
 		F84B6605B78AB4F245082176 /* RealtimeEventBus.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBFC6CFBC32F137AA69630AF /* RealtimeEventBus.swift */; };
@@ -322,8 +329,10 @@
 		1DA3A4F057B23B18F5A15855 /* PermissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsView.swift; sourceTree = "<group>"; };
 		1F698EA7D1CDA146902DD6DB /* View+Modifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+Modifiers.swift"; sourceTree = "<group>"; };
 		21429058A897EA054540CF78 /* ECGView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ECGView.swift; sourceTree = "<group>"; };
+		21FA3F9F049B975A2FEE6B04 /* BLEPairingCapabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEPairingCapabilityTests.swift; sourceTree = "<group>"; };
 		24567AB074A715ADECEE4EC6 /* LabsStateEligibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabsStateEligibilityTests.swift; sourceTree = "<group>"; };
 		25094CC0AAD6413921521FD0 /* GymListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymListView.swift; sourceTree = "<group>"; };
+		251931EDB0BA4DA1ECE982B4 /* ExternalHRSensorsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalHRSensorsView.swift; sourceTree = "<group>"; };
 		25495D7C5BE5BE059302E9C5 /* PostInstallReferralBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostInstallReferralBridge.swift; sourceTree = "<group>"; };
 		262EA565146C455B16AD63AD /* BLEStateObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEStateObserver.swift; sourceTree = "<group>"; };
 		270D9DD9964E6987742B699F /* UpdateRequiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateRequiredView.swift; sourceTree = "<group>"; };
@@ -332,7 +341,9 @@
 		2969551DF2A3FCCBB44CF308 /* Date+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Formatting.swift"; sourceTree = "<group>"; };
 		2A0FE56D7371D2AC5312C417 /* HeartRateMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateMonitor.swift; sourceTree = "<group>"; };
 		2AFD1011CD6348200610EBA3 /* CycleTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CycleTrackingView.swift; sourceTree = "<group>"; };
+		2FFDC5283F95A193593BFAA5 /* BLEPairingCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEPairingCapability.swift; sourceTree = "<group>"; };
 		30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymSessionAttributesTests.swift; sourceTree = "<group>"; };
+		30C1DE53A384AF785E1999E2 /* ExternalHRSourceDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalHRSourceDetectionTests.swift; sourceTree = "<group>"; };
 		315DCA955B01D6DD1AC2ECD9 /* DeviceEventSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceEventSyncService.swift; sourceTree = "<group>"; };
 		336679F15832921BE8598D24 /* GymRegionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymRegionMonitor.swift; sourceTree = "<group>"; };
 		338F134A72D75AFA915EF027 /* GymDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymDetailView.swift; sourceTree = "<group>"; };
@@ -367,6 +378,7 @@
 		55C5CE24F4D0356582F849DD /* MeshChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshChatViewModel.swift; sourceTree = "<group>"; };
 		568284F031C76C144A411E78 /* SocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketClient.swift; sourceTree = "<group>"; };
 		56898CE55871136E842BEC60 /* BLEAlarmSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEAlarmSoundPlayer.swift; sourceTree = "<group>"; };
+		5856FAFF0D498D396E96CE48 /* ExternalHRSensorAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalHRSensorAdapter.swift; sourceTree = "<group>"; };
 		58E1451727196C98AB732061 /* ReleaseGateManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseGateManagerTests.swift; sourceTree = "<group>"; };
 		5942D8F10497012501BF4901 /* LocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStore.swift; sourceTree = "<group>"; };
 		5A294D6CB70C48EAEF6AAE5E /* StoreKitManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManagerTests.swift; sourceTree = "<group>"; };
@@ -426,6 +438,7 @@
 		8DC4EDCD7695A856A5AE5E7D /* WorkoutControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutControlView.swift; sourceTree = "<group>"; };
 		8E696010F541FDFC34F22D4E /* OrderHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderHistoryView.swift; sourceTree = "<group>"; };
 		900D84B3DBDDBAB206A0855C /* DisconnectProtectionActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisconnectProtectionActivityManager.swift; sourceTree = "<group>"; };
+		908C21CDF2519F4003CCAA6A /* AccessorySetupController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessorySetupController.swift; sourceTree = "<group>"; };
 		91E2CAF6F2B2843E3FAFDA81 /* AlertsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsViewModel.swift; sourceTree = "<group>"; };
 		9325AC6C409A2219EA8CBF23 /* ApplePayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayManager.swift; sourceTree = "<group>"; };
 		942B2AA3801B97D73525058B /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -513,6 +526,7 @@
 		FA07F4455FC91DFEBF1E9057 /* StoreHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreHomeView.swift; sourceTree = "<group>"; };
 		FA924CF5F658C8136EFB1ED3 /* StripePortalSafariView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePortalSafariView.swift; sourceTree = "<group>"; };
 		FAAF4F40C3E69357C164C866 /* WatchSyncPayloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchSyncPayloads.swift; path = GearSnitch/Core/Watch/WatchSyncPayloads.swift; sourceTree = "<group>"; };
+		FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalHRSensorAdapterTests.swift; sourceTree = "<group>"; };
 		FDAE0DA274CB6AB93F097499 /* GymSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymSessionManager.swift; sourceTree = "<group>"; };
 		FE08B599CA8A0C737DA0D935 /* WorkoutListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutListViewModel.swift; sourceTree = "<group>"; };
 		FE6FCEFFBB75B66F4A88EC2A /* RemoteConfigClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConfigClient.swift; sourceTree = "<group>"; };
@@ -603,9 +617,11 @@
 		25FF401788D77C7B25C81950 /* BLE */ = {
 			isa = PBXGroup;
 			children = (
+				908C21CDF2519F4003CCAA6A /* AccessorySetupController.swift */,
 				56898CE55871136E842BEC60 /* BLEAlarmSoundPlayer.swift */,
 				FF38A290D64009E04FD4D16B /* BLEDevice.swift */,
 				65040AD89C646F2EB1439629 /* BLEManager.swift */,
+				2FFDC5283F95A193593BFAA5 /* BLEPairingCapability.swift */,
 				4ED90ED47B2C7532C3950E45 /* BLEScanner.swift */,
 				BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */,
 				262EA565146C455B16AD63AD /* BLEStateObserver.swift */,
@@ -715,6 +731,7 @@
 		4A031D39A2C8F88BF8E344D9 /* HealthKit */ = {
 			isa = PBXGroup;
 			children = (
+				5856FAFF0D498D396E96CE48 /* ExternalHRSensorAdapter.swift */,
 				6B0427DD41CE5177C56D180C /* HealthKitManager.swift */,
 				F179B2976810585B80ADB6CE /* HealthKitMedicationsSync.swift */,
 				03EB90ADAAC9DC50555F55EE /* HealthKitPermissions.swift */,
@@ -789,7 +806,10 @@
 			isa = PBXGroup;
 			children = (
 				FFA8FABA9830E62E74262966 /* ApplePayManagerTests.swift */,
+				21FA3F9F049B975A2FEE6B04 /* BLEPairingCapabilityTests.swift */,
 				87B1DFDA81A53E400021833A /* ECGViewModelTests.swift */,
+				FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */,
+				30C1DE53A384AF785E1999E2 /* ExternalHRSourceDetectionTests.swift */,
 				30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */,
 				4B66AE0569C6234BEA5970F5 /* HandPreferenceManagerTests.swift */,
 				2918A4D1C1C002CF48980700 /* HealthKitMedicationsSyncTests.swift */,
@@ -962,6 +982,7 @@
 		8847634A7A6272A5B8C0976D /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				251931EDB0BA4DA1ECE982B4 /* ExternalHRSensorsView.swift */,
 				F96AEA4AB904C01FED7EC5F3 /* MedicationsSyncSettingsView.swift */,
 				877839AB8E10C41E15B46325 /* NotificationPreferencesView.swift */,
 				89871DF0894D04D46D916B26 /* SettingsView.swift */,
@@ -1548,7 +1569,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				B623512F5AB5EE1AA5385ECF /* ApplePayManagerTests.swift in Sources */,
+				A6DAE48085467F603453747F /* BLEPairingCapabilityTests.swift in Sources */,
 				3FEA11D8F5C845EE76310F6F /* ECGViewModelTests.swift in Sources */,
+				C5C6633A7173DEF37BFE723D /* ExternalHRSensorAdapterTests.swift in Sources */,
+				B800757CDA3C62EE52FE4082 /* ExternalHRSourceDetectionTests.swift in Sources */,
 				B03D91635654732CA98894AE /* GymSessionAttributesTests.swift in Sources */,
 				B3B38C22B5D6DFF2D1FDC562 /* HandPreferenceManagerTests.swift in Sources */,
 				6A8795F413628EE87E0992C1 /* HealthKitMedicationsSyncTests.swift in Sources */,
@@ -1575,6 +1599,7 @@
 			files = (
 				6C43F1B555D4C0F98DFF59AC /* APIClient.swift in Sources */,
 				0C9FE86BBF60C61ED7D2DF24 /* APIEndpoint.swift in Sources */,
+				85343C617455112876109FCF /* AccessorySetupController.swift in Sources */,
 				BA52359135FCB3F40C6348A2 /* ActiveRunView.swift in Sources */,
 				B9132BE19983FED0AB1F25E9 /* ActiveWorkoutView.swift in Sources */,
 				19A3F14B3BA79EFDF8053558 /* ActiveWorkoutViewModel.swift in Sources */,
@@ -1593,6 +1618,7 @@
 				F36D288912DEB77D0A4C88F8 /* BLEAlarmSoundPlayer.swift in Sources */,
 				F5E99B110ED3A204F3F0E8F1 /* BLEDevice.swift in Sources */,
 				3C236926E06C3ADC097C67AC /* BLEManager.swift in Sources */,
+				E9BB2C2F9893F01971E150AC /* BLEPairingCapability.swift in Sources */,
 				3B69AAE4AE0195DE1A9FF687 /* BLEScanner.swift in Sources */,
 				C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */,
 				E27E6E7226C8549C3A1C3EA5 /* BLEStateObserver.swift in Sources */,
@@ -1629,6 +1655,8 @@
 				FF9F30F3785D6ABC696FA0E2 /* EmergencyContactsView.swift in Sources */,
 				7CC0BD3978F85A25EC10DCA7 /* EmptyStateView.swift in Sources */,
 				F085C3A9EB1ACADE41784C58 /* ErrorView.swift in Sources */,
+				AE80AA57C26BD4BF7C7DB41A /* ExternalHRSensorAdapter.swift in Sources */,
+				F1F2663889480A84734B9AD0 /* ExternalHRSensorsView.swift in Sources */,
 				D28F759FEDBA4B1E71568B02 /* FeatureFlags.swift in Sources */,
 				738A17E8421FF3B9B4F28C69 /* FloatingMenuView.swift in Sources */,
 				34A78B5370C92303B55123C8 /* GearSnitchApp.swift in Sources */,

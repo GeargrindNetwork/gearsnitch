@@ -50,6 +50,23 @@ struct SettingsView: View {
             .listRowBackground(Color.gsSurface)
 
             Section {
+                NavigationLink {
+                    ExternalHRSensorsView()
+                } label: {
+                    Label("External Heart-Rate Sensors", systemImage: "sensor.tag.radiowaves.forward")
+                        .foregroundColor(.gsText)
+                }
+            } header: {
+                Text("Health")
+                    .foregroundColor(.gsTextSecondary)
+            } footer: {
+                Text("Chest straps, optical armbands, and Powerbeats Pro 2. Additive source — Apple Watch and AirPods keep working as before.")
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+            }
+            .listRowBackground(Color.gsSurface)
+
+            Section {
                 infoRow(label: "Version", value: AppConfig.appVersion)
                 infoRow(label: "Build", value: AppConfig.buildNumber)
                 if let serverVersion = releaseGateManager.serverVersion {

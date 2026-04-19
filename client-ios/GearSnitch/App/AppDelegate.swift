@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         RuntimeDiagnostics.install()
         configureNotifications()
+        configureExternalHRSensorAdapter()
         return true
     }
 
@@ -84,6 +85,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
         // Set the notification handler as the delegate
         center.delegate = PushNotificationHandler.shared
+    }
+
+    /// Wire the BLE-HR-Profile adapter to `HeartRateMonitor` once at launch.
+    /// Scanning is deferred until the user navigates to Settings → External
+    /// Heart-Rate Sensors, so this never triggers a surprise CoreBluetooth
+    /// permission prompt at cold launch.
+    private func configureExternalHRSensorAdapter() {
+        Task { @MainActor in
+            ExternalHRSensorAdapter.shared.configure(sink: HeartRateMonitor.shared)
+        }
     }
 }
 

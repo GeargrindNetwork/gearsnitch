@@ -90,7 +90,9 @@ const steps = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    // Landing page intentionally pins to dark theme regardless of user preference;
+    // see docs/RALPH-BACKLOG.md #35 — full light-mode hero design is out of scope.
+    <div className="dark min-h-screen bg-black text-white">
       <Header />
 
       {/* Hero */}
