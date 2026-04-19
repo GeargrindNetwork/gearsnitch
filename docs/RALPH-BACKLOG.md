@@ -30,7 +30,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 13 | Apple Pay capability in XcodeGen project.yml | 7 | XS | 2 | infra | merged | Landed as [#71](https://github.com/GeargrindNetwork/gearsnitch/pull/71). |
 | 14 | tsconfig `ignoreDeprecations:5.0` vs TS 6 mismatch | 6 | XS | 2 | infra | merged | Landed as [#73](https://github.com/GeargrindNetwork/gearsnitch/pull/73). |
 | 15 | Widget extension target — compile + ship | 6 | M | 2 | ios | merged | Landed as [#68](https://github.com/GeargrindNetwork/gearsnitch/pull/68). |
-| 16 | Rest timer between sets | 6 | S | 2 | ios | pr-open | 30s/60s/90s/custom. Background audio cue. PR: _open — URL appended on push_ |
+| 16 | Rest timer between sets | 6 | S | 2 | ios | pr-open | 30s/60s/90s/custom. Background audio cue. PR: [#75](https://github.com/GeargrindNetwork/gearsnitch/pull/75) |
 | 17 | BLE battery level (0x180F) | 6 | S | 2 | ios | pending | Read + surface on DeviceDetailView. Low-battery push at <20%. Route through AccessorySetupKit (see #6). |
 | 18 | Auto-pause run on >60s inactivity | 6 | S | 2 | ios | pending | RunTrackingManager low-motion detection. |
 | 19 | Signal history chart (RSSI trends per device, 24h) | 5 | M | 2 | ios,api | pending | Store RSSI samples, render line chart. |
