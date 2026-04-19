@@ -5,6 +5,7 @@ struct ActiveRunView: View {
     @ObservedObject private var manager = RunTrackingManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showEndConfirmation = false
+    @State private var showPaceCoachSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -135,6 +136,8 @@ struct ActiveRunView: View {
                     Text(statusLabel(for: activeRun))
                         .font(.caption)
                         .foregroundColor(.gsTextSecondary)
+
+                    paceCoachChip
                 }
                 .padding(.top, 20)
 
@@ -201,6 +204,58 @@ struct ActiveRunView: View {
         }
     }
 
+    // MARK: - Pace Coach Chip (Backlog item #21)
+
+    private var paceCoachChip: some View {
+        Button {
+            showPaceCoachSettings = true
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: paceCoachIcon)
+                    .font(.caption2.weight(.semibold))
+                Text("Pace Coach: \(paceCoachText)")
+                    .font(.caption.weight(.medium))
+            }
+            .foregroundColor(paceCoachForeground)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(paceCoachBackground)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("pace-coach-chip")
+        .sheet(isPresented: $showPaceCoachSettings) {
+            PaceCoachQuickSettingsSheet()
+                .presentationDetents([.medium])
+        }
+    }
+
+    private var paceCoachText: String {
+        (manager.paceStatus ?? .onPace).displayLabel
+    }
+
+    private var paceCoachIcon: String {
+        switch manager.paceStatus ?? .onPace {
+        case .onPace:   return "checkmark.circle.fill"
+        case .speedUp:  return "arrow.up.circle.fill"
+        case .slowDown: return "arrow.down.circle.fill"
+        }
+    }
+
+    private var paceCoachForeground: Color {
+        switch manager.paceStatus ?? .onPace {
+        case .onPace:   return .gsEmerald
+        case .speedUp, .slowDown: return .gsWarning
+        }
+    }
+
+    private var paceCoachBackground: Color {
+        switch manager.paceStatus ?? .onPace {
+        case .onPace:   return Color.gsEmerald.opacity(0.12)
+        case .speedUp, .slowDown: return Color.gsWarning.opacity(0.15)
+        }
+    }
+
     private func statusLabel(for run: ActiveRunSession) -> String {
         if run.isEndingPending { return "Awaiting Save" }
         if run.isPaused { return "Auto-paused" }
@@ -255,4 +310,80 @@ struct ActiveRunView: View {
         ActiveRunView()
     }
     .preferredColorScheme(.dark)
+}
+
+// MARK: - PaceCoachQuickSettingsSheet (Backlog item #21)
+//
+// Mid-run tune-up sheet for the pace-coach chip. Exposes the three
+// knobs the runner most wants in the middle of a session:
+//   - Target pace (seconds per mile)
+//   - Target cadence (steps per minute)
+//   - Cadence tone enabled (headphones-only, OPT-IN)
+//
+// Keeps the surface intentionally small — deeper settings live in
+// `RunTrackingSettingsView`. All bindings route through
+// `RunTrackingManager` so values persist through `UserDefaults`.
+
+struct PaceCoachQuickSettingsSheet: View {
+
+    @ObservedObject private var manager = RunTrackingManager.shared
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Target pace") {
+                    Stepper(value: Binding(
+                        get: { manager.targetPaceSecondsPerMile },
+                        set: { manager.targetPaceSecondsPerMile = RunPaceCoachPreferences.clampPace($0) }
+                    ), in: RunPaceCoachPreferences.paceRange, step: 15) {
+                        HStack {
+                            Text("Pace")
+                            Spacer()
+                            Text(Self.formatPace(manager.targetPaceSecondsPerMile))
+                                .font(.body.monospacedDigit())
+                                .foregroundColor(.gsEmerald)
+                        }
+                    }
+                }
+
+                Section("Cadence tone") {
+                    Toggle("Headphone cadence tone", isOn: $manager.cadenceToneEnabled)
+                        .tint(.gsEmerald)
+
+                    if manager.cadenceToneEnabled {
+                        Stepper(value: Binding(
+                            get: { manager.targetCadenceSPM },
+                            set: { manager.targetCadenceSPM = RunPaceCoachPreferences.clampCadence($0) }
+                        ), in: RunPaceCoachPreferences.cadenceRange, step: 5) {
+                            HStack {
+                                Text("Cadence")
+                                Spacer()
+                                Text("\(manager.targetCadenceSPM) spm")
+                                    .font(.body.monospacedDigit())
+                                    .foregroundColor(.gsEmerald)
+                            }
+                        }
+                    }
+
+                    Text("Plays a soft click at your cadence over your music. Requires headphones — auto-pauses if you take them off.")
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                }
+            }
+            .navigationTitle("Pace Coach")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private static func formatPace(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return String(format: "%d:%02d /mi", m, s)
+    }
 }

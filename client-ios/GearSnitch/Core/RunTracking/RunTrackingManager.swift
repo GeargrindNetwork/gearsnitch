@@ -276,6 +276,38 @@ struct ActiveRunSession: Codable {
             points: routePoints
         )
     }
+
+    // MARK: - Rolling Pace (Backlog item #21)
+
+    /// Compute the user's current pace over the last `windowSeconds`
+    /// of GPS fixes, in seconds-per-mile. Returns `nil` if we don't
+    /// have enough data (or the runner is stationary). The pace coach
+    /// uses this (not `paceSecondsPerKm`) so short spikes / pauses
+    /// don't trigger false "speed up" buzzes right after a traffic
+    /// light.
+    func rollingPaceSecondsPerMile(
+        windowSeconds: TimeInterval = 30,
+        now: Date = Date()
+    ) -> Int? {
+        guard !isPaused, routePoints.count >= 2 else { return nil }
+
+        let cutoff = now.addingTimeInterval(-windowSeconds)
+        let window = routePoints.filter { $0.timestamp >= cutoff }
+        guard window.count >= 2 else { return nil }
+
+        var distanceMeters = 0.0
+        for i in 1..<window.count {
+            distanceMeters += window[i].asLocation.distance(from: window[i - 1].asLocation)
+        }
+        let firstTimestamp = window.first?.timestamp ?? now
+        let lastTimestamp  = window.last?.timestamp ?? now
+        let elapsed = max(0, lastTimestamp.timeIntervalSince(firstTimestamp))
+        guard elapsed > 0, distanceMeters > 0.5 else { return nil }
+
+        let metersPerMile = 1_609.344
+        let secondsPerMile = (elapsed / distanceMeters) * metersPerMile
+        return Int(secondsPerMile.rounded())
+    }
 }
 
 enum RunFormatting {
@@ -376,6 +408,58 @@ final class RunTrackingManager: NSObject, ObservableObject {
         case resumed
     }
 
+    // MARK: - Pace Coach (Backlog item #21)
+    //
+    // The pace coach evaluates on every 1Hz tick of `refreshTimer` and:
+    //   1. Updates `paceStatus` for the ActiveRunView chip.
+    //   2. If the user is off-pace and the 30s cooldown has elapsed,
+    //      forwards a haptic to the Watch AND (when cadence-tone is
+    //      enabled + headphones are connected) keeps the tone player
+    //      in sync with the user's target cadence.
+
+    private let paceCoach = RunPaceCoach()
+    private var paceCoachPreferences = RunPaceCoachPreferences()
+
+    /// Current pace-coach chip state. `nil` until the first off-pace
+    /// / on-pace evaluation has happened.
+    @Published private(set) var paceStatus: PaceStatus?
+
+    /// User-editable target pace (seconds per mile). Mirrors
+    /// `RunPaceCoachPreferences.targetPaceSecondsPerMile` but is
+    /// exposed as a `@Published` so the `ActiveRunView` can bind a
+    /// mid-run editor to it.
+    @Published var targetPaceSecondsPerMile: Int = RunPaceCoachPreferences.fallbackPaceSecondsPerMile {
+        didSet {
+            paceCoachPreferences.targetPaceSecondsPerMile = targetPaceSecondsPerMile
+        }
+    }
+
+    /// User-editable target cadence in SPM.
+    @Published var targetCadenceSPM: Int = RunPaceCoachPreferences.fallbackCadenceSPM {
+        didSet {
+            paceCoachPreferences.targetCadenceSPM = targetCadenceSPM
+            // Only re-tune if the tone player is already running,
+            // otherwise we'd start it prematurely (cadence is OPT-IN).
+            if RunPaceCadenceTonePlayer.shared.isRunning {
+                RunPaceCadenceTonePlayer.shared.start(spm: targetCadenceSPM)
+            }
+        }
+    }
+
+    /// Whether the headphone cadence tone is enabled (OPT-IN). Setter
+    /// starts/stops the tone player immediately so the toggle acts
+    /// like a play/pause button while the run is active.
+    @Published var cadenceToneEnabled: Bool = false {
+        didSet {
+            paceCoachPreferences.cadenceEnabled = cadenceToneEnabled
+            if cadenceToneEnabled, activeRun != nil {
+                RunPaceCadenceTonePlayer.shared.start(spm: targetCadenceSPM)
+            } else {
+                RunPaceCadenceTonePlayer.shared.stop()
+            }
+        }
+    }
+
     private static let persistenceDirectory = "RunTracking"
     private static let persistenceFileName = "active-run.json"
 
@@ -391,6 +475,13 @@ final class RunTrackingManager: NSObject, ObservableObject {
         locationManager.showsBackgroundLocationIndicator = true
 
         restoreActiveRun()
+
+        // Backlog item #21 — hydrate pace-coach state from
+        // UserDefaults on launch so the user's chosen target pace /
+        // cadence / opt-in persists across sessions.
+        targetPaceSecondsPerMile = paceCoachPreferences.targetPaceSecondsPerMile
+        targetCadenceSPM = paceCoachPreferences.targetCadenceSPM
+        cadenceToneEnabled = paceCoachPreferences.cadenceEnabled
 
         // Backlog item #18 — wire the inactivity detector to the
         // manager's location + motion streams. We honor the user
@@ -535,6 +626,15 @@ final class RunTrackingManager: NSObject, ObservableObject {
         locationManager.startUpdatingLocation()
         startInactivityDetector()
 
+        // Backlog item #21 — reset coach cooldown so the previous
+        // session's last-fired timestamp doesn't carry over, and
+        // start the cadence tone if the user opted in.
+        paceCoach.reset()
+        paceStatus = nil
+        if cadenceToneEnabled {
+            RunPaceCadenceTonePlayer.shared.start(spm: targetCadenceSPM)
+        }
+
         defer { isStarting = false }
 
         do {
@@ -580,6 +680,13 @@ final class RunTrackingManager: NSObject, ObservableObject {
         locationManager.stopUpdatingLocation()
         stopInactivityDetector()
         autoPauseBanner = nil
+
+        // Backlog item #21 — tear down the pace coach on run stop so
+        // we release the audio session (unblocks the user's music
+        // ducking) and clear the UI chip.
+        RunPaceCadenceTonePlayer.shared.stop()
+        paceCoach.reset()
+        paceStatus = nil
 
         defer { isStopping = false }
 
@@ -663,8 +770,31 @@ final class RunTrackingManager: NSObject, ObservableObject {
                 // Give the detector a chance to flip to paused even
                 // when no fresh GPS fix has arrived in a while.
                 self.inactivityDetector.tick()
+                // Backlog item #21: run the pace-coach evaluation
+                // every tick so the chip + haptic stay current.
+                self.tickPaceCoach()
                 self.objectWillChange.send()
             }
+        }
+    }
+
+    /// Feed the pace coach one evaluation tick. Public for testability.
+    func tickPaceCoach(now: Date = Date()) {
+        guard let activeRun, activeRun.pendingEndAt == nil, !activeRun.isPaused else {
+            // Inactive or paused — don't publish a stale status.
+            return
+        }
+        let currentPace = activeRun.rollingPaceSecondsPerMile(now: now)
+        let decision = paceCoach.evaluate(
+            currentPaceSecondsPerMile: currentPace,
+            targetPaceSecondsPerMile: targetPaceSecondsPerMile,
+            driftThresholdPct: paceCoachPreferences.driftThresholdPct,
+            now: now
+        )
+        paceStatus = decision.status
+
+        if let haptic = decision.haptic {
+            WatchSyncManager.shared.sendPaceCoachHaptic(kind: haptic.rawValue)
         }
     }
 

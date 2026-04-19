@@ -78,6 +78,7 @@ enum WatchMessageType: String {
     case hrMonitoring
     case watchHRSample
     case workoutState
+    case paceCoachHaptic
 }
 
 enum WatchSessionAction: String, Codable {
@@ -153,6 +154,42 @@ struct WatchWorkoutStatePayload: Codable, Equatable {
             return nil
         }
         return try? JSONDecoder.gearSnitchISO.decode(WatchWorkoutStatePayload.self, from: data)
+    }
+}
+
+// MARK: - iPhone → Watch Pace-Coach Haptic Payload (Backlog item #21)
+
+/// Tells the Watch to fire a haptic nudge when the runner drifts off
+/// target pace. The iPhone owns the decision logic (GPS is there); the
+/// Watch is a pure effector that dedupes on its own 30s window in case
+/// WC delivers duplicates.
+///
+/// `kind` mirrors `HapticNudge` from `RunPaceCoach.swift`:
+///   - "directionUp"   → speed up
+///   - "directionDown" → slow down
+struct PaceCoachHapticMessage: Codable, Equatable {
+    let kind: String
+    let sentAt: Date
+
+    static let messageTypeValue = WatchMessageType.paceCoachHaptic.rawValue
+
+    func toMessage() -> [String: Any] {
+        guard let data = try? JSONEncoder.gearSnitchISO.encode(self),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+        var enriched = dict
+        enriched[WatchHRSamplePayload.userInfoTypeKey] = Self.messageTypeValue
+        return enriched
+    }
+
+    static func from(message: [String: Any]) -> PaceCoachHapticMessage? {
+        var dict = message
+        dict.removeValue(forKey: WatchHRSamplePayload.userInfoTypeKey)
+        guard let data = try? JSONSerialization.data(withJSONObject: dict) else {
+            return nil
+        }
+        return try? JSONDecoder.gearSnitchISO.decode(PaceCoachHapticMessage.self, from: data)
     }
 }
 
