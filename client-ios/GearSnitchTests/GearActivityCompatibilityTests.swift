@@ -16,14 +16,18 @@ final class GearActivityCompatibilityTests: XCTestCase {
         // Decode via JSON so we don't have to teach the DTO a public init
         // just for tests. The wire format is the source of truth anyway.
         let retiredAt = retired ? "\"2024-01-01T00:00:00.000Z\"" : "null"
+        let status = retired ? "retired" : "active"
         let payload = """
         {
           "_id": "\(id)",
           "name": "\(kind) \(id)",
           "kind": "\(kind)",
           "unit": "miles",
+          "lifeLimit": 500,
+          "warningThreshold": 450,
           "currentValue": 0,
-          "retirementThreshold": null,
+          "usagePct": 0,
+          "status": "\(status)",
           "retiredAt": \(retiredAt)
         }
         """.data(using: .utf8)!
@@ -123,8 +127,11 @@ final class GearActivityCompatibilityTests: XCTestCase {
               "name": "X",
               "kind": "shoes",
               "unit": "\(unit)",
+              "lifeLimit": 500,
+              "warningThreshold": 450,
               "currentValue": \(value),
-              "retirementThreshold": null,
+              "usagePct": 0,
+              "status": "active",
               "retiredAt": null
             }
             """.data(using: .utf8)!
