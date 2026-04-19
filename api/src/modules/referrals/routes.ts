@@ -133,6 +133,15 @@ async function buildReferralPayload(userId: string) {
         : null,
       status: mapReferralHistoryStatus(item.status),
       createdAt: item.createdAt,
+      // Fields below surface the reward timeline on the referrer-side
+      // dashboard (backlog #25). They are optional and only filled in
+      // once the pipeline has qualified / rewarded the row, so the iOS
+      // client treats nulls as "not yet earned".
+      rewardDays: item.status === 'rewarded'
+        ? (item.rewardDays || REFERRAL_REWARD_DAYS)
+        : null,
+      rewardedAt: item.rewardedAt ?? null,
+      reason: item.reason ?? null,
     })),
   };
 }
