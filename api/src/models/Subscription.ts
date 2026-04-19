@@ -68,7 +68,7 @@ SubscriptionSchema.index(
 SubscriptionSchema.index({ userId: 1, status: 1 });
 SubscriptionSchema.index({ expiryDate: 1 });
 SubscriptionSchema.index({ originalTransactionId: 1 });
-SubscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
+// `stripeSubscriptionId` already has a sparse index from the field def.
 
 export const Subscription = mongoose.model<ISubscription>(
   'Subscription',

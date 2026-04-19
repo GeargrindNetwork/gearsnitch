@@ -15,7 +15,23 @@ import {
 const TAX_RATE = 0.0825; // 8.25%
 const FLAT_SHIPPING = 599; // $5.99 in cents
 
-const stripe = new StripeLib(config.stripeSecretKey);
+// Lazy-init: don't construct the Stripe SDK until first use. Avoids
+// throwing at module-load when STRIPE_SECRET_KEY is absent (tests, lint,
+// type-check, CI lanes that don't actually hit Stripe).
+let _stripe: StripeLib | null = null;
+function stripeClient(): StripeLib {
+  if (_stripe === null) {
+    _stripe = new StripeLib(config.stripeSecretKey);
+  }
+  return _stripe;
+}
+// Backwards-compatible Proxy: existing `stripe.xxx` callsites work
+// untouched, but the underlying SDK is only constructed on first access.
+const stripe: StripeLib = new Proxy({} as StripeLib, {
+  get(_target, prop) {
+    return Reflect.get(stripeClient(), prop);
+  },
+});
 
 export class PaymentService {
   /**

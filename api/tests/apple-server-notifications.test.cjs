@@ -369,6 +369,17 @@ describe('apple server notifications v2 — runtime integration', () => {
         cwd: apiRoot,
         encoding: 'utf8',
         stdio: 'pipe',
+        // PaymentService now instantiates Stripe at module-load, which the
+        // subscriptions route drags in transitively. Provide a valid-shaped
+        // test-mode key so the Stripe SDK constructor can parse; no live
+        // calls are made in this test (everything is mocked).
+        env: {
+          ...process.env,
+          STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY
+            || 'sk_test_' + 'a'.repeat(99),
+          STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET
+            || 'whsec_test_' + 'a'.repeat(32),
+        },
       },
     );
 
