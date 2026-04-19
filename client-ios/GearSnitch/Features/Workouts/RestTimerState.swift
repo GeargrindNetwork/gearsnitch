@@ -49,9 +49,15 @@ final class RestTimerState: ObservableObject {
     // MARK: - Init
 
     init(duration: Int, tickInterval: TimeInterval = 1.0) {
-        let clamped = RestTimerPreferences.clamp(duration)
-        self.totalSeconds = clamped
-        self.remainingSeconds = clamped
+        // No clamp here — both production callers (RestTimerOverlayView
+        // hardcoded 60, ActiveWorkoutViewModel from
+        // `RestTimerPreferences.defaultSeconds` which is already
+        // clamped at the setter) pass in-range values. The earlier
+        // defensive clamp silently rewrote sub-10s test fixtures and
+        // was blocking unit tests from driving short deterministic
+        // durations.
+        self.totalSeconds = duration
+        self.remainingSeconds = duration
         self.phase = .running
         self.tickInterval = tickInterval
     }
