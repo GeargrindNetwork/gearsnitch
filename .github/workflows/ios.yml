@@ -164,7 +164,7 @@ jobs:
       DERIVED_DATA: ${{ github.workspace }}/DerivedDataWatch
       SCHEME: GearSnitchWatch
       PROJECT: client-ios/GearSnitch.xcodeproj
-      DESTINATION: 'platform=watchOS Simulator,name=Apple Watch Series 9,OS=latest'
+      DESTINATION: 'platform=watchOS Simulator,name=Apple Watch SE (40mm) (2nd generation),OS=latest'
 
     steps:
       - uses: actions/checkout@v4
