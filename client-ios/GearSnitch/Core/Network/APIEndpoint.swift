@@ -891,6 +891,34 @@ struct CreateMedicationDoseBody: Encodable {
     let occurredAt: Date
     let notes: String?
     let source: String
+    /// HealthKit `HKMedicationDose` UUID, only populated when the dose is
+    /// being round-tripped through Apple Health (item #7). Enables the
+    /// backend to dedupe on `{userId, appleHealthDoseId}` so a dose we
+    /// pushed to HK on local-log and then pulled back on foreground-sync
+    /// does not create a duplicate row.
+    let appleHealthDoseId: String?
+
+    init(
+        cycleId: String?,
+        dateKey: String?,
+        category: String,
+        compoundName: String,
+        dose: MedicationDoseAmountBody,
+        occurredAt: Date,
+        notes: String?,
+        source: String,
+        appleHealthDoseId: String? = nil
+    ) {
+        self.cycleId = cycleId
+        self.dateKey = dateKey
+        self.category = category
+        self.compoundName = compoundName
+        self.dose = dose
+        self.occurredAt = occurredAt
+        self.notes = notes
+        self.source = source
+        self.appleHealthDoseId = appleHealthDoseId
+    }
 }
 
 struct UpdateMedicationDoseBody: Encodable {
@@ -902,4 +930,27 @@ struct UpdateMedicationDoseBody: Encodable {
     let occurredAt: Date?
     let notes: String??
     let source: String?
+    let appleHealthDoseId: String??
+
+    init(
+        cycleId: String?? = nil,
+        dateKey: String? = nil,
+        category: String? = nil,
+        compoundName: String? = nil,
+        dose: MedicationDoseAmountBody? = nil,
+        occurredAt: Date? = nil,
+        notes: String?? = nil,
+        source: String? = nil,
+        appleHealthDoseId: String?? = nil
+    ) {
+        self.cycleId = cycleId
+        self.dateKey = dateKey
+        self.category = category
+        self.compoundName = compoundName
+        self.dose = dose
+        self.occurredAt = occurredAt
+        self.notes = notes
+        self.source = source
+        self.appleHealthDoseId = appleHealthDoseId
+    }
 }
