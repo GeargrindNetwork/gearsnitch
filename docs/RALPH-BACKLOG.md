@@ -42,7 +42,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 25 | Referral dashboard polish (referrer-side) | 4 | S | 2 | ios | pending | Earlier proposal from item #2 agent. |
 | 26 | App Store review prompting | 5 | S | 2 | ios | pending | SKStoreReviewController on 3rd workout / 5th device pair. |
 | 27 | Workout summary push after session end | 5 | M | 2 | api,worker,ios | pending | Uses new APNs sender. |
-| 28 | Stripe Checkout for web subscriptions | 5 | M | 2 | web,api | pr-open | External-web-only path; no iOS-initiated links (App Store 3.1.1). PR opening on branch `feat/stripe-checkout-web-subscriptions`. |
+| 28 | Stripe Checkout for web subscriptions | 5 | M | 2 | web,api | pr-open | External-web-only path; no iOS-initiated links (App Store 3.1.1). PR [#70](https://github.com/GeargrindNetwork/gearsnitch/pull/70). |
 | 29 | iOS CI workflow (macos-14 + xcodebuild test) | 4 | M | 2 | infra | pending | |
 | 30 | Cloud Run auto-rollback on deploy 5xx | 4 | M | 2 | infra | pending | Per guard rail #3. |
 | 31 | graphify-out/ housekeeping (gitignore) | 3 | XS | 2 | infra | pending | Currently modified every commit. |
