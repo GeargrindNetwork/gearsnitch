@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { User } from '../../models/User.js';
-import { GearComponent, logGearUsage, type IGearComponent } from '../../models/GearComponent.js';
+import { GearComponent, type IGearComponent } from '../../models/GearComponent.js';
 import { EventLog } from '../../models/EventLog.js';
 
 /**
@@ -117,5 +117,9 @@ export async function incrementGearForWorkoutMetrics(
   if (amount <= 0) {
     return null;
   }
-  return logGearUsage(gear._id, userId, amount);
+  return GearComponent.findOneAndUpdate(
+    { _id: gear._id, userId, retiredAt: null },
+    { $inc: { currentValue: amount } },
+    { new: true },
+  );
 }

@@ -55,9 +55,6 @@ export type { IWaterLog } from './WaterLog';
 export { Workout } from './Workout';
 export type { IWorkout, IWorkoutExercise, IWorkoutSet } from './Workout';
 
-export { GearComponent, logGearUsage, GEAR_KINDS, GEAR_UNITS } from './GearComponent';
-export type { IGearComponent, GearKind, GearUnit } from './GearComponent';
-
 export { Run } from './Run';
 export type { IRun, IRunPoint } from './Run';
 
