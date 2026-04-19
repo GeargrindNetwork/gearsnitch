@@ -300,7 +300,7 @@ Core services are organized into nested subdirectories under `GearSnitch/Core/` 
 4. Store
 5. Profile
 
-> The `Features/` directory contains **17 additional feature modules** beyond the main 5 tabs (Dashboard, Workouts, Health, Store, Profile), for a total of 22 feature directories. Examples: Alerts, Auth, Calendar, Calories, Cycles, DeviceMap, Devices, Gyms, MeshChat, Onboarding, Referrals, RunTracking, Settings, Stopwatch, Widgets, DosingCalculator, Release.
+> The `Features/` directory contains **16 additional feature modules** beyond the main 5 tabs (Dashboard, Workouts, Health, Store, Profile), for a total of 21 feature directories. Examples: Alerts, Auth, Calendar, Calories, Cycles, DeviceMap, Devices, Gyms, Onboarding, Referrals, RunTracking, Settings, Stopwatch, Widgets, DosingCalculator, Release.
 
 #### Native Framework Integrations
 

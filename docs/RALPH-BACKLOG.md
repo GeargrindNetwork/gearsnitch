@@ -13,6 +13,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | — | APNs push sender (item #19 prep) | merged | [#48](https://github.com/GeargrindNetwork/gearsnitch/pull/48) |
 | 5 | Weekly reconciliation cron for subscription state drift | merged | [#50](https://github.com/GeargrindNetwork/gearsnitch/pull/50) |
 | 35 | Dark-mode consistency pass | merged | [#53](https://github.com/GeargrindNetwork/gearsnitch/pull/53) |
+| S4 (partial) | Retire Mesh Chat feature | merged | Stopwatch (demote) and BMI calc (retire) still pending. |
 
 ## Queued — ranked by impact × (1/complexity)
 
@@ -70,7 +71,7 @@ Items escalated here require explicit user approval before spawning a coding age
 | S1 | Identity collapse — brand consolidation | Requires pillar decision | GearSnitch / GearGrind.Net / GearGrind Network / Shawn Frazier Inc all coexist. |
 | S2 | 3-tab nav rebuild (Gear / Train / Chemistry + avatar) | Requires pillar decision | Matches ultrathink redesign. Significant iOS refactor. |
 | S3 | Onboarding "first win" restructure | Requires pillar decision | Defer permission gauntlet; let user pair a device / log a gym / browse store first. |
-| S4 | Retire / demote unused features (Mesh Chat, Stopwatch, BMI calc) | Requires product decision | Per ultrathink redesign. |
+| S4 | Retire / demote remaining unused features (Stopwatch demote, BMI calc retire) | Requires product decision | Per ultrathink redesign. **Mesh Chat portion shipped** — see Shipped table. |
 | S5 | KMS envelope encryption on PHI — scope expansion (BAA inventory + audit-log retention) | Tier 1 (encryption keys + PHI) | 2026 HIPAA guidance: AES-256 at rest + TLS 1.3 + audit logs + BAAs. |
 | S6 | Lab PDF upload + biomarker extraction (WHOOP Advanced Labs parity) | Biomarker storage may qualify as PHI | WHOOP 2025 launch; our lab-draw scheduler is stubbed, this unblocks without Rupa/LabCorp. High impact (9) but needs storage-design signoff. |
 
