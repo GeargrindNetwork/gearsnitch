@@ -11,6 +11,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import LandingPage from './pages/LandingPage';
 import StorePage from './pages/StorePage';
 import AccountPage from './pages/AccountPage';
+import BillingHistoryPage from './pages/BillingHistoryPage';
 import SignInPage from './pages/SignInPage';
 import SubscribePage from './pages/SubscribePage';
 import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
@@ -67,6 +68,14 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <SubscriptionSuccessPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/account/billing"
+                element={(
+                  <ProtectedAppRoute>
+                    <BillingHistoryPage />
                   </ProtectedAppRoute>
                 )}
               />

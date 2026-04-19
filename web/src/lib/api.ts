@@ -1008,6 +1008,57 @@ export async function createSubscriptionPortalSession(
   return res.data;
 }
 
+// ─── Billing History (item #22) ───────────────────────────────────────────
+
+export type SubscriptionInvoiceStatus =
+  | 'paid'
+  | 'open'
+  | 'void'
+  | 'uncollectible'
+  | 'draft';
+
+export interface SubscriptionInvoice {
+  id: string;
+  number: string | null;
+  createdAt: string;
+  paidAt: string | null;
+  amountPaid: number;
+  amountDue: number;
+  currency: string;
+  status: SubscriptionInvoiceStatus;
+  hostedInvoiceUrl: string | null;
+  invoicePdfUrl: string | null;
+  description: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+}
+
+export interface SubscriptionInvoicesResponse {
+  invoices: SubscriptionInvoice[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
+export async function getSubscriptionInvoices(params?: {
+  startingAfter?: string | null;
+  limit?: number;
+}): Promise<SubscriptionInvoicesResponse> {
+  const qs = new URLSearchParams();
+  if (params?.startingAfter) qs.set('startingAfter', params.startingAfter);
+  if (typeof params?.limit === 'number') qs.set('limit', String(params.limit));
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : '';
+
+  const res = await api.get<SubscriptionInvoicesResponse>(`/subscriptions/invoices${suffix}`);
+  if (!res.success || !res.data) {
+    throw new Error(res.error?.message || 'Failed to load billing history');
+  }
+  return {
+    invoices: Array.isArray(res.data.invoices) ? res.data.invoices : [],
+    hasMore: Boolean(res.data.hasMore),
+    nextCursor: res.data.nextCursor ?? null,
+  };
+}
+
 // ─── Emergency Contacts ───────────────────────────────────────────────────
 
 export interface EmergencyContact {
