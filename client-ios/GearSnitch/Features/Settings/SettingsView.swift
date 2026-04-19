@@ -46,6 +46,14 @@ struct SettingsView: View {
                         .foregroundColor(.gsText)
                 }
 
+                // Backlog item #18 — Auto-pause run on inactivity.
+                NavigationLink {
+                    RunTrackingSettingsView()
+                } label: {
+                    Label("Run tracking", systemImage: "figure.run")
+                        .foregroundColor(.gsText)
+                }
+
                 NavigationLink {
                     NotificationPreferencesView()
                 } label: {

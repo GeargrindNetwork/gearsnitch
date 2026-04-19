@@ -85,6 +85,8 @@
 	<string>Always-on location lets GearSnitch auto-activate monitoring at your gym.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>GearSnitch detects when you arrive at your gym.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>GearSnitch uses motion data to auto-pause your run when you stop moving so your pace average stays accurate.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>GearSnitch accesses your photos to set a profile picture.</string>
 	<key>NSSupportsLiveActivities</key>

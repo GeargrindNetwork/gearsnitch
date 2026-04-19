@@ -117,12 +117,22 @@ struct ActiveRunView: View {
     private func activeRunContent(_ activeRun: ActiveRunSession) -> some View {
         ScrollView {
             VStack(spacing: 20) {
+                if let banner = manager.autoPauseBanner {
+                    AutoPauseBannerView(
+                        state: banner,
+                        onAutoDismiss: { manager.clearAutoPauseBanner() },
+                        onForceResume: { manager.forceResume() }
+                    )
+                    .padding(.top, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+
                 VStack(spacing: 6) {
                     Text(activeRun.durationString)
                         .font(.system(size: 44, weight: .bold, design: .monospaced))
-                        .foregroundColor(.gsEmerald)
+                        .foregroundColor(activeRun.isPaused ? .gsWarning : .gsEmerald)
 
-                    Text(activeRun.isEndingPending ? "Awaiting Save" : "Elapsed Time")
+                    Text(statusLabel(for: activeRun))
                         .font(.caption)
                         .foregroundColor(.gsTextSecondary)
                 }
@@ -154,7 +164,7 @@ struct ActiveRunView: View {
                 VStack(spacing: 0) {
                     detailRow(label: "Captured Points", value: "\(activeRun.routePoints.count)")
                     Divider().background(Color.gsBorder)
-                    detailRow(label: "Status", value: activeRun.isEndingPending ? "Pending save" : "Recording")
+                    detailRow(label: "Status", value: activeRun.isEndingPending ? "Pending save" : (activeRun.isPaused ? "Auto-paused" : "Recording"))
                     Divider().background(Color.gsBorder)
                     detailRow(label: "Started", value: activeRun.startedAt.formatted(date: .abbreviated, time: .shortened))
                 }
@@ -189,6 +199,12 @@ struct ActiveRunView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
         }
+    }
+
+    private func statusLabel(for run: ActiveRunSession) -> String {
+        if run.isEndingPending { return "Awaiting Save" }
+        if run.isPaused { return "Auto-paused" }
+        return "Elapsed Time"
     }
 
     private var permissionMessage: String {
