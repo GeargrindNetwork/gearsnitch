@@ -23,6 +23,13 @@ struct HealthDashboardView: View {
                     trendsCard
                 }
 
+                // ECG card
+                NavigationLink {
+                    ECGView()
+                } label: {
+                    ecgCard
+                }
+
                 // Quick links
                 VStack(spacing: 12) {
                     NavigationLink {
@@ -239,6 +246,56 @@ struct HealthDashboardView: View {
                 .stroke(
                     LinearGradient(
                         colors: [Color.gsDanger.opacity(0.3), Color.gsCyan.opacity(0.3)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+    }
+
+    // MARK: - ECG Card
+
+    private var ecgCard: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.gsDanger.opacity(0.25), Color.gsEmerald.opacity(0.2)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+
+                Image(systemName: "waveform.path.ecg")
+                    .font(.title3)
+                    .foregroundColor(.gsDanger)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("ECG & HRV")
+                    .font(.headline)
+                    .foregroundColor(.gsText)
+
+                Text("View your Apple Watch ECG records")
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+        }
+        .padding(16)
+        .background(Color.gsSurface)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.gsDanger.opacity(0.3), Color.gsEmerald.opacity(0.3)],
                         startPoint: .topLeading, endPoint: .bottomTrailing
                     ),
                     lineWidth: 1
