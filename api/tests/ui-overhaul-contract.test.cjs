@@ -37,42 +37,13 @@ describe('subscription screen overhaul', () => {
   });
 });
 
-describe('floating hamburger menu', () => {
-  const floatingMenu = readRepo('client-ios/GearSnitch/App/FloatingMenuView.swift');
-  const mainTabView = readRepo('client-ios/GearSnitch/App/MainTabView.swift');
-
-  test('floating menu exists with hamburger button', () => {
-    expect(floatingMenu).toContain('FloatingMenuView');
-    expect(floatingMenu).toContain('line.3.horizontal');
-    expect(floatingMenu).toContain('xmark');
-  });
-
-  test('floating menu includes all 5 standard tabs', () => {
-    expect(floatingMenu).toContain('.dashboard');
-    expect(floatingMenu).toContain('.workouts');
-    expect(floatingMenu).toContain('.health');
-    expect(floatingMenu).toContain('.store');
-    expect(floatingMenu).toContain('.profile');
-  });
-
-  test('floating menu includes hospitals and labs buttons', () => {
-    expect(floatingMenu).toContain('Hospitals');
-    expect(floatingMenu).toContain('Labs');
-    expect(floatingMenu).toContain('cross.case.fill');
-    expect(floatingMenu).toContain('staroflife.fill');
-  });
-
-  test('MainTabView uses FloatingMenuView instead of TabView', () => {
-    expect(mainTabView).toContain('FloatingMenuView');
-    expect(mainTabView).not.toMatch(/TabView\(selection:/);
-  });
-
-  test('MainTabView shows hospitals and labs as fullScreenCover', () => {
-    expect(mainTabView).toContain('NearestHospitalsView');
-    expect(mainTabView).toContain('ScheduleLabsView');
-    expect(mainTabView).toContain('fullScreenCover');
-  });
-});
+// The "floating hamburger menu" describe block was removed in the S2
+// 3-tab nav rebuild (PR #88). The new root is `RootTabView` with
+// 3 tabs (Gear / Train / Chemistry) + an AvatarMenuView sheet.
+// The legacy FloatingMenuView + MainTabView now live under
+// `client-ios/GearSnitch/_legacy/` behind `FeatureFlags.legacyNavEnabled`.
+// Assertions for the new structure live in the iOS test target
+// (RootTabMappingTests / RootTabViewSnapshotTests / LegacyNavFeatureFlagTests).
 
 describe('device and gym deduplication', () => {
   const pairingFlow = readRepo('client-ios/GearSnitch/Features/Devices/DevicePairingFlowView.swift');
