@@ -1,0 +1,9 @@
+name: GearSnitch
+settings:
+  base:
+    DEVELOPMENT_TEAM: TUZYDM227C
+targets:
+  GearSnitch:
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gearsnitch.app
