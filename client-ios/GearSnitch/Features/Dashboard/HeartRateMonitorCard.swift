@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 
 struct HeartRateMonitorCard: View {
@@ -26,10 +27,12 @@ struct HeartRateMonitorCard: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            if let bpm = monitor.currentBPM, let zone = monitor.currentZone {
-                activeBPMView(bpm: bpm, zone: zone)
-            } else if monitor.isMonitoring {
-                waitingView
+            if monitor.isMonitoring {
+                // Split Watch / AirPods columns are the primary UI while the
+                // monitor is running. Columns render "—" when their buffer
+                // is empty, so the layout is stable regardless of which
+                // source has delivered a sample yet.
+                splitColumnView
             } else if permissions.state == .denied {
                 healthPermissionDeniedView
             } else if !hasHRCapableDevice {
@@ -44,7 +47,7 @@ struct HeartRateMonitorCard: View {
         .cornerRadius(20)
         .overlay(
             RoundedRectangle(cornerRadius: 20)
-                .stroke(heartBorderColor.opacity(0.3), lineWidth: 1)
+                .stroke(splitBorderColor.opacity(0.3), lineWidth: 1)
         )
         .onAppear {
             withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
@@ -73,132 +76,183 @@ struct HeartRateMonitorCard: View {
         }
     }
 
-    // MARK: - Active BPM
+    // MARK: - Split Column View
 
-    /// Target heart rate based on standard formula: 220 - age
-    /// Uses a default of 185 if age is unknown (age ~35)
-    private var targetHeartRate: Int {
-        // TODO: Pull actual age from user profile when available
-        185
+    /// Two equal-width columns — Watch on the left, AirPods on the right —
+    /// each with a live BPM readout and a Swift Charts line+area chart of the
+    /// last 5 minutes of 30-second samples. A Δ correlation badge beneath the
+    /// columns shows the absolute difference between the latest readings and
+    /// doubles as a quick sanity check on which source is trustworthy.
+    private var splitColumnView: some View {
+        VStack(spacing: 14) {
+            HStack(alignment: .top, spacing: 12) {
+                sourceColumn(
+                    title: "Watch",
+                    systemImage: "applewatch",
+                    tint: .gsEmerald,
+                    samples: monitor.watchSamples,
+                    source: .watch
+                )
+                .frame(maxWidth: .infinity)
+
+                Divider()
+                    .background(Color.gsBorder)
+
+                sourceColumn(
+                    title: "AirPods",
+                    systemImage: "airpods.pro",
+                    tint: .gsCyan,
+                    samples: monitor.airpodsSamples,
+                    source: .airpods
+                )
+                .frame(maxWidth: .infinity)
+            }
+
+            correlationBadge
+        }
     }
 
-    private func activeBPMView(bpm: Int, zone: HeartRateZone) -> some View {
-        VStack(spacing: 12) {
-            // Current BPM | Heart Icon | Target HR
-            HStack(alignment: .center, spacing: 0) {
-                // Left — Current BPM
-                VStack(spacing: 2) {
-                    Text("\(bpm)")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundColor(zone.color)
-                    Text("BPM")
-                        .font(.caption2.weight(.medium))
-                        .foregroundColor(.gsTextSecondary)
-                }
-                .frame(maxWidth: .infinity)
+    private func sourceColumn(
+        title: String,
+        systemImage: String,
+        tint: Color,
+        samples: [HRSample],
+        source: HeartRateSourceKind
+    ) -> some View {
+        let latest = monitor.latestBPM(for: source)
+        let zone = latest.map { HeartRateZone.from(bpm: $0) }
 
-                // Center — Pulsing heart
-                ZStack {
-                    Circle()
-                        .fill(zone.color.opacity(0.12))
-                        .frame(width: 80, height: 80)
-                        .scaleEffect(isPulsing ? 1.15 : 1.0)
-
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 36))
-                        .foregroundColor(zone.color)
-                        .scaleEffect(isPulsing ? 1.1 : 0.95)
-                }
-
-                // Right — Target HR
-                VStack(spacing: 2) {
-                    Text("\(targetHeartRate)")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundColor(.gsTextSecondary.opacity(0.6))
-                    Text("TARGET")
-                        .font(.caption2.weight(.medium))
-                        .foregroundColor(.gsTextSecondary)
-                }
-                .frame(maxWidth: .infinity)
-            }
-
+        return VStack(spacing: 10) {
             HStack(spacing: 6) {
-                Circle()
-                    .fill(zone.color)
-                    .frame(width: 8, height: 8)
-                Text(zone.label)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(zone.color)
-            }
-
-            if let source = monitor.sourceDeviceName {
-                Text(sourceAttribution(for: source))
-                    .font(.caption)
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(tint)
+                Text(title)
+                    .font(.caption.weight(.semibold))
                     .foregroundColor(.gsTextSecondary)
             }
 
-            // Zone bar
-            HStack(spacing: 2) {
-                ForEach(HeartRateZone.allCases, id: \.self) { z in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(z == zone ? z.color : z.color.opacity(0.15))
-                        .frame(height: 6)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                if let bpm = latest {
+                    Text("\(bpm)")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(zone?.color ?? tint)
+                } else {
+                    Text("—")
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(.gsTextSecondary.opacity(0.5))
+                }
+                Text("BPM")
+                    .font(.caption2.weight(.medium))
+                    .foregroundColor(.gsTextSecondary)
+            }
+
+            splitChart(samples: samples, tint: tint)
+                .frame(height: 64)
+
+            if let zone {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(zone.color)
+                        .frame(width: 6, height: 6)
+                    Text(zone.label)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundColor(zone.color)
+                }
+            } else {
+                Text("Waiting…")
+                    .font(.caption2)
+                    .foregroundColor(.gsTextSecondary.opacity(0.6))
+            }
+        }
+    }
+
+    /// Swift Charts line + area mark for a single source's rolling buffer.
+    /// `bpm == nil` entries become gaps so the user can see when a source
+    /// missed a 30-second tick rather than being misled by interpolation.
+    @ViewBuilder
+    private func splitChart(samples: [HRSample], tint: Color) -> some View {
+        if samples.contains(where: { $0.bpm != nil }) {
+            Chart {
+                ForEach(samples) { sample in
+                    if let bpm = sample.bpm {
+                        LineMark(
+                            x: .value("Time", sample.timestamp),
+                            y: .value("BPM", bpm)
+                        )
+                        .interpolationMethod(.monotone)
+                        .foregroundStyle(tint)
+
+                        AreaMark(
+                            x: .value("Time", sample.timestamp),
+                            y: .value("BPM", bpm)
+                        )
+                        .interpolationMethod(.monotone)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [tint.opacity(0.35), tint.opacity(0.0)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    }
                 }
             }
-        }
-    }
-
-    /// Render "via AirPods Pro" / "via Apple Watch" / "via iPhone" when the
-    /// source is known, falling back to the raw source name for clarity.
-    private func sourceAttribution(for source: String) -> String {
-        switch monitor.sourceKind {
-        case .airpods, .watch, .phone, .other:
-            return "via \(source)"
-        case .unknown:
-            return source
-        }
-    }
-
-    // MARK: - Waiting
-
-    private var waitingView: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color.gsEmerald.opacity(0.12))
-                    .frame(width: 80, height: 80)
-                    .scaleEffect(isPulsing ? 1.1 : 1.0)
-
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 36))
-                    .foregroundColor(.gsEmerald.opacity(0.6))
-                    .scaleEffect(isPulsing ? 1.05 : 0.95)
+            .chartXAxis(.hidden)
+            .chartYAxis(.hidden)
+            .chartPlotStyle { plot in
+                plot.background(Color.clear)
             }
+        } else {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.gsSurfaceRaised.opacity(0.4))
+                .overlay(
+                    Text("no data")
+                        .font(.caption2)
+                        .foregroundColor(.gsTextSecondary.opacity(0.5))
+                )
+        }
+    }
 
-            Text("Monitoring Heart Rate")
-                .font(.headline)
-                .foregroundColor(.gsText)
-
-            Text("Waiting for data from AirPods, Apple Watch, or iPhone…")
-                .font(.caption)
+    /// Absolute BPM difference between the latest Watch and AirPods readings.
+    /// Acts as a correlation indicator: small Δ (< ~5 BPM) suggests both
+    /// sources agree; a large Δ flags a stale or noisy sensor on one side.
+    private var correlationBadge: some View {
+        HStack(spacing: 8) {
+            Text("Δ")
+                .font(.caption.weight(.bold))
                 .foregroundColor(.gsTextSecondary)
-                .multilineTextAlignment(.center)
 
-            if hasPairedAirPodsLikeDevice {
-                Button {
-                    showHealthSettingsHint = true
-                } label: {
-                    Text("Not seeing your AirPods heart rate?")
-                        .font(.caption2.weight(.medium))
-                        .foregroundColor(.gsEmerald)
-                }
-                .buttonStyle(.plain)
+            if let delta = monitor.latestHeartRateDelta {
+                Text("\(delta) BPM")
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundColor(deltaColor(for: delta))
+            } else {
+                Text("—")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.gsTextSecondary.opacity(0.5))
             }
 
-            ProgressView()
-                .tint(.gsEmerald)
+            Spacer()
+
+            Text("30s cadence · 5 min window")
+                .font(.caption2)
+                .foregroundColor(.gsTextSecondary.opacity(0.7))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.gsSurfaceRaised.opacity(0.5))
+        .cornerRadius(8)
+    }
+
+    private func deltaColor(for delta: Int) -> Color {
+        switch delta {
+        case 0..<5: return .gsEmerald
+        case 5..<10: return .gsWarning
+        default: return .red
         }
     }
 
@@ -306,7 +360,15 @@ struct HeartRateMonitorCard: View {
         }
     }
 
-    private var heartBorderColor: Color {
+    /// Border tint for the card. Uses the latest Watch zone (when present),
+    /// then AirPods, then the current-zone fallback, then a neutral border.
+    private var splitBorderColor: Color {
+        if let bpm = monitor.latestBPM(for: .watch) {
+            return HeartRateZone.from(bpm: bpm).color
+        }
+        if let bpm = monitor.latestBPM(for: .airpods) {
+            return HeartRateZone.from(bpm: bpm).color
+        }
         if let zone = monitor.currentZone {
             return zone.color
         }
