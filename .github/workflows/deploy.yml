@@ -63,3 +63,38 @@ jobs:
             --config=infrastructure/cloudbuild/cloudbuild.yaml \
             --substitutions=_TAG=${SHORT_SHA},_REGION=us-central1,_PROJECT_ID=gearsnitch,_VITE_API_URL="${API_URL}",_VITE_WS_URL="${WS_URL}",_VITE_GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}",_VITE_APPLE_SERVICE_ID="${APPLE_SERVICE_ID}",_VITE_APPLE_REDIRECT_URI="${APPLE_REDIRECT_URI}" \
             --project=gearsnitch
+
+      # RALPH #30: after the deploy lands, watch the new API revision for 5
+      # minutes and auto-rollback if its 5xx rate exceeds the threshold.
+      # The watcher is idempotent — running it against an already-healthy or
+      # already-rolled-back service is a no-op.
+      - name: Install jq
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq jq
+
+      - name: Watch Cloud Run for post-deploy 5xx and auto-rollback
+        id: rollback_watch
+        env:
+          CLOUDRUN_SERVICE: gearsnitch-api
+          CLOUDRUN_REGION: us-central1
+          ROLLBACK_5XX_THRESHOLD_PCT: '5'
+          ROLLBACK_WATCH_SECONDS: '300'
+          ROLLBACK_SAMPLE_INTERVAL_SECONDS: '30'
+        run: |
+          set +e
+          bash scripts/cloudrun-rollback-watcher.sh
+          rc=$?
+          echo "watcher_exit=$rc" >> "$GITHUB_OUTPUT"
+          case "$rc" in
+            0)
+              echo "::notice title=Cloud Run health::Post-deploy watch completed cleanly; no rollback needed."
+              exit 0
+              ;;
+            1)
+              echo "::error title=Cloud Run auto-rollback::5xx rate exceeded ${ROLLBACK_5XX_THRESHOLD_PCT}% on ${CLOUDRUN_SERVICE} — traffic has been shifted back to the previous revision."
+              exit 1
+              ;;
+            *)
+              echo "::error title=Cloud Run watcher fatal::rollback-watcher exited $rc (not 0/1). Investigate gcloud/jq/auth."
+              exit "$rc"
+              ;;
+          esac
