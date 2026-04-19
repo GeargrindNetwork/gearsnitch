@@ -30,6 +30,10 @@ import labsRoutes from '../modules/labs/routes.js';
 import emergencyContactsRoutes from '../modules/emergency-contacts/routes.js';
 import metricsRoutes from '../modules/metrics/routes.js';
 import ecgRoutes from '../modules/ecg/routes.js';
+import {
+  adminRouter as featureFlagsAdminRouter,
+  userRouter as featureFlagsUserRouter,
+} from '../modules/feature-flags/index.js';
 
 const router = Router();
 
@@ -87,6 +91,13 @@ router.use('/gear', gearRoutes);
 router.use('/store', storeRoutes);
 router.use('/content', contentRoutes);
 router.use('/support', supportRoutes);
+// Feature flags — admin write + user read surfaces (backlog item #34).
+// Mount the admin sub-router before `/admin/*` so the dedicated router's own
+// `isAuthenticated + hasRole(['admin'])` guard handles this namespace
+// explicitly (the admin module also guards, but keeps the flag routes
+// isolated from the generic admin CRUD).
+router.use('/admin/feature-flags', featureFlagsAdminRouter);
+router.use('/feature-flags', featureFlagsUserRouter);
 router.use('/admin', adminRoutes);
 router.use('/config', configRoutes);
 router.use('/sessions', sessionsRoutes);

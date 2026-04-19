@@ -141,6 +141,7 @@ class ApiClient {
 
   get<T>(path: string) { return this.request<T>('GET', path); }
   post<T>(path: string, body?: unknown) { return this.request<T>('POST', path, body); }
+  put<T>(path: string, body?: unknown) { return this.request<T>('PUT', path, body); }
   patch<T>(path: string, body?: unknown) { return this.request<T>('PATCH', path, body); }
   delete<T>(path: string) { return this.request<T>('DELETE', path); }
 }
@@ -1190,4 +1191,69 @@ export async function getHealthDashboard(): Promise<HealthDashboardResponse> {
     throw new Error(response.error?.message || 'Failed to load health dashboard');
   }
   return response.data;
+}
+
+// ─── Feature Flags (item #34) ─────────────────────────────────────────────
+
+export interface FeatureFlagsResponse {
+  flags: Record<string, boolean>;
+  tier: string | null;
+}
+
+/**
+ * Fetch the resolved feature-flag map for the authenticated user. The
+ * server already applies the per-user > per-tier > global > default
+ * resolution order before returning — the client just renders.
+ */
+export async function getFeatureFlags(): Promise<Record<string, boolean>> {
+  const response = await api.get<FeatureFlagsResponse>('/feature-flags');
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to load feature flags');
+  }
+  const flags = response.data.flags;
+  return flags && typeof flags === 'object' ? flags : {};
+}
+
+export async function getAdminFeatureFlag(name: string): Promise<boolean | null> {
+  const response = await api.get<{ name: string; value: boolean | null }>(
+    `/admin/feature-flags/${encodeURIComponent(name)}`,
+  );
+  if (!response.success || !response.data) {
+    throw new Error(response.error?.message || 'Failed to read feature flag');
+  }
+  return response.data.value ?? null;
+}
+
+export async function setAdminFeatureFlag(
+  name: string,
+  value: boolean,
+  opts: { userId?: string; tier?: string } = {},
+): Promise<void> {
+  const body: { value: boolean; userId?: string; tier?: string } = { value };
+  if (opts.userId) body.userId = opts.userId;
+  if (opts.tier) body.tier = opts.tier;
+  const response = await api.put<unknown>(
+    `/admin/feature-flags/${encodeURIComponent(name)}`,
+    body,
+  );
+  if (!response.success) {
+    throw new Error(response.error?.message || 'Failed to update feature flag');
+  }
+}
+
+export async function deleteAdminFeatureFlag(
+  name: string,
+  opts: { scope?: 'global' | 'user' | 'tier'; userId?: string; tier?: string } = {},
+): Promise<void> {
+  const qs = new URLSearchParams();
+  if (opts.scope) qs.set('scope', opts.scope);
+  if (opts.userId) qs.set('userId', opts.userId);
+  if (opts.tier) qs.set('tier', opts.tier);
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : '';
+  const response = await api.delete<unknown>(
+    `/admin/feature-flags/${encodeURIComponent(name)}${suffix}`,
+  );
+  if (!response.success) {
+    throw new Error(response.error?.message || 'Failed to delete feature flag');
+  }
 }
