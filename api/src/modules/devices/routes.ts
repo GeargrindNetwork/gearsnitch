@@ -11,6 +11,7 @@ import { Device } from '../../models/Device.js';
 import { RssiSample } from '../../models/RssiSample.js';
 import { User } from '../../models/User.js';
 import { enqueuePushNotification } from '../../services/pushNotificationQueue.js';
+import { checkAndAwardFor } from '../achievements/service.js';
 
 const router = Router();
 const deviceService = new DeviceService();
@@ -299,6 +300,8 @@ router.post(
         getUserId(req),
         req.body as z.infer<typeof createDeviceSchema>,
       );
+      // Backlog item #39 — first_device_paired achievement hook.
+      await checkAndAwardFor(getUserId(req), 'devicePaired', req.requestId);
       successResponse(res, device, StatusCodes.CREATED);
     } catch (err) {
       const body = req.body as Partial<z.infer<typeof createDeviceSchema>>;

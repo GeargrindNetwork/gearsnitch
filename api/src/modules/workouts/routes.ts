@@ -17,6 +17,7 @@ import { User } from '../../models/User.js';
 import { enqueuePushNotification } from '../../services/pushNotificationQueue.js';
 import logger from '../../utils/logger.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
+import { checkAndAwardFor } from '../achievements/service.js';
 
 /**
  * Item #27 — workout-completion summary push.
@@ -921,6 +922,8 @@ router.patch(
           },
           req.requestId,
         );
+        // Backlog item #39 — first-completion achievement hook.
+        await checkAndAwardFor(workout.userId, 'workoutCompleted', req.requestId);
       }
 
       successResponse(res, serializeWorkout(updatedWorkout ?? workout.toObject()));
@@ -1052,6 +1055,9 @@ router.post(
           },
           req.requestId,
         );
+        // Backlog item #39 — evaluate achievement badges (first_workout,
+        // hundred_sessions, streaks). Best-effort.
+        await checkAndAwardFor(workout.userId, 'workoutCompleted', req.requestId);
       }
 
 

@@ -5,6 +5,9 @@ import { User } from '../../models/User.js';
 import { ProcessedWebhookEvent } from '../../models/ProcessedWebhookEvent.js';
 import logger from '../../utils/logger.js';
 import { handleCheckoutSessionCompleted } from './checkoutService.js';
+// Backlog item #39 — achievement badges (first_purchase trigger).
+// Read-only subscribe into the charge path; see `handleInvoicePaid` below.
+import { checkAndAwardFor } from '../achievements/service.js';
 
 /**
  * Stripe subscription lifecycle webhook handlers.
@@ -368,6 +371,10 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     userId: result.userId.toString(),
     newExpiry: newExpiry?.toISOString() ?? null,
   });
+
+  // Backlog item #39 — first_purchase achievement hook. Idempotent via the
+  // unique index on Achievement(userId, badgeId) so renewals are no-ops.
+  await checkAndAwardFor(result.userId, 'subscriptionCharged');
 }
 
 async function handleInvoicePaymentFailed(

@@ -5,6 +5,9 @@ import {
   Environment,
   type JWSTransactionDecodedPayload,
 } from 'app-store-server-api';
+// Backlog item #39 — achievement badges (first_purchase trigger).
+// Read-only hook into the Apple StoreKit charge-validation path.
+import { checkAndAwardFor } from '../achievements/service.js';
 
 export type SubscriptionTier = 'free' | 'monthly' | 'annual' | 'lifetime';
 
@@ -254,6 +257,12 @@ export async function validateAppleTransaction(
       userId,
       transactionId: payload.originalTransactionId,
     });
+  }
+
+  // Backlog item #39 — first_purchase achievement. Idempotent; re-verifies
+  // on every transaction validation are no-ops after the first award.
+  if (subscription.status === 'active') {
+    await checkAndAwardFor(userId, 'subscriptionCharged');
   }
 
   return {

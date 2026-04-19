@@ -132,3 +132,6 @@ export {
   GEAR_UNITS,
   GEAR_STATUSES,
 } from './GearComponent';
+
+export { Achievement } from './Achievement';
+export type { IAchievement } from './Achievement';

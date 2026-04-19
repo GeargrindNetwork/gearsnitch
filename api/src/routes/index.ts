@@ -30,6 +30,7 @@ import labsRoutes from '../modules/labs/routes.js';
 import emergencyContactsRoutes from '../modules/emergency-contacts/routes.js';
 import metricsRoutes from '../modules/metrics/routes.js';
 import ecgRoutes from '../modules/ecg/routes.js';
+import achievementsRoutes from '../modules/achievements/routes.js';
 import {
   adminRouter as featureFlagsAdminRouter,
   userRouter as featureFlagsUserRouter,
@@ -110,5 +111,7 @@ router.use('/labs', labsRoutes);
 router.use('/emergency-contacts', emergencyContactsRoutes);
 router.use('/metrics', metricsRoutes);
 router.use('/ecg', ecgRoutes);
+// Backlog item #39 — achievement badges (streaks + milestones).
+router.use('/achievements', achievementsRoutes);
 
 export default router;
