@@ -18,6 +18,14 @@ struct SubscriptionStatusView: View {
     @State private var isLoading = false
     @State private var error: String?
 
+    // Stripe billing portal state
+    @State private var portalURL: URL?
+    @State private var isLoadingPortal = false
+    @State private var portalErrorMessage: String?
+    @State private var showPortalError = false
+
+    private let portalService = StripePortalService()
+
     var body: some View {
         Group {
             if isLoading && subscription == nil {
@@ -33,6 +41,32 @@ struct SubscriptionStatusView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await loadSubscription()
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { portalURL != nil },
+                set: { newValue in if !newValue { portalURL = nil } }
+            ),
+            onDismiss: {
+                // Refresh the subscription from the backend — the user may
+                // have switched plans, canceled, or updated billing while
+                // on the Stripe portal.
+                Task { await loadSubscription() }
+            }
+        ) {
+            if let portalURL {
+                StripePortalSafariView(url: portalURL) {
+                    // SFSafariViewController "Done" tap → dismiss the sheet.
+                    // `onDismiss` above will run the refresh.
+                    self.portalURL = nil
+                }
+                .ignoresSafeArea()
+            }
+        }
+        .alert("Couldn't open billing portal", isPresented: $showPortalError) {
+            Button("OK", role: .cancel) { portalErrorMessage = nil }
+        } message: {
+            Text(portalErrorMessage ?? "Please try again.")
         }
     }
 
@@ -85,20 +119,11 @@ struct SubscriptionStatusView: View {
                 }
                 .cardStyle(padding: 0)
 
-                // Manage
-                Button {
-                    if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
-                        UIApplication.shared.open(url)
-                    }
-                } label: {
-                    Label("Manage Subscription", systemImage: "arrow.up.right.square")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(.gsEmerald)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(Color.gsEmerald.opacity(0.1))
-                        .cornerRadius(12)
-                }
+                // Manage — route to Stripe portal for stripe-backed subs,
+                // Apple Settings otherwise. Item #3 (Stripe Customer Portal
+                // deep-link). Apple subs continue to use the existing
+                // settings deep-link; we don't duplicate that flow.
+                manageButton(for: sub)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -126,6 +151,91 @@ struct SubscriptionStatusView: View {
                 .padding(.horizontal, 32)
 
             Spacer()
+        }
+    }
+
+    // MARK: - Manage Button
+
+    /// Provider-aware "Manage" button.
+    ///
+    /// - `stripe` → opens the Stripe Customer Portal in an in-app
+    ///   `SFSafariViewController`. Refreshes subscription state on dismiss.
+    /// - any other provider (Apple, nil) → falls back to Apple's built-in
+    ///   subscription settings deep-link (existing behavior).
+    @ViewBuilder
+    private func manageButton(for sub: SubscriptionDTO) -> some View {
+        let provider = sub.platform?.lowercased()
+
+        if provider == "stripe" {
+            Button {
+                Task { await openStripePortal() }
+            } label: {
+                HStack(spacing: 8) {
+                    if isLoadingPortal {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.gsEmerald)
+                    } else {
+                        Image(systemName: "arrow.up.right.square")
+                    }
+                    Text(isLoadingPortal ? "Opening..." : "Manage Billing on Web")
+                }
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.gsEmerald)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(Color.gsEmerald.opacity(0.1))
+                .cornerRadius(12)
+            }
+            .disabled(isLoadingPortal)
+            .accessibilityIdentifier("manageBillingOnWebButton")
+        } else {
+            Button {
+                if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Label("Manage Subscription", systemImage: "arrow.up.right.square")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.gsEmerald)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(Color.gsEmerald.opacity(0.1))
+                    .cornerRadius(12)
+            }
+        }
+    }
+
+    // MARK: - Stripe Portal
+
+    @MainActor
+    private func openStripePortal() async {
+        guard !isLoadingPortal else { return }
+        isLoadingPortal = true
+        defer { isLoadingPortal = false }
+
+        do {
+            let url = try await portalService.fetchPortalURL()
+            portalURL = url
+        } catch let error as StripePortalError {
+            portalErrorMessage = message(for: error)
+            showPortalError = true
+        } catch {
+            portalErrorMessage = error.localizedDescription
+            showPortalError = true
+        }
+    }
+
+    private func message(for error: StripePortalError) -> String {
+        switch error {
+        case .unauthenticated:
+            return "Your session has expired. Please sign in again."
+        case .serverError:
+            return "Stripe is temporarily unavailable. Please try again in a moment."
+        case .invalidURL:
+            return "Received an unexpected response. Please try again."
+        case .requestFailed(let msg):
+            return msg
         }
     }
 

@@ -92,6 +92,7 @@
 		60AF420185D0F8C121905A36 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C72A3F57652B3904DA4C0B1D /* PrimaryButton.swift */; };
 		614CDEC5D615AFA6D07EF913 /* GearSnitchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 38A15AAE9D0FBF0FA32364F0 /* GearSnitchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6465E3D90138805BB7744587 /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51480EC335EB26C4CE925C66 /* SubscriptionView.swift */; };
+		6482572F0D4EEF7FB1558854 /* StripePortalService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7ED0FD7D6607FFCF61139F04 /* StripePortalService.swift */; };
 		6847A31FC3ED6A5959C8D289 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942B2AA3801B97D73525058B /* OnboardingView.swift */; };
 		687E3DCF2C907DAF5764E0B7 /* SignInViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7880B2F2F9BAB5DC91F8B0C2 /* SignInViewModel.swift */; };
 		6880B89E098956273AC0032A /* QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B4A4958CFA3CCEE2AF18A94 /* QRCodeView.swift */; };
@@ -166,6 +167,7 @@
 		BA214A124C701E9705A97225 /* MetricsLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67FDD9EA8D9439FA5BFE3EEC /* MetricsLogView.swift */; };
 		BA52359135FCB3F40C6348A2 /* ActiveRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1912FE4772AD939ECEABD7E8 /* ActiveRunView.swift */; };
 		BB8C3F0C06FD7FDC73123743 /* HeartRateMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF12374DD51BE2EAF44F6BA6 /* HeartRateMonitorTests.swift */; };
+		BD2AFD4B55AD5D620141EF99 /* StripePortalSafariView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA924CF5F658C8136EFB1ED3 /* StripePortalSafariView.swift */; };
 		BDBDD74BED82A64BAB80C8BF /* WatchSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B0BA53BABC6105198FBDF25 /* WatchSessionManager.swift */; };
 		C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */; };
 		C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */; };
@@ -183,6 +185,7 @@
 		D07CA7812C5706F4F694BBF4 /* ReferralQRModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7A3A080222FD6EBEEFB2F3 /* ReferralQRModalView.swift */; };
 		D08ACB55AE0D613900A5871E /* ApplePayButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C214E8EAE2147E0D752B9D5 /* ApplePayButton.swift */; };
 		D0BE86BB19680CBF2292AD3B /* WatchHRSamplePayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46C21E86E9093630621327BB /* WatchHRSamplePayload.swift */; };
+		D268CA5A359B68DEAB78C5BA /* StripePortalServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66B182407BBAA6FAB794692D /* StripePortalServiceTests.swift */; };
 		D28F759FEDBA4B1E71568B02 /* FeatureFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1620CF81D724DC3279BCC97D /* FeatureFlags.swift */; };
 		D324A4D52CBF1C63B30D3816 /* RunTrackingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CD1E1D646849EADF918A43 /* RunTrackingManager.swift */; };
 		D4F0427389476DE29BE009FD /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67550D7F3CED6EDCE592F5A5 /* LocationManager.swift */; };
@@ -369,6 +372,7 @@
 		5F654EDC6D283F1CFA8D355F /* DeviceStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceStatusBadge.swift; sourceTree = "<group>"; };
 		63CF89913B054F363A8C8B39 /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
 		65040AD89C646F2EB1439629 /* BLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEManager.swift; sourceTree = "<group>"; };
+		66B182407BBAA6FAB794692D /* StripePortalServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePortalServiceTests.swift; sourceTree = "<group>"; };
 		67550D7F3CED6EDCE592F5A5 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		67E39ABE4E646B6D84EE70EC /* LabsStateEligibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabsStateEligibility.swift; sourceTree = "<group>"; };
 		67FDD9EA8D9439FA5BFE3EEC /* MetricsLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsLogView.swift; sourceTree = "<group>"; };
@@ -393,6 +397,7 @@
 		7C214E8EAE2147E0D752B9D5 /* ApplePayButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayButton.swift; sourceTree = "<group>"; };
 		7C56C84E74ED46F4CAB07188 /* WatchComplicationCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchComplicationCenter.swift; sourceTree = "<group>"; };
 		7D8F66DD4AB609729A71DD1A /* StopwatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StopwatchView.swift; sourceTree = "<group>"; };
+		7ED0FD7D6607FFCF61139F04 /* StripePortalService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePortalService.swift; sourceTree = "<group>"; };
 		7FDAF6E82525532EB0FFC115 /* LogMealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogMealView.swift; sourceTree = "<group>"; };
 		80109D925697C302D72E2F78 /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		81A23D3E4D1F46C1FB0CA7D8 /* GearSnitchWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GearSnitchWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -500,6 +505,7 @@
 		F7E6883A9A303D7BFAC83E26 /* GearSnitchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearSnitchUITests.swift; sourceTree = "<group>"; };
 		F8CD7598811AF36A137595A6 /* DosingCalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosingCalculatorView.swift; sourceTree = "<group>"; };
 		FA07F4455FC91DFEBF1E9057 /* StoreHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreHomeView.swift; sourceTree = "<group>"; };
+		FA924CF5F658C8136EFB1ED3 /* StripePortalSafariView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePortalSafariView.swift; sourceTree = "<group>"; };
 		FAAF4F40C3E69357C164C866 /* WatchSyncPayloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchSyncPayloads.swift; path = GearSnitch/Core/Watch/WatchSyncPayloads.swift; sourceTree = "<group>"; };
 		FDAE0DA274CB6AB93F097499 /* GymSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymSessionManager.swift; sourceTree = "<group>"; };
 		FE08B599CA8A0C737DA0D935 /* WorkoutListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutListViewModel.swift; sourceTree = "<group>"; };
@@ -791,6 +797,7 @@
 				8BC5E7BD7D09E97C49A0C967 /* RequestBuilderTests.swift */,
 				C48810DB5F6525DFBA03BCBC /* ResponseDecoderTests.swift */,
 				5A294D6CB70C48EAEF6AAE5E /* StoreKitManagerTests.swift */,
+				66B182407BBAA6FAB794692D /* StripePortalServiceTests.swift */,
 				A8C5E7FE280E1ADD4E89EA4E /* SubscriptionTierTests.swift */,
 				830CEE37A4D930EDF494F88A /* WatchSyncPayloadsTests.swift */,
 			);
@@ -938,6 +945,7 @@
 				6ADFCAE61675D4B0A0E1E6C5 /* Realtime */,
 				4441329B86EC2858A42CE832 /* RunTracking */,
 				DAFDC6CD665FCE1B0F3D9D9B /* Session */,
+				922E3346A0E559F42B16F978 /* UI */,
 				5ACFDB0AFFEC683C60B62776 /* Watch */,
 				1B3A3EF252CFC54E3B13F2F5 /* Widgets */,
 			);
@@ -990,6 +998,14 @@
 				D9D079EE0921F05A5E725089 /* LostItemScannerView.swift */,
 			);
 			path = Devices;
+			sourceTree = "<group>";
+		};
+		922E3346A0E559F42B16F978 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				FA924CF5F658C8136EFB1ED3 /* StripePortalSafariView.swift */,
+			);
+			path = UI;
 			sourceTree = "<group>";
 		};
 		A43C94D20C664D42092E1625 /* Location */ = {
@@ -1185,6 +1201,7 @@
 				5C046F4715799B2015B386A4 /* PaymentModels.swift */,
 				D929C599AC0FE4E0FBCC10F1 /* PaymentService.swift */,
 				80109D925697C302D72E2F78 /* StoreKitManager.swift */,
+				7ED0FD7D6607FFCF61139F04 /* StripePortalService.swift */,
 			);
 			path = Payments;
 			sourceTree = "<group>";
@@ -1536,6 +1553,7 @@
 				8B2915D2D437967F466C8858 /* RequestBuilderTests.swift in Sources */,
 				1286F1B362522B5B8795E690 /* ResponseDecoderTests.swift in Sources */,
 				57C7357BD4908A6455428F21 /* StoreKitManagerTests.swift in Sources */,
+				D268CA5A359B68DEAB78C5BA /* StripePortalServiceTests.swift in Sources */,
 				82417DE74E327115B9325EEA /* SubscriptionTierTests.swift in Sources */,
 				27B3208F6002CC34702B3CE6 /* WatchSyncPayloadsTests.swift in Sources */,
 			);
@@ -1685,6 +1703,8 @@
 				3B9590D069122E717D0AF0C0 /* StoreHomeView.swift in Sources */,
 				C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */,
 				8AC3EB3CC4A1DA239B28508B /* StoreKitManager.swift in Sources */,
+				BD2AFD4B55AD5D620141EF99 /* StripePortalSafariView.swift in Sources */,
+				6482572F0D4EEF7FB1558854 /* StripePortalService.swift in Sources */,
 				FA5D6CCABA743DCD4C612B7F /* SubscriptionCardsView.swift in Sources */,
 				FEDFD0F6AC5AB05417853194 /* SubscriptionStatusView.swift in Sources */,
 				6465E3D90138805BB7744587 /* SubscriptionView.swift in Sources */,
