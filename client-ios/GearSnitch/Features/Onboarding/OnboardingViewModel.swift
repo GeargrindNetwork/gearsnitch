@@ -568,6 +568,20 @@ private final class BLEAuthorizationDelegate: NSObject, CBCentralManagerDelegate
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        // Briefly scan so iOS will show the permission prompt on first use.
+        // Creating a CBCentralManager alone is not always enough — iOS only
+        // surfaces the "Allow Bluetooth?" dialog when the app actually tries
+        // to use the manager. We stop the scan immediately; the prompt has
+        // already been triggered by the time the first scan call lands.
+        if central.state == .poweredOn && CBManager.authorization == .notDetermined {
+            central.scanForPeripherals(withServices: nil, options: nil)
+            central.stopScan()
+            // Don't report yet — wait for the user to respond to the prompt,
+            // which will transition the authorization state to
+            // .allowedAlways or .denied and redrive this callback.
+            return
+        }
+
         guard !hasReported else { return }
         let authorized = CBManager.authorization == .allowedAlways
         // Wait for a definitive state before reporting

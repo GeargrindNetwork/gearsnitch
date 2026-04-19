@@ -155,7 +155,7 @@ final class WatchECGController: NSObject, ObservableObject {
     }
 
     private func emitBatch() {
-        guard let recordingId = activeRecordingId else { return }
+        guard activeRecordingId != nil else { return }
         guard let start = recordingStartedAt else { return }
         var pairs: [[Double]] = []
         pairs.reserveCapacity(batchSize)

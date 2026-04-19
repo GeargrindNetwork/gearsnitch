@@ -20,12 +20,12 @@ import os
 @MainActor
 final class ECGPersistenceService {
 
-    static let shared = ECGPersistenceService()
+    nonisolated static let shared = ECGPersistenceService()
 
     private let logger = Logger(subsystem: "com.gearsnitch", category: "ECGPersistenceService")
     private let healthStore = HKHealthStore()
 
-    private init() {}
+    nonisolated private init() {}
 
     // MARK: - HealthKit
 

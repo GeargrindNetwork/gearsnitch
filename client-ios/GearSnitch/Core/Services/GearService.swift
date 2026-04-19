@@ -133,7 +133,7 @@ final class GearService {
     // can reference it without Swift 6 "main actor-isolated static property"
     // diagnostics. Safe because the singleton is initialized once at first
     // touch and all instance methods stay MainActor-isolated.
-    nonisolated(unsafe) static let shared = GearService()
+    nonisolated static let shared = GearService()
 
     private let apiClient: APIClient
 
