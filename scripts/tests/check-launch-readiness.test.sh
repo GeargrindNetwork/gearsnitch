@@ -157,6 +157,23 @@ expect_exit "non-existent Info.plist -> exit 1" 1 \
   --entitlements  "$FIXTURES/GearSnitch.good.entitlements" \
   --project-yml   "$FIXTURES/project.good.yml"
 
+# 8. project.yml missing the Apple Pay capability -> exit 1 (item #13)
+#    Even when the entitlements file currently has the merchant id, a
+#    project.yml that omits it means the next `xcodegen generate` will strip
+#    the entitlement on the next regen. We must fail closed.
+expect_exit "project.yml missing Apple Pay capability -> exit 1 (item #13)" 1 \
+  --info-plist    "$FIXTURES/Info.good.plist" \
+  --entitlements  "$FIXTURES/GearSnitch.good.entitlements" \
+  --project-yml   "$FIXTURES/project.no-applepay.yml"
+
+# 9. project.yml has Apple Pay block but with a wrong merchant id -> exit 1
+#    Catches the historical PR #25 / #29 typo class
+#    (`merchant.com.gearsnitch.app` vs canonical `merchant.gearsnitch.app`).
+expect_exit "project.yml with wrong Apple Pay merchant id -> exit 1 (item #13)" 1 \
+  --info-plist    "$FIXTURES/Info.good.plist" \
+  --entitlements  "$FIXTURES/GearSnitch.good.entitlements" \
+  --project-yml   "$FIXTURES/project.wrong-merchant.yml"
+
 # -----------------------------------------------------------------------------
 # summary
 # -----------------------------------------------------------------------------
