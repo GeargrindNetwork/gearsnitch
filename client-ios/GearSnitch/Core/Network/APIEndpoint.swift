@@ -621,6 +621,11 @@ struct UpdateUserBody: Encodable {
     var displayName: String?
     var avatarURL: String?
     var preferences: [String: String]?
+    /// Item #27 — opt-out flag for the post-session summary push. `nil`
+    /// leaves the server-side value untouched; `false` re-enables; `true`
+    /// disables. Default for a new user on the server is `false`
+    /// (i.e. the push fires).
+    var workoutSummaryPushDisabled: Bool?
     var onboardingCompletedAt: Date?
     var permissionsState: PermissionStateSyncBody?
 }
