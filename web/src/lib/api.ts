@@ -963,6 +963,22 @@ export async function cancelSubscription(): Promise<void> {
   if (!res.success) throw new Error(res.error?.message || 'Failed to cancel');
 }
 
+/**
+ * Create a Stripe Billing Portal session and return the redirect URL.
+ * The caller should set `window.location.href = url` to hand off to Stripe.
+ */
+export async function createSubscriptionPortalSession(
+  returnUrl?: string,
+): Promise<{ url: string }> {
+  const res = await api.post<{ url: string }>('/subscriptions/portal-session', {
+    returnUrl: returnUrl ?? `${window.location.origin}/account`,
+  });
+  if (!res.success || !res.data) {
+    throw new Error(res.error?.message || 'Failed to open billing portal');
+  }
+  return res.data;
+}
+
 // ─── Emergency Contacts ───────────────────────────────────────────────────
 
 export interface EmergencyContact {
