@@ -55,6 +55,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 37 | GPS run polylines + route map | 5 | L | 2 | ios,api | pending | CoreLocation + MapKit. |
 | 38 | Apple Watch companion workout sync | 5 | L | 2 | ios | pending | **Affected by #10** — model must handle iPhone-originated workouts with Watch as optional sensor. |
 | 39 | Achievement badges (streaks, milestones) | 5 | M | 2 | ios,api | pending | 7d/30d streaks, 100 sessions, first run, first purchase. |
+| 40 | iOS list polish bundle — HK permission, swipe-to-delete, calorie, pair-device fixes | 7 | S | 2 | ios,api | pr-open | Dashboard HealthKit probe-query, swipe-delete on Workouts/Runs/Devices, MET-based calorie display, pair-device scan diagnostics. |
 
 ## Blocked
 

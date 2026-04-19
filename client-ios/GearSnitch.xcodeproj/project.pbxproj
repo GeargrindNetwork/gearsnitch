@@ -219,6 +219,7 @@
 		C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */; };
 		C2C54017F71B796A166C970B /* DeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196547EBE5AAE728369FB79D /* DeviceDetailView.swift */; };
 		C37297D5DDEDDAA1FF8786DF /* GearService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82C8AF98938A9BB5A17236D /* GearService.swift */; };
+		C3EE28D661821251B2E6258C /* WorkoutCalorieEstimateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAB3C586E15B277A3C81D2BE /* WorkoutCalorieEstimateTests.swift */; };
 		C5C6633A7173DEF37BFE723D /* ExternalHRSensorAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */; };
 		C771426D99982CF60723DE02 /* PermissionGateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E5B10371664AD313AD389E2 /* PermissionGateManager.swift */; };
 		C7BCED7BF8563DB9B2EA0E74 /* HandPreferenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43994928D28F3BFEBAACB47D /* HandPreferenceManager.swift */; };
@@ -576,6 +577,7 @@
 		C94404D4B90C54109A3CE63B /* HeartRateZoneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateZoneTests.swift; sourceTree = "<group>"; };
 		CA6452B7EFEFA36C2DCA1B73 /* DeviceDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDetailViewModel.swift; sourceTree = "<group>"; };
 		CA95213EDCE919F70CDCBCD8 /* GearSnitchWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GearSnitchWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CAB3C586E15B277A3C81D2BE /* WorkoutCalorieEstimateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCalorieEstimateTests.swift; sourceTree = "<group>"; };
 		CAB3D9CA4DC58FA6C10E16BA /* RestTimerOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerOverlayView.swift; sourceTree = "<group>"; };
 		CB013F4ED78E99B9669CBE4F /* HeartRateMonitorCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateMonitorCard.swift; sourceTree = "<group>"; };
 		CC700522257A90E6A2C18919 /* ReferralQRModalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralQRModalTests.swift; sourceTree = "<group>"; };
@@ -981,6 +983,7 @@
 				830CEE37A4D930EDF494F88A /* WatchSyncPayloadsTests.swift */,
 				2EAC3462B1358917ADDF063A /* WorkoutActivityTypeTests.swift */,
 				26127A01ACCD5DC151B13F22 /* WorkoutAppIntentsTests.swift */,
+				CAB3C586E15B277A3C81D2BE /* WorkoutCalorieEstimateTests.swift */,
 				88F58333FEB04AB1B56F4D39 /* WorkoutCrashRecoveryTests.swift */,
 				A59B1B4911EBB77E915FC314 /* WorkoutSessionRouterTests.swift */,
 			);
@@ -1783,6 +1786,7 @@
 				27B3208F6002CC34702B3CE6 /* WatchSyncPayloadsTests.swift in Sources */,
 				5E0D8C874B7943D6F89BAB8F /* WorkoutActivityTypeTests.swift in Sources */,
 				6D6EBCE1E09A46E709BEAB7A /* WorkoutAppIntentsTests.swift in Sources */,
+				C3EE28D661821251B2E6258C /* WorkoutCalorieEstimateTests.swift in Sources */,
 				516F1010AE0D0A5D79746F5A /* WorkoutCrashRecoveryTests.swift in Sources */,
 				F4D4AB7056286E7151DCF6DC /* WorkoutSessionRouterTests.swift in Sources */,
 			);

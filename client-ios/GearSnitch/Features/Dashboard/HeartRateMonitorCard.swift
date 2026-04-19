@@ -55,6 +55,16 @@ struct HeartRateMonitorCard: View {
             }
             autoStartMonitoringIfNeeded()
         }
+        .task {
+            // Re-evaluate HealthKit read authorization every time the
+            // Dashboard surfaces this card. `authorizationStatus(for:)` is
+            // write-only, so we issue a probe query through
+            // `HealthKitPermissions.refreshStateWithProbeQuery()` to catch
+            // the "granted during onboarding but still shown as denied"
+            // cache case. See HealthKitPermissions.swift.
+            await permissions.refreshStateWithProbeQuery()
+            autoStartMonitoringIfNeeded()
+        }
         .alert("AirPods Heart Rate", isPresented: $showHealthSettingsHint) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -388,24 +398,64 @@ struct HeartRateMonitorCard: View {
                 .font(.headline)
                 .foregroundColor(.gsText)
 
-            Text("AirPods Pro 3 heart rate comes through Apple Health. Enable Heart Rate read access in Settings → Health → Data Access & Devices → GearSnitch.")
+            Text("AirPods Pro 3 heart rate comes through Apple Health. Enable Heart Rate read access for GearSnitch in the Apple Health app.")
                 .font(.caption)
                 .foregroundColor(.gsTextSecondary)
                 .multilineTextAlignment(.center)
 
-            Button {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
+            HStack(spacing: 10) {
+                Button {
+                    openAppleHealthSources()
+                } label: {
+                    Text("Open Health")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(Color.gsEmerald)
+                        .cornerRadius(8)
                 }
-            } label: {
-                Text("Open Settings")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .background(Color.gsEmerald)
-                    .cornerRadius(8)
+
+                Button {
+                    Task {
+                        // `requestAuthorization` is a no-op when the user has
+                        // already denied (iOS won't re-prompt), but it's safe
+                        // to invoke and will surface the system sheet the
+                        // first time if the state is actually `.notDetermined`
+                        // despite our local cache. Then probe again so the
+                        // banner reflects reality immediately.
+                        try? await permissions.requestAuthorization()
+                        await permissions.refreshStateWithProbeQuery()
+                    }
+                } label: {
+                    Text("Re-request")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.gsEmerald)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(Color.gsEmerald.opacity(0.15))
+                        .cornerRadius(8)
+                }
             }
+        }
+    }
+
+    /// Deep-links to the Apple Health app's Sources tab. The
+    /// `x-apple-health://` scheme is the canonical entry point; Apple Health
+    /// opens to the last-used tab, which (after Sources has been opened once)
+    /// is the right landing surface for "turn on GearSnitch". Falls back to
+    /// the in-app settings URL when Apple Health isn't installed — which can
+    /// happen on iPad or on simulators that don't bundle the Health app.
+    private func openAppleHealthSources() {
+        let healthURL = URL(string: "x-apple-health://")
+        let settingsURL = URL(string: UIApplication.openSettingsURLString)
+
+        if let healthURL, UIApplication.shared.canOpenURL(healthURL) {
+            UIApplication.shared.open(healthURL)
+            return
+        }
+        if let settingsURL {
+            UIApplication.shared.open(settingsURL)
         }
     }
 

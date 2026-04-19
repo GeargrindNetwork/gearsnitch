@@ -38,6 +38,23 @@ struct DeviceListView: View {
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("Devices")
         .navigationBarTitleDisplayMode(.large)
+        .alert(
+            "Remove Device",
+            isPresented: Binding(
+                get: { viewModel.pendingDeletion != nil },
+                set: { if !$0 { viewModel.pendingDeletion = nil } }
+            ),
+            presenting: viewModel.pendingDeletion
+        ) { device in
+            Button("Remove", role: .destructive) {
+                Task { await viewModel.deleteDevice(device) }
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.pendingDeletion = nil
+            }
+        } message: { device in
+            Text("This will unpair \"\(device.displayName)\" from your account and disconnect it. You can re-pair it later.")
+        }
         .sheet(isPresented: $showPairing, onDismiss: {
             Task { await viewModel.loadDevices() }
         }) {
@@ -53,26 +70,26 @@ struct DeviceListView: View {
     // MARK: - Device List
 
     private var deviceList: some View {
-        ScrollView {
-            LazyVStack(spacing: 10) {
-                ForEach(viewModel.devices) { device in
-                    NavigationLink(destination: DeviceDetailView(deviceId: device.id)) {
-                        deviceRow(device)
-                            .padding(14)
-                            .background(Color.gsSurface)
-                            .cornerRadius(14)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.gsBorder, lineWidth: 1)
-                            )
+        // Swipe actions require a `List` row context, so we moved off the
+        // LazyVStack. The inset-grouped look keeps the existing card feel.
+        List {
+            ForEach(viewModel.devices) { device in
+                NavigationLink(destination: DeviceDetailView(deviceId: device.id)) {
+                    deviceRow(device)
+                }
+                .listRowBackground(Color.gsSurface)
+                .listRowSeparatorTint(Color.gsBorder)
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        viewModel.pendingDeletion = device
+                    } label: {
+                        Label("Remove", systemImage: "trash.fill")
                     }
-                    .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 80)
         }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
         .refreshable {
             await viewModel.loadDevices()
         }

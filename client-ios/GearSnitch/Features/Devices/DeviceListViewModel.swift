@@ -62,6 +62,9 @@ final class DeviceListViewModel: ObservableObject {
     @Published var devices: [DeviceDTO] = []
     @Published var isLoading = false
     @Published var error: String?
+    /// Backed by `.alert` on the view — the device waiting for the user's
+    /// confirmation. Nil when no confirmation is outstanding.
+    @Published var pendingDeletion: DeviceDTO?
 
     private let apiClient = APIClient.shared
 
@@ -104,5 +107,38 @@ final class DeviceListViewModel: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    /// DELETE /api/v1/devices/:id + unpair from BLEManager. Optimistically
+    /// removes the row, then rolls back on error. When the device is
+    /// currently connected we also drop the live `BLEDevice` so the user
+    /// doesn't see a stale "connected" row reappear on the next refresh.
+    func deleteDevice(_ device: DeviceDTO) async {
+        let original = devices
+        devices.removeAll { $0.id == device.id }
+        refreshPersistedMetadata()
+
+        let manager = BLEManager.shared
+        if let live = (manager.connectedDevices + manager.discoveredDevices)
+            .first(where: { $0.persistedId == device.id }) {
+            manager.disconnect(from: live)
+        }
+
+        do {
+            let _: EmptyData = try await apiClient.request(
+                APIEndpoint.Devices.delete(id: device.id)
+            )
+        } catch {
+            self.error = error.localizedDescription
+            devices = original
+            refreshPersistedMetadata()
+        }
+    }
+
+    /// Re-push the persisted metadata list so BLEManager's known-device
+    /// bookkeeping stays in sync after a local mutation. Cheap; the set is
+    /// small (a handful of devices at most).
+    private func refreshPersistedMetadata() {
+        BLEManager.shared.replacePersistedMetadata(devices.map(\.priorityMetadata))
     }
 }

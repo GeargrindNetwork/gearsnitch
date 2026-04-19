@@ -28,6 +28,23 @@ struct RunHistoryView: View {
                 }
             }
         }
+        .alert(
+            "Delete Run",
+            isPresented: Binding(
+                get: { viewModel.pendingDeletion != nil },
+                set: { if !$0 { viewModel.pendingDeletion = nil } }
+            ),
+            presenting: viewModel.pendingDeletion
+        ) { run in
+            Button("Delete", role: .destructive) {
+                Task { await viewModel.deleteRun(run) }
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.pendingDeletion = nil
+            }
+        } message: { run in
+            Text("This will permanently remove the \(run.distanceString) run from \(run.startedAt.formatted(date: .abbreviated, time: .shortened)). This cannot be undone.")
+        }
         .task {
             await viewModel.loadRuns()
         }
@@ -73,6 +90,16 @@ struct RunHistoryView: View {
                         runRow(run)
                     }
                     .listRowBackground(Color.gsSurface)
+                    // Trailing swipe → destructive delete. Confirmation
+                    // happens via the `.alert` bound to `pendingDeletion`
+                    // on the parent view.
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            viewModel.pendingDeletion = run
+                        } label: {
+                            Label("Delete", systemImage: "trash.fill")
+                        }
+                    }
                 }
             }
         }
