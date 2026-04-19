@@ -1,40 +1,50 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 /**
- * GearComponent — a piece of trackable gear (e.g. running shoes, bike,
- * chain, tires, chest strap). Mileage/time/session counters accrue as
- * workouts complete so we can fire retirement alerts (see backlog item #4).
+ * GearComponent — a single piece of trackable gear-life that the user wants
+ * to keep an eye on (a pair of running shoes, a bike chain, a tire, etc.).
  *
- * This is the minimal shape introduced alongside item #9 (auto-gear
- * assignment by activity type). PR #55 ships the richer UX + admin flows,
- * but the model lives here so routing/typing compiles independently.
+ * Tracks consumption against a `lifeLimit` in `unit`s (miles / km / hours /
+ * sessions). When `currentValue / lifeLimit` crosses `warningThreshold` the
+ * worker enqueues a "gear approaching retirement" push; when it reaches the
+ * full limit the worker enqueues a "ready to retire" push and auto-flips
+ * `status` to `retired` (see worker/src/jobs/gearMileageAlert.ts and
+ * api/src/modules/gear/routes.ts log-usage handler).
+ *
+ * Optional `deviceId` links the component to a paired BLE device (a smart
+ * bike, an earbud case, etc.) so DeviceDetailView can surface a usage badge.
  */
 
 export const GEAR_KINDS = [
-  'shoes',
-  'bike',
-  'tire',
+  'shoe',
   'chain',
-  'chest_strap',
+  'tire',
+  'cassette',
   'helmet',
+  'battery',
   'other',
 ] as const;
 
-export type GearKind = (typeof GEAR_KINDS)[number];
-
 export const GEAR_UNITS = ['miles', 'km', 'hours', 'sessions'] as const;
+
+export const GEAR_STATUSES = ['active', 'retired', 'archived'] as const;
+
+export type GearKind = (typeof GEAR_KINDS)[number];
 export type GearUnit = (typeof GEAR_UNITS)[number];
+export type GearStatus = (typeof GEAR_STATUSES)[number];
 
 export interface IGearComponent extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
+  deviceId: Types.ObjectId | null;
   name: string;
   kind: GearKind;
   unit: GearUnit;
+  lifeLimit: number;
+  warningThreshold: number;
   currentValue: number;
-  retirementThreshold: number | null;
+  status: GearStatus;
   retiredAt: Date | null;
-  notes?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,7 +52,8 @@ export interface IGearComponent extends Document {
 const GearComponentSchema = new Schema<IGearComponent>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    name: { type: String, required: true, trim: true, maxlength: 120 },
+    deviceId: { type: Schema.Types.ObjectId, ref: 'Device', default: null },
+    name: { type: String, required: true, trim: true, maxlength: 200 },
     kind: {
       type: String,
       enum: GEAR_KINDS,
@@ -52,43 +63,22 @@ const GearComponentSchema = new Schema<IGearComponent>(
       type: String,
       enum: GEAR_UNITS,
       required: true,
-      default: 'miles',
     },
+    lifeLimit: { type: Number, required: true, min: 0 },
+    warningThreshold: { type: Number, default: 0.85, min: 0, max: 1 },
     currentValue: { type: Number, default: 0, min: 0 },
-    retirementThreshold: { type: Number, default: null, min: 0 },
+    status: {
+      type: String,
+      enum: GEAR_STATUSES,
+      default: 'active',
+    },
     retiredAt: { type: Date, default: null },
-    notes: { type: String, default: null, maxlength: 2000 },
   },
   { timestamps: true },
 );
 
-GearComponentSchema.index({ userId: 1, kind: 1 });
-GearComponentSchema.index({ userId: 1, retiredAt: 1 });
-
-/**
- * Log usage against a gear component. Returns the updated document or null
- * if the gear doesn't belong to the user or is already retired. Caller is
- * expected to translate workout metrics (distanceMeters, durationSeconds,
- * sessionCount) into the gear's `unit` before calling.
- *
- * NB: The auto-attach flow in `/workouts` and `/runs` calls this when a
- * workout closes; keep the math here authoritative so PR #55's UI can reuse it.
- */
-export async function logGearUsage(
-  gearId: Types.ObjectId,
-  userId: Types.ObjectId,
-  amount: number,
-): Promise<IGearComponent | null> {
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-
-  return GearComponent.findOneAndUpdate(
-    { _id: gearId, userId, retiredAt: null },
-    { $inc: { currentValue: amount } },
-    { new: true },
-  );
-}
+GearComponentSchema.index({ userId: 1, status: 1 });
+GearComponentSchema.index({ userId: 1, deviceId: 1 });
 
 export const GearComponent = mongoose.model<IGearComponent>(
   'GearComponent',

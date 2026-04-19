@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>NSAccessorySetupKitSupports</key>
+	<array>
+		<string>Bluetooth</string>
+	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Reads health data.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Writes workouts.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Detects gym arrival.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Monitors gear.</string>
+</dict>
+</plist>

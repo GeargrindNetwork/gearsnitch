@@ -119,3 +119,16 @@ export type {
   CycleEntryDoseUnit,
   CycleEntrySource,
 } from './CycleEntry';
+
+export { GearComponent } from './GearComponent';
+export type {
+  IGearComponent,
+  GearKind,
+  GearUnit,
+  GearStatus,
+} from './GearComponent';
+export {
+  GEAR_KINDS,
+  GEAR_UNITS,
+  GEAR_STATUSES,
+} from './GearComponent';
