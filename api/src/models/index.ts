@@ -8,7 +8,10 @@ export { Referral } from './Referral';
 export type { IReferral } from './Referral';
 
 export { Subscription } from './Subscription';
-export type { ISubscription } from './Subscription';
+export type { ISubscription, SubscriptionStatus } from './Subscription';
+
+export { ProcessedWebhookEvent } from './ProcessedWebhookEvent';
+export type { IProcessedWebhookEvent } from './ProcessedWebhookEvent';
 
 export { Device } from './Device';
 export type { IDevice } from './Device';
