@@ -7,8 +7,10 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gearsnitch.app
+    # Wrong merchant id (typo / pre-PR-#25 placeholder). Should fail item #13
+    # check because the canonical id `merchant.gearsnitch.app` is missing.
     entitlements:
       path: GearSnitch/GearSnitch.entitlements
       properties:
         com.apple.developer.in-app-payments:
-          - merchant.gearsnitch.app
+          - merchant.com.gearsnitch.app

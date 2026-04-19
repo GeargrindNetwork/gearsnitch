@@ -47,6 +47,12 @@ export interface IUser extends Document {
     pushEnabled: boolean;
     panicAlertsEnabled: boolean;
     disconnectAlertsEnabled: boolean;
+    /**
+     * Opt-out flag for the post-workout / post-run summary push (item #27).
+     * Default `false` — meaning the summary push is ON. Users disable it from
+     * the iOS Settings → Notifications screen.
+     */
+    workoutSummaryPushDisabled: boolean;
     custom?: Record<string, string>;
   };
   deletionRequestedAt: Date | null;
@@ -98,6 +104,9 @@ const UserSchema = new Schema<IUser>(
       pushEnabled: { type: Boolean, default: false },
       panicAlertsEnabled: { type: Boolean, default: false },
       disconnectAlertsEnabled: { type: Boolean, default: false },
+      // Opt-out for post-session summary pushes (item #27). Default false
+      // (= push enabled). Users flip via Settings → Notifications.
+      workoutSummaryPushDisabled: { type: Boolean, default: false },
       custom: { type: Schema.Types.Mixed, default: {} },
     },
     deletionRequestedAt: { type: Date, default: null },
