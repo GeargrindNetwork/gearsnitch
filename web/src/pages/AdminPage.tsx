@@ -69,7 +69,7 @@ export default function AdminPage() {
   });
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="dark min-h-screen bg-black text-white">
       <Header />
       <main className="mx-auto max-w-6xl space-y-6 px-4 pb-16 pt-28 sm:px-6">
         <div className="flex items-center justify-between">

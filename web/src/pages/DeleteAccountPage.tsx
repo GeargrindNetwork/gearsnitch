@@ -58,7 +58,7 @@ export default function DeleteAccountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-300">
+    <div className="dark min-h-screen bg-black text-zinc-300">
       <Header />
 
       <main className="mx-auto max-w-2xl px-4 pb-20 pt-28 sm:px-6 lg:px-8">

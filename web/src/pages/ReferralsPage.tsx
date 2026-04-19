@@ -151,7 +151,7 @@ export default function ReferralsPage() {
   const error = summaryQuery.error ?? qrQuery.error;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="dark min-h-screen bg-zinc-950 text-zinc-100">
       <Header />
 
       <main className="mx-auto max-w-4xl space-y-6 px-6 pb-16 pt-28 lg:px-8">
