@@ -31,7 +31,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 14 | tsconfig `ignoreDeprecations:5.0` vs TS 6 mismatch | 6 | XS | 2 | infra | pending | `npm run build` currently fails. Bump to `"6.0"`. |
 | 15 | Widget extension target — compile + ship | 6 | M | 2 | ios | pending | Widgets exist in source; target not regenerated via XcodeGen. |
 | 16 | Rest timer between sets | 6 | S | 2 | ios | pending | 30s/60s/90s/custom. Background audio cue. |
-| 17 | BLE battery level (0x180F) | 6 | S | 2 | ios,api | pr-open | Read + surface on DeviceDetailView. Low-battery push at <20% with 12h cooldown. Routes through AccessorySetupKit (see #6). PR: _pending push_ |
+| 17 | BLE battery level (0x180F) | 6 | S | 2 | ios,api | pr-open | Read + surface on DeviceDetailView. Low-battery push at <20% with 12h cooldown. Routes through AccessorySetupKit (see #6). PR [#78](https://github.com/GeargrindNetwork/gearsnitch/pull/78). |
 | 18 | Auto-pause run on >60s inactivity | 6 | S | 2 | ios | pending | RunTrackingManager low-motion detection. |
 | 19 | Signal history chart (RSSI trends per device, 24h) | 5 | M | 2 | ios,api | pending | Store RSSI samples, render line chart. |
 | 20 | Dashboard trend charts (week/month/year) | 5 | M | 2 | web | pending | Pick Recharts or visx. |
