@@ -123,7 +123,7 @@ jobs:
             echo "note: no GearSnitchTests swift sources — skipping xcodebuild test"
           fi
 
-      - name: Test
+      - name: Test (unit only — UI tests need auth state, run manually)
         if: steps.check-tests.outputs.has_tests == 'true'
         run: |
           set -o pipefail
@@ -134,6 +134,8 @@ jobs:
             -configuration Debug \
             -derivedDataPath "$DERIVED_DATA" \
             -resultBundlePath "$DERIVED_DATA/GearSnitch.xcresult" \
+            -only-testing:GearSnitchTests \
+            -skip-testing:GearSnitchUITests \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
@@ -162,7 +164,7 @@ jobs:
       DERIVED_DATA: ${{ github.workspace }}/DerivedDataWatch
       SCHEME: GearSnitchWatch
       PROJECT: client-ios/GearSnitch.xcodeproj
-      DESTINATION: 'platform=watchOS Simulator,name=Apple Watch Series 10,OS=latest'
+      DESTINATION: 'platform=watchOS Simulator,name=Apple Watch Series 9,OS=latest'
 
     steps:
       - uses: actions/checkout@v4
