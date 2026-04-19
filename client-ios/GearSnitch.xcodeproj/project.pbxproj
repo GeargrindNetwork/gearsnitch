@@ -97,6 +97,7 @@
 		687E3DCF2C907DAF5764E0B7 /* SignInViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7880B2F2F9BAB5DC91F8B0C2 /* SignInViewModel.swift */; };
 		6880B89E098956273AC0032A /* QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B4A4958CFA3CCEE2AF18A94 /* QRCodeView.swift */; };
 		68E596191F2960CA5E8F6027 /* OrderHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E696010F541FDFC34F22D4E /* OrderHistoryView.swift */; };
+		6A8795F413628EE87E0992C1 /* HealthKitMedicationsSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2918A4D1C1C002CF48980700 /* HealthKitMedicationsSyncTests.swift */; };
 		6ACD0C6987DB425A21F592BE /* UpdateRequiredView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 270D9DD9964E6987742B699F /* UpdateRequiredView.swift */; };
 		6BCF07FB104240861AA7B14D /* DeviceDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA6452B7EFEFA36C2DCA1B73 /* DeviceDetailViewModel.swift */; };
 		6C43F1B555D4C0F98DFF59AC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F590B33018B52518E473826 /* APIClient.swift */; };
@@ -127,6 +128,7 @@
 		89DA5F46F0D3E1CA8FF7A425 /* WidgetSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F206AF9F1EC948435DEE0768 /* WidgetSyncStore.swift */; };
 		8AC3EB3CC4A1DA239B28508B /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80109D925697C302D72E2F78 /* StoreKitManager.swift */; };
 		8B2915D2D437967F466C8858 /* RequestBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC5E7BD7D09E97C49A0C967 /* RequestBuilderTests.swift */; };
+		8C1E2ECEA83FE459EA3A4896 /* MedicationsSyncSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F96AEA4AB904C01FED7EC5F3 /* MedicationsSyncSettingsView.swift */; };
 		8F9BF3097A8C637113010AB1 /* StopwatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F66DD4AB609729A71DD1A /* StopwatchView.swift */; };
 		8FC58F52B8FD0DAE7A76F077 /* ReleaseGateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765EB0F048354608BECF6173 /* ReleaseGateManager.swift */; };
 		9168ED8EBF3FFB1B5B180BAC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34190732929A003811CFE93F /* AppDelegate.swift */; };
@@ -207,6 +209,7 @@
 		EB84C24BD128AE172E72D41B /* LostItemScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9D079EE0921F05A5E725089 /* LostItemScannerView.swift */; };
 		ECE1F3509A9C2837F0EB1685 /* RequestBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A51F4F70A487D475FF0DACC /* RequestBuilder.swift */; };
 		EF2664825895989401CE8026 /* GearSnitch.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 3FB6FF132F60FB46F1F2B652 /* GearSnitch.storekit */; };
+		F04299F4946E335056A3474F /* HealthKitMedicationsSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F179B2976810585B80ADB6CE /* HealthKitMedicationsSync.swift */; };
 		F057BEC36EA4BBEA75C0ECDC /* DisconnectProtectionAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A0ABE6B92C73ED0396CFB4 /* DisconnectProtectionAttributes.swift */; };
 		F085C3A9EB1ACADE41784C58 /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC4503FD69B7AD8694A9DCA /* ErrorView.swift */; };
 		F0DA7AD286B5A3BF2E2C87F9 /* CheckoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C44012CC8C69A572397415B6 /* CheckoutView.swift */; };
@@ -325,6 +328,7 @@
 		262EA565146C455B16AD63AD /* BLEStateObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEStateObserver.swift; sourceTree = "<group>"; };
 		270D9DD9964E6987742B699F /* UpdateRequiredView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateRequiredView.swift; sourceTree = "<group>"; };
 		282CC4FACBF2E0FA52081C4D /* RunHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunHistoryViewModel.swift; sourceTree = "<group>"; };
+		2918A4D1C1C002CF48980700 /* HealthKitMedicationsSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitMedicationsSyncTests.swift; sourceTree = "<group>"; };
 		2969551DF2A3FCCBB44CF308 /* Date+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Formatting.swift"; sourceTree = "<group>"; };
 		2A0FE56D7371D2AC5312C417 /* HeartRateMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateMonitor.swift; sourceTree = "<group>"; };
 		2AFD1011CD6348200610EBA3 /* CycleTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CycleTrackingView.swift; sourceTree = "<group>"; };
@@ -495,6 +499,7 @@
 		ED7E00D84F51A63E31E167D5 /* GearSnitchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearSnitchApp.swift; sourceTree = "<group>"; };
 		ED9A0BE700EC1769DB3C3EFC /* GearSnitchWatchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GearSnitchWatchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EE31C69DCC5519DB263464A3 /* TrendsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrendsViewModel.swift; sourceTree = "<group>"; };
+		F179B2976810585B80ADB6CE /* HealthKitMedicationsSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitMedicationsSync.swift; sourceTree = "<group>"; };
 		F1CA3A40698B2F73922AABEB /* GearSnitchWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearSnitchWatchApp.swift; sourceTree = "<group>"; };
 		F206AF9F1EC948435DEE0768 /* WidgetSyncStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSyncStore.swift; sourceTree = "<group>"; };
 		F3D8A5EDDA636D919BAD1EAA /* DisconnectProtectionLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisconnectProtectionLiveActivityWidget.swift; sourceTree = "<group>"; };
@@ -504,6 +509,7 @@
 		F7447513075EF893EBB81204 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		F7E6883A9A303D7BFAC83E26 /* GearSnitchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GearSnitchUITests.swift; sourceTree = "<group>"; };
 		F8CD7598811AF36A137595A6 /* DosingCalculatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosingCalculatorView.swift; sourceTree = "<group>"; };
+		F96AEA4AB904C01FED7EC5F3 /* MedicationsSyncSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationsSyncSettingsView.swift; sourceTree = "<group>"; };
 		FA07F4455FC91DFEBF1E9057 /* StoreHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreHomeView.swift; sourceTree = "<group>"; };
 		FA924CF5F658C8136EFB1ED3 /* StripePortalSafariView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePortalSafariView.swift; sourceTree = "<group>"; };
 		FAAF4F40C3E69357C164C866 /* WatchSyncPayloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchSyncPayloads.swift; path = GearSnitch/Core/Watch/WatchSyncPayloads.swift; sourceTree = "<group>"; };
@@ -710,6 +716,7 @@
 			isa = PBXGroup;
 			children = (
 				6B0427DD41CE5177C56D180C /* HealthKitManager.swift */,
+				F179B2976810585B80ADB6CE /* HealthKitMedicationsSync.swift */,
 				03EB90ADAAC9DC50555F55EE /* HealthKitPermissions.swift */,
 				0A87B12D0792AE9A7DD273AE /* HealthKitSyncService.swift */,
 				2A0FE56D7371D2AC5312C417 /* HeartRateMonitor.swift */,
@@ -785,6 +792,7 @@
 				87B1DFDA81A53E400021833A /* ECGViewModelTests.swift */,
 				30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */,
 				4B66AE0569C6234BEA5970F5 /* HandPreferenceManagerTests.swift */,
+				2918A4D1C1C002CF48980700 /* HealthKitMedicationsSyncTests.swift */,
 				0292382E993D9CD14F1B9737 /* HeartRateMonitorSplitTests.swift */,
 				CF12374DD51BE2EAF44F6BA6 /* HeartRateMonitorTests.swift */,
 				C94404D4B90C54109A3CE63B /* HeartRateZoneTests.swift */,
@@ -954,6 +962,7 @@
 		8847634A7A6272A5B8C0976D /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				F96AEA4AB904C01FED7EC5F3 /* MedicationsSyncSettingsView.swift */,
 				877839AB8E10C41E15B46325 /* NotificationPreferencesView.swift */,
 				89871DF0894D04D46D916B26 /* SettingsView.swift */,
 				485597A9F21A8CB324F3A988 /* TermsOfServiceView.swift */,
@@ -1542,6 +1551,7 @@
 				3FEA11D8F5C845EE76310F6F /* ECGViewModelTests.swift in Sources */,
 				B03D91635654732CA98894AE /* GymSessionAttributesTests.swift in Sources */,
 				B3B38C22B5D6DFF2D1FDC562 /* HandPreferenceManagerTests.swift in Sources */,
+				6A8795F413628EE87E0992C1 /* HealthKitMedicationsSyncTests.swift in Sources */,
 				9BABE541CDF5B7862A9606BB /* HeartRateMonitorSplitTests.swift in Sources */,
 				BB8C3F0C06FD7FDC73123743 /* HeartRateMonitorTests.swift in Sources */,
 				6D4B6143F26731AA501C2CBD /* HeartRateZoneTests.swift in Sources */,
@@ -1634,6 +1644,7 @@
 				F9FF68FC8A8F7610D080246D /* HealthDashboardView.swift in Sources */,
 				9B04E43CFB0CA5C0E37D7BCD /* HealthDashboardViewModel.swift in Sources */,
 				DF96153FB19AEBF3ED46981E /* HealthKitManager.swift in Sources */,
+				F04299F4946E335056A3474F /* HealthKitMedicationsSync.swift in Sources */,
 				017FFC06B774A5A527FC2B30 /* HealthKitPermissions.swift in Sources */,
 				46D36C2A884928C6A93572FE /* HealthKitSyncService.swift in Sources */,
 				85759552153562314380E06F /* HeartRateCard.swift in Sources */,
@@ -1651,6 +1662,7 @@
 				EB84C24BD128AE172E72D41B /* LostItemScannerView.swift in Sources */,
 				3229912722BD93481B14730D /* MainTabView.swift in Sources */,
 				9B9E529520997CE0A3F86F36 /* MapSearchManager.swift in Sources */,
+				8C1E2ECEA83FE459EA3A4896 /* MedicationsSyncSettingsView.swift in Sources */,
 				3D14B5644E74520403A211CA /* MeshChatView.swift in Sources */,
 				4934714B0AFAD6AFDC4539C8 /* MeshChatViewModel.swift in Sources */,
 				06456364887CBB61FE611BED /* MeshNetworkManager.swift in Sources */,

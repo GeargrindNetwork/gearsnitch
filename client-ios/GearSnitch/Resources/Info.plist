@@ -65,9 +65,9 @@
 	<key>NSCameraUsageDescription</key>
 	<string>GearSnitch uses the camera to scan referral QR codes.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>GearSnitch reads your health data for fitness tracking, including your ECG records, heart rate, and HRV.</string>
+	<string>GearSnitch syncs your peptide and medication doses with Apple Health so you have one source of truth across all your health apps. GearSnitch also reads your health data for fitness tracking, including your ECG records, heart rate, and HRV.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>GearSnitch records your workout and fitness data to Apple Health.</string>
+	<string>GearSnitch syncs your peptide and medication doses with Apple Health so you have one source of truth across all your health apps. GearSnitch also records your workout and fitness data to Apple Health.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Always-on location lets GearSnitch auto-activate monitoring at your gym.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

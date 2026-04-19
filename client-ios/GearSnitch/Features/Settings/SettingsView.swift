@@ -36,6 +36,13 @@ struct SettingsView: View {
                     Label("Notification Preferences", systemImage: "bell.badge")
                         .foregroundColor(.gsText)
                 }
+
+                NavigationLink {
+                    MedicationsSyncSettingsView()
+                } label: {
+                    Label("Medications", systemImage: "pills")
+                        .foregroundColor(.gsText)
+                }
             } header: {
                 Text("Preferences")
                     .foregroundColor(.gsTextSecondary)
