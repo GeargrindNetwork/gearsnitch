@@ -27,7 +27,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 10 | iPhone-native workout session + crash recovery | 8 | M | 2 | ios | pending | WWDC25 HKWorkoutSession on iPhone. Retention win for non-Watch owners. |
 | 11 | App Intents for Lock Screen workout control | 7 | S | 2 | ios | pending | INStartWorkoutIntent family. Compounds with #10. |
 | 12 | Racquet-sport activity types (Padel, Pickleball) | 7 | XS | 3 | ios | pending | Strava shipped Padel/Basketball/Volleyball/Cricket/Dance 2025. |
-| 13 | Apple Pay capability in XcodeGen project.yml | 7 | XS | 2 | infra | pending | Prevents silent Apple Pay regression on pbxproj regen. |
+| 13 | Apple Pay capability in XcodeGen project.yml | 7 | XS | 2 | infra | pr-open | Prevents silent Apple Pay regression on pbxproj regen. PR pending. |
 | 14 | tsconfig `ignoreDeprecations:5.0` vs TS 6 mismatch | 6 | XS | 2 | infra | pending | `npm run build` currently fails. Bump to `"6.0"`. |
 | 15 | Widget extension target — compile + ship | 6 | M | 2 | ios | pending | Widgets exist in source; target not regenerated via XcodeGen. |
 | 16 | Rest timer between sets | 6 | S | 2 | ios | pending | 30s/60s/90s/custom. Background audio cue. |

@@ -246,6 +246,37 @@ check_bundle_id_and_team() {
   fi
 }
 
+# Asserts that project.yml itself declares the Apple Pay capability under the
+# main GearSnitch target's `entitlements.properties` block. XcodeGen rebuilds
+# GearSnitch.entitlements from this declaration on every regen — so if it
+# vanishes from project.yml, the next `xcodegen generate` will silently strip
+# the entitlement (history: PR #25 had to add it after a previous regen lost
+# it). Backlog item #13.
+check_project_yml_apple_pay_capability() {
+  local in_app_payments_match=0
+  local merchant_match=0
+
+  # Match either same-line (`com.apple.developer.in-app-payments: [...]`) or
+  # the YAML-block form we use in project.yml (key on its own line, merchant
+  # on a subsequent `- merchant.gearsnitch.app` line).
+  if grep -Eq "^[[:space:]]+com\.apple\.developer\.in-app-payments[[:space:]]*:" \
+      "$PROJECT_YML"; then
+    in_app_payments_match=1
+  fi
+
+  if grep -Eq "^[[:space:]]+-[[:space:]]+$EXPECTED_MERCHANT_ID([[:space:]]|$)" \
+      "$PROJECT_YML"; then
+    merchant_match=1
+  fi
+
+  if [[ "$in_app_payments_match" -eq 1 && "$merchant_match" -eq 1 ]]; then
+    pass "project.yml declares Apple Pay (in-app-payments + $EXPECTED_MERCHANT_ID)"
+  else
+    fail "project.yml declares Apple Pay capability" \
+      "missing com.apple.developer.in-app-payments entry with $EXPECTED_MERCHANT_ID — next xcodegen regen will silently strip the entitlement (item #13)"
+  fi
+}
+
 check_provisioning_profile_push() {
   if [[ -z "$PROVISIONING_PROFILE" ]]; then
     warn "provisioning profile not supplied — skipping APNs push capability check"
@@ -314,8 +345,9 @@ echo
 echo "--> identifiers"
 if [[ -f "$PROJECT_YML" ]]; then
   check_bundle_id_and_team
+  check_project_yml_apple_pay_capability
 else
-  warn "project.yml not found at $PROJECT_YML — skipping bundle/team id check"
+  warn "project.yml not found at $PROJECT_YML — skipping bundle/team id and Apple Pay capability checks"
 fi
 
 echo
