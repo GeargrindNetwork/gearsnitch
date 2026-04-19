@@ -8,10 +8,11 @@ options:
   generateEmptyDirectories: true
   schemePathPrefix: ../../
 
-packages:
-  GoogleSignIn:
-    url: https://github.com/google/GoogleSignIn-iOS
-    exactVersion: 9.0.0
+# TODO(google-signin): re-enable after package re-added
+# packages:
+#   GoogleSignIn:
+#     url: https://github.com/google/GoogleSignIn-iOS
+#     exactVersion: 9.0.0
 
 settings:
   base:
@@ -74,8 +75,14 @@ targets:
         com.apple.developer.in-app-payments:
           - merchant.gearsnitch.app
     dependencies:
-      - package: GoogleSignIn
+      # TODO(google-signin): re-enable after package re-added
+      # - package: GoogleSignIn
       - target: GearSnitchWidgets
+        embed: true
+      # Embed the Watch app so it installs on the paired Apple Watch when
+      # the iPhone app installs. Without this, GearSnitch.app/Watch/ is
+      # empty and the Watch app never reaches the user's wrist.
+      - target: GearSnitchWatch
         embed: true
     scheme:
       testTargets:

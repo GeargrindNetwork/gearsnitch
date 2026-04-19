@@ -37,11 +37,11 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 19 | Signal history chart (RSSI trends per device, 24h) | 5 | M | 2 | ios,api | pending | Store RSSI samples, render line chart. |
 | 20 | Dashboard trend charts (week/month/year) | 5 | M | 2 | web,api | pr-open | Recharts + new `/api/v1/metrics/trends`. PR: [#82](https://github.com/GeargrindNetwork/gearsnitch/pull/82) |
 | 21 | Run pace coach — Watch haptic + headphone cadence tone | 7 | M | 2 | ios | pending | Watch haptic at drift >5%; metronome over music. |
-| 22 | Billing history page | 5 | S | 2 | web | pending | Lists Stripe invoices via `GET /subscriptions/invoices`. |
+| 22 | Billing history page | 5 | S | 2 | web | pr-open | Lists Stripe invoices via `GET /subscriptions/invoices`. PR: [#94](https://github.com/GeargrindNetwork/gearsnitch/pull/94) |
 | 23 | Notifications history page | 5 | S | 2 | web | pending | Surfaces APNs/push-log per user. |
 | 24 | Web test framework (Vitest + RTL) | 5 | M | 2 | web | pending | Tier 1 surfaces first. |
 | 25 | Referral dashboard polish (referrer-side) | 4 | S | 2 | ios | pending | Earlier proposal from item #2 agent. |
-| 26 | App Store review prompting | 5 | S | 2 | ios | pending | SKStoreReviewController on 3rd workout / 5th device pair. |
+| 26 | App Store review prompting | 5 | S | 2 | ios | pr-open | SKStoreReviewController gated on 3rd workout / 5th pair / 7th session + 14-day install age + 30-day cooldown. PR: [#93](https://github.com/GeargrindNetwork/gearsnitch/pull/93) |
 | 27 | Workout summary push after session end | 5 | M | 2 | api,worker,ios | merged | Landed as [#69](https://github.com/GeargrindNetwork/gearsnitch/pull/69). |
 | 28 | Stripe Checkout for web subscriptions | 5 | M | 2 | web,api | merged | Landed as [#70](https://github.com/GeargrindNetwork/gearsnitch/pull/70). |
 | 29 | iOS CI workflow (macos-14 + xcodebuild test) | 4 | M | 2 | infra | merged | Landed as [#60](https://github.com/GeargrindNetwork/gearsnitch/pull/60). |
@@ -55,6 +55,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 37 | GPS run polylines + route map | 5 | L | 2 | ios,api | pending | CoreLocation + MapKit. |
 | 38 | Apple Watch companion workout sync | 5 | L | 2 | ios | pending | **Affected by #10** — model must handle iPhone-originated workouts with Watch as optional sensor. |
 | 39 | Achievement badges (streaks, milestones) | 5 | M | 2 | ios,api | pending | 7d/30d streaks, 100 sessions, first run, first purchase. |
+| 40 | iOS list polish bundle — HK permission, swipe-to-delete, calorie, pair-device fixes | 7 | S | 2 | ios,api | pr-open | Dashboard HealthKit probe-query, swipe-delete on Workouts/Runs/Devices, MET-based calorie display, pair-device scan diagnostics. |
 
 ## Blocked
 

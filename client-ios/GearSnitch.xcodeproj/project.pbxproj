@@ -154,6 +154,7 @@
 		85343C617455112876109FCF /* AccessorySetupController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 908C21CDF2519F4003CCAA6A /* AccessorySetupController.swift */; };
 		85759552153562314380E06F /* HeartRateCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D4B3EA544CB999DE793A80 /* HeartRateCard.swift */; };
 		85BBA8AA90A6F84A7F713C59 /* HeatmapCalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B045FB188519FA9F441365A /* HeatmapCalendarViewModel.swift */; };
+		88DCF7F6A3267B9B369EB219 /* ReviewPromptController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEA8D89C2EA5513E1EA8172 /* ReviewPromptController.swift */; };
 		89DA5F46F0D3E1CA8FF7A425 /* WidgetSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F206AF9F1EC948435DEE0768 /* WidgetSyncStore.swift */; };
 		8AC3EB3CC4A1DA239B28508B /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80109D925697C302D72E2F78 /* StoreKitManager.swift */; };
 		8B2915D2D437967F466C8858 /* RequestBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC5E7BD7D09E97C49A0C967 /* RequestBuilderTests.swift */; };
@@ -162,6 +163,7 @@
 		8E259CFD38A69FFCB4AE29C2 /* RunTrackingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1FC16D151D7932B238C051 /* RunTrackingSettingsView.swift */; };
 		8E7AFEB928740D6583F9F1DA /* RestTimerPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94806B803CD72C47DD2C06C3 /* RestTimerPreferences.swift */; };
 		8F02A1F8B43962032B6326C2 /* WorkoutActivityPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0E21C4F3CE75D479C84C8B /* WorkoutActivityPicker.swift */; };
+		8F5D74740DB16D853FFA2134 /* ReviewPromptControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B58FE430852B5F01F1359FC /* ReviewPromptControllerTests.swift */; };
 		8F9BF3097A8C637113010AB1 /* StopwatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F66DD4AB609729A71DD1A /* StopwatchView.swift */; };
 		8FC58F52B8FD0DAE7A76F077 /* ReleaseGateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765EB0F048354608BECF6173 /* ReleaseGateManager.swift */; };
 		9168ED8EBF3FFB1B5B180BAC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34190732929A003811CFE93F /* AppDelegate.swift */; };
@@ -178,7 +180,6 @@
 		9C98E7F5B9A3C0A1200018B3 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 417D0CABD8C8B4785A6C1AE1 /* WelcomeView.swift */; };
 		9D21F3A44E5DB619EE199193 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F32A1A2C3307AE3F92ACEE9 /* RootTabView.swift */; };
 		9D81BFFCC64F5F472B654A86 /* SignalHistoryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FE7FDD8D8BCA035342CCDD5 /* SignalHistoryService.swift */; };
-		9DDC55408A600A073AC8BA68 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 20E9F4332B27C32C0A22AFD6 /* GoogleSignIn */; };
 		9EA585582C7FCB7A44FCAA4B /* DevicePairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94B038489629E63048FE4C9A /* DevicePairingView.swift */; };
 		9F70E27F22C1D348A848173F /* ReferralAttributionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8313119C4866B1111856FA61 /* ReferralAttributionStore.swift */; };
 		A0A5332CB5436007B731A9A4 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F668A4BEE7643D5829ADD8 /* SessionManager.swift */; };
@@ -219,8 +220,10 @@
 		C0C8D5B078D060AE7C239359 /* WorkoutAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03C66A774A3110D7AC7461B /* WorkoutAppShortcuts.swift */; };
 		C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */; };
 		C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */; };
+		C2BFF2DAA4C4B99464D75C09 /* GearSnitchWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CA95213EDCE919F70CDCBCD8 /* GearSnitchWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		C2C54017F71B796A166C970B /* DeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196547EBE5AAE728369FB79D /* DeviceDetailView.swift */; };
 		C37297D5DDEDDAA1FF8786DF /* GearService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82C8AF98938A9BB5A17236D /* GearService.swift */; };
+		C3EE28D661821251B2E6258C /* WorkoutCalorieEstimateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAB3C586E15B277A3C81D2BE /* WorkoutCalorieEstimateTests.swift */; };
 		C5C6633A7173DEF37BFE723D /* ExternalHRSensorAdapterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD78CDF3B5FB93D36FEA143A /* ExternalHRSensorAdapterTests.swift */; };
 		C771426D99982CF60723DE02 /* PermissionGateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E5B10371664AD313AD389E2 /* PermissionGateManager.swift */; };
 		C7BCED7BF8563DB9B2EA0E74 /* HandPreferenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43994928D28F3BFEBAACB47D /* HandPreferenceManager.swift */; };
@@ -305,6 +308,13 @@
 			remoteGlobalIDString = ECF6BEF24B590549BDA03608;
 			remoteInfo = GearSnitch;
 		};
+		644BB3F5F4413A3DB66946B3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BBE1BCD4DFAE9AAA147B6DCD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 45835FA151003E74D7BFD1A0;
+			remoteInfo = GearSnitchWatch;
+		};
 		B753B5C0E750057670794459 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BBE1BCD4DFAE9AAA147B6DCD /* Project object */;
@@ -345,6 +355,17 @@
 				3E46A1E1677DA39F4243EFC7 /* GearSnitchWatchWidgets.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		579A610E9A3820FAA78FC6E2 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				C2BFF2DAA4C4B99464D75C09 /* GearSnitchWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A1CE963B4352B97747F03880 /* Embed Foundation Extensions */ = {
@@ -408,6 +429,7 @@
 		2A0FE56D7371D2AC5312C417 /* HeartRateMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateMonitor.swift; sourceTree = "<group>"; };
 		2AFD1011CD6348200610EBA3 /* CycleTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CycleTrackingView.swift; sourceTree = "<group>"; };
 		2EAC3462B1358917ADDF063A /* WorkoutActivityTypeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutActivityTypeTests.swift; sourceTree = "<group>"; };
+		2EEA8D89C2EA5513E1EA8172 /* ReviewPromptController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPromptController.swift; sourceTree = "<group>"; };
 		2FFDC5283F95A193593BFAA5 /* BLEPairingCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEPairingCapability.swift; sourceTree = "<group>"; };
 		30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymSessionAttributesTests.swift; sourceTree = "<group>"; };
 		30C1DE53A384AF785E1999E2 /* ExternalHRSourceDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalHRSourceDetectionTests.swift; sourceTree = "<group>"; };
@@ -437,6 +459,7 @@
 		497216D5518DFFDE5130E047 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4AADEB4E2DE2686C4781E1B7 /* CartViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModel.swift; sourceTree = "<group>"; };
 		4B36B16C524620D9F19754CA /* AlertDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertDetailView.swift; sourceTree = "<group>"; };
+		4B58FE430852B5F01F1359FC /* ReviewPromptControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPromptControllerTests.swift; sourceTree = "<group>"; };
 		4B66AE0569C6234BEA5970F5 /* HandPreferenceManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandPreferenceManagerTests.swift; sourceTree = "<group>"; };
 		4BED958861CEFA542CA1CE5D /* CalendarSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSyncService.swift; sourceTree = "<group>"; };
 		4E6FC728320A895C25B95E05 /* GymListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymListViewModel.swift; sourceTree = "<group>"; };
@@ -584,6 +607,7 @@
 		C94404D4B90C54109A3CE63B /* HeartRateZoneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateZoneTests.swift; sourceTree = "<group>"; };
 		CA6452B7EFEFA36C2DCA1B73 /* DeviceDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDetailViewModel.swift; sourceTree = "<group>"; };
 		CA95213EDCE919F70CDCBCD8 /* GearSnitchWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GearSnitchWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CAB3C586E15B277A3C81D2BE /* WorkoutCalorieEstimateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutCalorieEstimateTests.swift; sourceTree = "<group>"; };
 		CAB3D9CA4DC58FA6C10E16BA /* RestTimerOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestTimerOverlayView.swift; sourceTree = "<group>"; };
 		CB013F4ED78E99B9669CBE4F /* HeartRateMonitorCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateMonitorCard.swift; sourceTree = "<group>"; };
 		CC700522257A90E6A2C18919 /* ReferralQRModalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferralQRModalTests.swift; sourceTree = "<group>"; };
@@ -650,17 +674,6 @@
 		FF38A290D64009E04FD4D16B /* BLEDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEDevice.swift; sourceTree = "<group>"; };
 		FFA8FABA9830E62E74262966 /* ApplePayManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplePayManagerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFrameworksBuildPhase section */
-		4BF2BFF306B54D4956DA81A6 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				9DDC55408A600A073AC8BA68 /* GoogleSignIn in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		02D13016DC1E3ECF734499F5 /* Alerts */ = {
@@ -778,6 +791,7 @@
 			children = (
 				F82C8AF98938A9BB5A17236D /* GearService.swift */,
 				CD19563C1D39090E31D62B9D /* iCloudProfileSync.swift */,
+				2EEA8D89C2EA5513E1EA8172 /* ReviewPromptController.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -987,6 +1001,7 @@
 				972DBBBF32E714B66D3D70BD /* RestTimerOverlayStateTests.swift */,
 				C25134B51860EFA45CA6E826 /* RestTimerPreferencesTests.swift */,
 				A710FE23636DE160423B76C2 /* RestTimerStateTests.swift */,
+				4B58FE430852B5F01F1359FC /* ReviewPromptControllerTests.swift */,
 				FA2CFDB27BDBC52CD6B19128 /* RootTabMappingTests.swift */,
 				67941208C4A058BF9151303A /* RootTabViewSnapshotTests.swift */,
 				16C9CAAD91D90E103DDED4DF /* RssiSampleBufferTests.swift */,
@@ -998,6 +1013,7 @@
 				830CEE37A4D930EDF494F88A /* WatchSyncPayloadsTests.swift */,
 				2EAC3462B1358917ADDF063A /* WorkoutActivityTypeTests.swift */,
 				26127A01ACCD5DC151B13F22 /* WorkoutAppIntentsTests.swift */,
+				CAB3C586E15B277A3C81D2BE /* WorkoutCalorieEstimateTests.swift */,
 				88F58333FEB04AB1B56F4D39 /* WorkoutCrashRecoveryTests.swift */,
 				A59B1B4911EBB77E915FC314 /* WorkoutSessionRouterTests.swift */,
 			);
@@ -1588,17 +1604,17 @@
 			buildPhases = (
 				C0F7709925BA0574F98CE3EE /* Sources */,
 				2957AFFBE965A6D54533EEF4 /* Resources */,
-				4BF2BFF306B54D4956DA81A6 /* Frameworks */,
 				A1CE963B4352B97747F03880 /* Embed Foundation Extensions */,
+				579A610E9A3820FAA78FC6E2 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				35F49ACA36D024E00A1EFDDE /* PBXTargetDependency */,
+				35BD62F4F6C9E9EECFE12FE6 /* PBXTargetDependency */,
 			);
 			name = GearSnitch;
 			packageProductDependencies = (
-				20E9F4332B27C32C0A22AFD6 /* GoogleSignIn */,
 			);
 			productName = GearSnitch;
 			productReference = C908273D26DA717EF992020E /* GearSnitch.app */;
@@ -1653,9 +1669,6 @@
 			);
 			mainGroup = 3BAC827FBE3E08946CE58C24;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				26DE48B9972ADD4F10310069 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EF62A29CE9D588EE284200F7 /* Products */;
 			projectDirPath = "";
@@ -1793,6 +1806,7 @@
 				F36B06CF82F9959380FBF461 /* RestTimerOverlayStateTests.swift in Sources */,
 				57400582763B7B03625182AF /* RestTimerPreferencesTests.swift in Sources */,
 				19C335E3117E33712D102BF4 /* RestTimerStateTests.swift in Sources */,
+				8F5D74740DB16D853FFA2134 /* ReviewPromptControllerTests.swift in Sources */,
 				3B4CDDD19F4EDDDFC54CD689 /* RootTabMappingTests.swift in Sources */,
 				61CEA77D2526E872C9DDA5F7 /* RootTabViewSnapshotTests.swift in Sources */,
 				A503D3E29FD189035C2E68E6 /* RssiSampleBufferTests.swift in Sources */,
@@ -1804,6 +1818,7 @@
 				27B3208F6002CC34702B3CE6 /* WatchSyncPayloadsTests.swift in Sources */,
 				5E0D8C874B7943D6F89BAB8F /* WorkoutActivityTypeTests.swift in Sources */,
 				6D6EBCE1E09A46E709BEAB7A /* WorkoutAppIntentsTests.swift in Sources */,
+				C3EE28D661821251B2E6258C /* WorkoutCalorieEstimateTests.swift in Sources */,
 				516F1010AE0D0A5D79746F5A /* WorkoutCrashRecoveryTests.swift in Sources */,
 				F4D4AB7056286E7151DCF6DC /* WorkoutSessionRouterTests.swift in Sources */,
 			);
@@ -1956,6 +1971,7 @@
 				8E7AFEB928740D6583F9F1DA /* RestTimerPreferences.swift in Sources */,
 				16E9F6FDDB297898CABE4B83 /* RestTimerSoundPlayer.swift in Sources */,
 				7C3CE39425F670E6448811E1 /* RestTimerState.swift in Sources */,
+				88DCF7F6A3267B9B369EB219 /* ReviewPromptController.swift in Sources */,
 				9D21F3A44E5DB619EE199193 /* RootTabView.swift in Sources */,
 				5F90FAC2283D3E0662480F1A /* RootView.swift in Sources */,
 				84B40C915C95268AAC475A3A /* RssiSampleBuffer.swift in Sources */,
@@ -2024,6 +2040,11 @@
 			isa = PBXTargetDependency;
 			target = 6CEC398F94F1452D4F7CA825 /* GearSnitchWatchWidgets */;
 			targetProxy = D1F2D4D62BB77E59094E2270 /* PBXContainerItemProxy */;
+		};
+		35BD62F4F6C9E9EECFE12FE6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 45835FA151003E74D7BFD1A0 /* GearSnitchWatch */;
+			targetProxy = 644BB3F5F4413A3DB66946B3 /* PBXContainerItemProxy */;
 		};
 		35F49ACA36D024E00A1EFDDE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -2521,25 +2542,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		26DE48B9972ADD4F10310069 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
-			requirement = {
-				kind = exactVersion;
-				version = 9.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		20E9F4332B27C32C0A22AFD6 /* GoogleSignIn */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 26DE48B9972ADD4F10310069 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
-			productName = GoogleSignIn;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = BBE1BCD4DFAE9AAA147B6DCD /* Project object */;
 }

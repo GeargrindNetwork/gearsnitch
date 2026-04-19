@@ -38,6 +38,27 @@ struct RunHistoryView: View {
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("Runs")
         .navigationBarTitleDisplayMode(.large)
+        // Delete-run alert (PR #96). Toolbar add-run was removed in PR #95 —
+        // the "Add Run" action now lives in a bottom-right FAB (see the
+        // accessibilityIdentifier "runHistory.addRunFab" above) so it stops
+        // overlapping with the shared top-nav cluster.
+        .alert(
+            "Delete Run",
+            isPresented: Binding(
+                get: { viewModel.pendingDeletion != nil },
+                set: { if !$0 { viewModel.pendingDeletion = nil } }
+            ),
+            presenting: viewModel.pendingDeletion
+        ) { run in
+            Button("Delete", role: .destructive) {
+                Task { await viewModel.deleteRun(run) }
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.pendingDeletion = nil
+            }
+        } message: { run in
+            Text("This will permanently remove the \(run.distanceString) run from \(run.startedAt.formatted(date: .abbreviated, time: .shortened)). This cannot be undone.")
+        }
         .task {
             await viewModel.loadRuns()
         }
@@ -83,6 +104,16 @@ struct RunHistoryView: View {
                         runRow(run)
                     }
                     .listRowBackground(Color.gsSurface)
+                    // Trailing swipe → destructive delete. Confirmation
+                    // happens via the `.alert` bound to `pendingDeletion`
+                    // on the parent view.
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            viewModel.pendingDeletion = run
+                        } label: {
+                            Label("Delete", systemImage: "trash.fill")
+                        }
+                    }
                 }
             }
         }

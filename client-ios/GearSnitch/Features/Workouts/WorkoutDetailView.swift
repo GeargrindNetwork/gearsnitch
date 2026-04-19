@@ -152,7 +152,8 @@ struct WorkoutDetailView: View {
             updatedAt: Date(),
             gearId: nil,
             gearIds: nil,
-            activityType: nil
+            activityType: nil,
+            calories: nil
         ))
     }
     .preferredColorScheme(.dark)

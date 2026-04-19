@@ -1,3 +1,11 @@
+// TODO(google-signin): re-enable after package re-added
+//
+// The entire GoogleSignIn integration is temporarily gated out while the
+// GoogleSignIn SPM dependency is removed to unblock local iOS builds.
+// Apple Sign-In and email/password paths remain active. Server-side
+// `POST /api/v1/auth/oauth/google` endpoints are intentionally left in
+// place so this file can simply be un-gated once the package is restored.
+#if false
 import Combine
 import Foundation
 import GoogleSignIn
@@ -104,3 +112,4 @@ final class GoogleSignInManager: ObservableObject {
         return root
     }
 }
+#endif

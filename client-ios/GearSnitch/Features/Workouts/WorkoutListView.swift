@@ -33,6 +33,23 @@ struct WorkoutListView: View {
                 }
             }
         }
+        .alert(
+            "Delete Workout",
+            isPresented: Binding(
+                get: { viewModel.pendingDeletion != nil },
+                set: { if !$0 { viewModel.pendingDeletion = nil } }
+            ),
+            presenting: viewModel.pendingDeletion
+        ) { workout in
+            Button("Delete", role: .destructive) {
+                Task { await viewModel.deleteWorkout(workout) }
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.pendingDeletion = nil
+            }
+        } message: { workout in
+            Text("This will permanently remove \"\(workout.name)\" from your log. This cannot be undone.")
+        }
         .task {
             await viewModel.loadWorkouts()
         }
@@ -78,6 +95,17 @@ struct WorkoutListView: View {
                 }
                 .listRowBackground(Color.gsSurface)
                 .listRowSeparatorTint(Color.gsBorder)
+                // Trailing swipe surfaces a destructive Delete action.
+                // The actual destruction is gated behind the confirmation
+                // alert on the parent view so an accidental swipe can't wipe
+                // data — the standard Mail.app pattern.
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        viewModel.pendingDeletion = workout
+                    } label: {
+                        Label("Delete", systemImage: "trash.fill")
+                    }
+                }
             }
         }
         .listStyle(.plain)
@@ -107,6 +135,12 @@ struct WorkoutListView: View {
                 HStack(spacing: 12) {
                     Label(workout.durationString, systemImage: "clock")
                     Label("\(workout.exerciseCount) exercises", systemImage: "dumbbell")
+                    // Calorie badge — uses stored value from HealthKit /
+                    // Watch when present, otherwise a MET-based estimate
+                    // from duration × activity MET × weight.
+                    if let label = workout.calorieLabel(weightKg: viewModel.userWeightKg) {
+                        Label(label, systemImage: "flame.fill")
+                    }
                 }
                 .font(.caption)
                 .foregroundColor(.gsTextSecondary)

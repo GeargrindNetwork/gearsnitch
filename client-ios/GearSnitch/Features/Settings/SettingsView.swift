@@ -161,6 +161,20 @@ struct SettingsView: View {
                     Label("Email Support", systemImage: "envelope")
                         .foregroundColor(.gsText)
                 }
+
+                // Backlog item #26 — manual fallback for users who've
+                // dismissed the automatic SKStoreReviewController prompt
+                // or who want to leave a review unsolicited. Deep-links
+                // directly to the App Store "Write a Review" sheet.
+                // TODO: replace the `id0000000000` placeholder in
+                // `AppConfig.appStoreURL` with the real App Store ID
+                // once the app ships.
+                Button {
+                    openAppStoreReviewPage()
+                } label: {
+                    Label("Rate GearSnitch on the App Store", systemImage: "star.bubble")
+                        .foregroundColor(.gsText)
+                }
             } header: {
                 Text("Support")
                     .foregroundColor(.gsTextSecondary)
@@ -259,6 +273,21 @@ struct SettingsView: View {
             try await AccountDataExporter.exportMyData()
         } catch {
             exportError = error.localizedDescription
+        }
+    }
+
+    /// Open the App Store listing with the "Write a Review" action
+    /// pre-selected. See `AppConfig.appStoreURL` for the canonical URL
+    /// (TODO: placeholder ID until the app ships).
+    private func openAppStoreReviewPage() {
+        let base = AppConfig.appStoreURL.replacingOccurrences(
+            of: "https://apps.apple.com",
+            with: "itms-apps://itunes.apple.com"
+        )
+        guard var components = URLComponents(string: base) else { return }
+        components.queryItems = [URLQueryItem(name: "action", value: "write-review")]
+        if let url = components.url {
+            UIApplication.shared.open(url)
         }
     }
 }

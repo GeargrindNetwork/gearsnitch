@@ -23,6 +23,10 @@ import {
   isWebSubscriptionTier,
   type WebSubscriptionTier,
 } from './checkoutService.js';
+import {
+  listSanitizedInvoicesForUser,
+  InvoiceListError,
+} from './invoicesService.js';
 
 const APPLE_MANAGE_URL = 'https://apps.apple.com/account/subscriptions';
 const paymentService = new PaymentService();
@@ -380,6 +384,52 @@ router.post('/portal-session', isAuthenticated, async (req: Request, res: Respon
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to create billing portal session';
     errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, message);
+  }
+});
+
+// GET /subscriptions/invoices — list the user's Stripe-hosted invoices.
+//
+// Powers the web Billing History page (backlog item #22). Apple-only
+// subscribers (no `stripeCustomerId` on the User row) legitimately have
+// no invoices here — they get an empty list, not an error, and the UI
+// renders the "manage via Apple ID Settings" empty state.
+//
+// Pagination: callers may pass `?startingAfter=<invoiceId>` to page further
+// into history. `?limit` caps Stripe's page size (default 50, max 100).
+router.get('/invoices', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.sub;
+
+    const rawLimit = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : NaN;
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50;
+    const startingAfter =
+      typeof req.query.startingAfter === 'string' && req.query.startingAfter.trim().length > 0
+        ? req.query.startingAfter
+        : null;
+
+    const result = await listSanitizedInvoicesForUser({ userId, limit, startingAfter });
+
+    successResponse(res, {
+      invoices: result.invoices,
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor,
+    });
+  } catch (err) {
+    if (err instanceof InvoiceListError) {
+      logger.error('subscription.invoices.failed', {
+        userId: req.user?.sub,
+        code: err.code,
+        error: err.message,
+      });
+      errorResponse(res, err.statusCode, err.message, err.code);
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Failed to list invoices';
+    logger.error('subscription.invoices.exception', {
+      userId: req.user?.sub,
+      error: message,
+    });
+    errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to list invoices', message);
   }
 });
 

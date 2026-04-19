@@ -540,6 +540,44 @@ router.get('/:id', isAuthenticated, async (req: Request, res: Response) => {
   }
 });
 
+// DELETE /runs/:id — owner-only hard delete. Mirrors the workout endpoint
+// (see `modules/workouts/routes.ts`) so the iOS swipe-to-delete flow has a
+// canonical REST path. We don't support partial soft-delete here because
+// Run has no `deletedAt` field today; if compliance ever wants an audit
+// trail this becomes a PATCH status flip instead.
+router.delete('/:id', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const userId = new Types.ObjectId((req.user as JwtPayload).sub);
+    // `req.params.id` is typed as `string | string[]` because Express 5's
+    // generics allow multi-value param arrays. Coerce to a scalar string
+    // before handing it to Mongoose — our route only ever registers a
+    // single-value `:id` param.
+    const rawRunId = typeof req.params.id === 'string' ? req.params.id : '';
+
+    if (!rawRunId || !Types.ObjectId.isValid(rawRunId)) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid run id');
+      return;
+    }
+
+    const runId = new Types.ObjectId(rawRunId);
+    const deleted = await Run.findOneAndDelete({ _id: runId, userId }).lean();
+
+    if (!deleted) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'Run not found');
+      return;
+    }
+
+    successResponse(res, { deleted: true });
+  } catch (error) {
+    errorResponse(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to delete run',
+      (error as Error).message,
+    );
+  }
+});
+
 router.post(
   '/:id/complete',
   isAuthenticated,
