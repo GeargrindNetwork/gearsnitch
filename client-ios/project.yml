@@ -76,6 +76,8 @@ targets:
       - path: GearSnitch/Features/Widgets
       - path: GearSnitch/Shared/Extensions/Color+GearSnitch.swift
       - path: GearSnitch/Shared/Widgets
+      - path: GearSnitch/Features/Workouts/WorkoutAppIntents.swift
+      - path: GearSnitch/Features/Workouts/WorkoutCoordinator.swift
     settings:
       base:
         INFOPLIST_FILE: GearSnitchWidgetExtension/Resources/Info.plist

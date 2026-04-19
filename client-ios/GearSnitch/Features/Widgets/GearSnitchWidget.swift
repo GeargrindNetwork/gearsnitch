@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -228,7 +229,94 @@ struct GearSnitchWidgetBundle: WidgetBundle {
         GearSnitchSessionWidget()
         GearSnitchDeviceStatusWidget()
         GearSnitchCaloriesWidget()
+        GearSnitchStartWorkoutWidget()
         GymSessionLiveActivityWidget()
+    }
+}
+
+// MARK: - Start Workout Widget (Lock Screen + Home Screen)
+//
+// Tapping the widget button fires `StartWorkoutIntent` which routes through
+// `WorkoutCoordinator` and lights up the iPhone-native workout session (or
+// the current fallback entry point). Requires iOS 17+ for `Button(intent:)`.
+
+struct StartWorkoutWidgetEntry: TimelineEntry {
+    let date: Date
+}
+
+struct StartWorkoutWidgetProvider: TimelineProvider {
+    func placeholder(in context: Context) -> StartWorkoutWidgetEntry {
+        StartWorkoutWidgetEntry(date: .now)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (StartWorkoutWidgetEntry) -> Void) {
+        completion(StartWorkoutWidgetEntry(date: .now))
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<StartWorkoutWidgetEntry>) -> Void) {
+        completion(Timeline(
+            entries: [StartWorkoutWidgetEntry(date: .now)],
+            policy: .never
+        ))
+    }
+}
+
+struct StartWorkoutWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: StartWorkoutWidgetEntry
+
+    var body: some View {
+        switch family {
+        case .accessoryCircular:
+            Button(intent: StartWorkoutIntent()) {
+                Image(systemName: "figure.run")
+                    .font(.title2)
+            }
+            .buttonStyle(.plain)
+            .containerBackground(.fill.tertiary, for: .widget)
+        case .accessoryRectangular:
+            Button(intent: StartWorkoutIntent()) {
+                HStack(spacing: 8) {
+                    Image(systemName: "figure.run")
+                        .font(.title3)
+                    Text("Start Workout")
+                        .font(.caption.weight(.semibold))
+                }
+            }
+            .buttonStyle(.plain)
+            .containerBackground(.fill.tertiary, for: .widget)
+        default:
+            Button(intent: StartWorkoutIntent()) {
+                VStack(spacing: 8) {
+                    Image(systemName: "figure.run")
+                        .font(.system(size: 36))
+                        .foregroundColor(.gsEmerald)
+                    Text("Start Workout")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.gsText)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .buttonStyle(.plain)
+            .containerBackground(Color.gsBackground, for: .widget)
+        }
+    }
+}
+
+struct GearSnitchStartWorkoutWidget: Widget {
+    let kind = "GearSnitchStartWorkoutWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: StartWorkoutWidgetProvider()) { entry in
+            StartWorkoutWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Start Workout")
+        .description("One-tap workout start from the Lock Screen or Home Screen.")
+        .supportedFamilies([
+            .systemSmall,
+            .accessoryCircular,
+            .accessoryRectangular,
+        ])
     }
 }
 
