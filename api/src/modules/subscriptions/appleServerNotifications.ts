@@ -190,7 +190,7 @@ export async function handleAppleSignedNotification(
     await ProcessedWebhookEvent.create({
       provider: 'apple',
       eventId: notificationUUID,
-      notificationType,
+      type: notificationType,
     });
   } catch (err) {
     // Unique-constraint violation = concurrent duplicate; treat as idempotent.
