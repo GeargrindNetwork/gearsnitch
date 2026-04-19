@@ -54,6 +54,19 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAccessorySetupKitSupports</key>
+	<array>
+		<string>Bluetooth</string>
+		<string>BluetoothMatchedAccessoriesOnly</string>
+	</array>
+	<key>NSAccessorySetupBluetoothServices</key>
+	<array>
+		<string>180D</string>
+		<string>180F</string>
+		<string>1814</string>
+		<string>1816</string>
+		<string>1818</string>
+	</array>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>GearSnitch monitors your gear via Bluetooth to detect disconnections.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>

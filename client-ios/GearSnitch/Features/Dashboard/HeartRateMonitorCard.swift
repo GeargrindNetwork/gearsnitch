@@ -83,6 +83,30 @@ struct HeartRateMonitorCard: View {
     /// last 5 minutes of 30-second samples. A Δ correlation badge beneath the
     /// columns shows the absolute difference between the latest readings and
     /// doubles as a quick sanity check on which source is trustworthy.
+    /// True when an external BLE HR sensor has published a reading recently.
+    /// Drives whether the third "External" tile is shown and whether it
+    /// replaces the AirPods tile (when AirPods has no reading) or appears
+    /// alongside it (when both are streaming).
+    private var hasExternalReading: Bool {
+        monitor.latestBPM(for: .external) != nil
+    }
+
+    private var hasAirPodsReading: Bool {
+        monitor.latestBPM(for: .airpods) != nil
+    }
+
+    /// Layout rule (documented in PR body): when an external BLE HR sensor is
+    /// active we show a third tile next to Watch + AirPods. If AirPods has no
+    /// current reading but an external sensor does, the external tile replaces
+    /// the (otherwise blank) AirPods tile to keep the two-column density.
+    private var shouldReplaceAirPodsWithExternal: Bool {
+        hasExternalReading && !hasAirPodsReading
+    }
+
+    private var externalSensorLabel: String {
+        monitor.currentExternalSource ?? "Sensor"
+    }
+
     private var splitColumnView: some View {
         VStack(spacing: 14) {
             HStack(alignment: .top, spacing: 12) {
@@ -98,14 +122,39 @@ struct HeartRateMonitorCard: View {
                 Divider()
                     .background(Color.gsBorder)
 
-                sourceColumn(
-                    title: "AirPods",
-                    systemImage: "airpods.pro",
-                    tint: .gsCyan,
-                    samples: monitor.airpodsSamples,
-                    source: .airpods
-                )
-                .frame(maxWidth: .infinity)
+                if shouldReplaceAirPodsWithExternal {
+                    sourceColumn(
+                        title: externalSensorLabel,
+                        systemImage: "sensor.tag.radiowaves.forward",
+                        tint: .gsWarning,
+                        samples: monitor.externalSamples,
+                        source: .external
+                    )
+                    .frame(maxWidth: .infinity)
+                } else {
+                    sourceColumn(
+                        title: "AirPods",
+                        systemImage: "airpods.pro",
+                        tint: .gsCyan,
+                        samples: monitor.airpodsSamples,
+                        source: .airpods
+                    )
+                    .frame(maxWidth: .infinity)
+
+                    if hasExternalReading {
+                        Divider()
+                            .background(Color.gsBorder)
+
+                        sourceColumn(
+                            title: externalSensorLabel,
+                            systemImage: "sensor.tag.radiowaves.forward",
+                            tint: .gsWarning,
+                            samples: monitor.externalSamples,
+                            source: .external
+                        )
+                        .frame(maxWidth: .infinity)
+                    }
+                }
             }
 
             correlationBadge

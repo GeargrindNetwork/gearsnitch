@@ -11,6 +11,7 @@ export const WORKER_QUEUE_NAMES = [
   'referral-qualification',
   'referral-reward',
   'subscription-validation',
+  'subscription-reconciliation',
   'push-notifications',
   'alert-fanout',
   'store-order-processing',

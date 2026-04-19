@@ -81,15 +81,34 @@ enum HeartRateSourceKind: String {
     case airpods
     case watch
     case phone
+    /// An external BLE Heart Rate Profile sensor (chest strap, optical armband,
+    /// or a Powerbeats Pro 2 routed through iPhone HealthKit). See
+    /// `ExternalHRSensorAdapter` and `HeartRateMonitor.ingestExternalSample`.
+    case external
     case other
     case unknown
 
     static func classify(sourceName: String?) -> HeartRateSourceKind {
         guard let name = sourceName?.lowercased(), !name.isEmpty else { return .unknown }
+        if isPowerbeatsProSource(name) { return .airpods }
         if name.contains("airpod") { return .airpods }
         if name.contains("watch") { return .watch }
         if name.contains("iphone") { return .phone }
         return .other
+    }
+
+    /// Pattern-match a HealthKit sample source name against the patterns that
+    /// iOS 26 uses when Powerbeats Pro 2 stream heart rate straight into the
+    /// iPhone's HealthKit (no Watch in between). Matches on "powerbeats" or
+    /// "beats pro" substrings so variants like "Shawn's Powerbeats Pro 2" or
+    /// "Beats Pro (2nd generation)" both classify as an AirPods-like source.
+    ///
+    /// We intentionally bucket Powerbeats Pro 2 into `.airpods` for UI and
+    /// rolling-buffer routing — product-wise they behave identically (on-ear
+    /// PPG HR via HealthKit, not BLE GATT) so the existing AirPods column
+    /// already renders the correct experience.
+    static func isPowerbeatsProSource(_ lowercasedName: String) -> Bool {
+        lowercasedName.contains("powerbeats") || lowercasedName.contains("beats pro")
     }
 }
 
@@ -134,6 +153,23 @@ final class HeartRateMonitor: ObservableObject {
     /// for AirPods HR — there is no BLE GATT path).
     @Published private(set) var airpodsSamples: [HRSample] = []
 
+    /// Rolling 5-minute buffer of samples attributed to external BLE HR
+    /// Profile sensors (chest straps, optical armbands). Populated via
+    /// `ingestExternalSample(bpm:source:timestamp:)` — the primary entry
+    /// point used by `ExternalHRSensorAdapter` for notifications on the
+    /// 0x2A37 Heart Rate Measurement characteristic.
+    ///
+    /// IMPORTANT: this buffer is additive; it does not replace or degrade
+    /// the Watch or AirPods buffers. Dashboards show this column only when
+    /// an external sensor is actively streaming.
+    @Published private(set) var externalSamples: [HRSample] = []
+
+    /// Human-readable name of the external sensor currently streaming HR
+    /// (e.g. "Polar H10", "Wahoo TICKR"). `nil` when no external sensor has
+    /// delivered a sample recently. Used by the Dashboard to label the
+    /// additional source column and by Settings for status display.
+    @Published private(set) var currentExternalSource: String?
+
     private let healthStore: HeartRateHealthStore
     private let logger = Logger(subsystem: "com.gearsnitch", category: "HeartRateMonitor")
 
@@ -168,6 +204,7 @@ final class HeartRateMonitor: ObservableObject {
     /// is already running and pushing new samples as they land.
     private var latestWatchReading: (bpm: Int, at: Date)?
     private var latestAirPodsReading: (bpm: Int, at: Date)?
+    private var latestExternalReading: (bpm: Int, at: Date)?
 
     /// How far back to look for a seed sample when monitoring starts. This
     /// lets the Dashboard card render the most recent HR immediately after
@@ -252,8 +289,11 @@ final class HeartRateMonitor: ObservableObject {
 
         watchSamples.removeAll()
         airpodsSamples.removeAll()
+        externalSamples.removeAll()
         latestWatchReading = nil
         latestAirPodsReading = nil
+        latestExternalReading = nil
+        currentExternalSource = nil
 
         logger.info("Stopped heart rate monitoring")
     }
@@ -331,6 +371,10 @@ final class HeartRateMonitor: ObservableObject {
             if (latestAirPodsReading?.at ?? .distantPast) <= timestamp {
                 latestAirPodsReading = (bpm, timestamp)
             }
+        case .external:
+            if (latestExternalReading?.at ?? .distantPast) <= timestamp {
+                latestExternalReading = (bpm, timestamp)
+            }
         case .phone, .other, .unknown:
             break
         }
@@ -367,6 +411,7 @@ final class HeartRateMonitor: ObservableObject {
         switch source {
         case .watch: return watchSamples.last(where: { $0.bpm != nil })?.bpm ?? nil
         case .airpods: return airpodsSamples.last(where: { $0.bpm != nil })?.bpm ?? nil
+        case .external: return externalSamples.last(where: { $0.bpm != nil })?.bpm ?? nil
         default: return nil
         }
     }
@@ -423,6 +468,13 @@ final class HeartRateMonitor: ObservableObject {
             return reading.bpm
         }()
 
+        let externalBPM: Int? = {
+            guard let reading = latestExternalReading, reading.at >= freshCutoff else {
+                return nil
+            }
+            return reading.bpm
+        }()
+
         appendToBuffer(
             &watchSamples,
             sample: HRSample(timestamp: now, bpm: watchBPM, source: .watch),
@@ -431,6 +483,11 @@ final class HeartRateMonitor: ObservableObject {
         appendToBuffer(
             &airpodsSamples,
             sample: HRSample(timestamp: now, bpm: airpodsBPM, source: .airpods),
+            now: now
+        )
+        appendToBuffer(
+            &externalSamples,
+            sample: HRSample(timestamp: now, bpm: externalBPM, source: .external),
             now: now
         )
     }
@@ -454,6 +511,24 @@ final class HeartRateMonitor: ObservableObject {
         if (latestWatchReading?.at ?? .distantPast) <= timestamp {
             latestWatchReading = (bpm, timestamp)
         }
+    }
+
+    /// Ingest a BLE Heart Rate Profile sample from an external sensor (chest
+    /// strap, optical armband, etc). Mirrors `ingestWatchSample` — appends to
+    /// the `externalSamples` rolling buffer, updates the latest-reading cache
+    /// so the 30-second tick keeps the column fresh, and records the source
+    /// device label so the UI can show which sensor is streaming.
+    ///
+    /// IMPORTANT: this path is strictly additive. It never touches
+    /// `watchSamples`, `airpodsSamples`, or their latest-reading caches.
+    func ingestExternalSample(bpm: Int, source: String, timestamp: Date) {
+        let sample = HRSample(timestamp: timestamp, bpm: bpm, source: .external)
+        appendToBuffer(&externalSamples, sample: sample, now: Date())
+
+        if (latestExternalReading?.at ?? .distantPast) <= timestamp {
+            latestExternalReading = (bpm, timestamp)
+        }
+        currentExternalSource = source
     }
 
     // MARK: - Live Activity Updates
@@ -534,11 +609,19 @@ final class HeartRateMonitor: ObservableObject {
         case .airpods: return "airpods_pro"
         case .watch: return "apple_watch"
         case .phone: return "iphone"
+        case .external: return "ble_hr"
         case .other: return "healthkit"
         case .unknown: return "unknown"
         }
     }
 }
+
+// MARK: - External HR Sink Conformance
+
+/// Allows `ExternalHRSensorAdapter` to forward BLE-decoded HR samples into
+/// the monitor without knowing about its other ingestion paths. Strictly
+/// additive — does not alter Watch or AirPods ingestion.
+extension HeartRateMonitor: ExternalHRSampleSink {}
 
 // MARK: - API Payloads
 

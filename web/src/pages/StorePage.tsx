@@ -132,7 +132,7 @@ export default function StorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="dark min-h-screen bg-zinc-950 text-zinc-100">
       <Header />
 
       <section className="px-6 py-16 lg:px-8">

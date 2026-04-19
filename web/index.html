@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -9,8 +9,28 @@
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="GearSnitch monitors your Bluetooth devices at the gym, alerts you instantly when something disconnects, and keeps your gear safe." />
     <title>GearSnitch - Never Lose Your Gym Gear Again</title>
+    <script>
+      // Apply saved / system theme before first paint to avoid FOUC.
+      // Must stay in sync with STORAGE_KEY in src/lib/theme.tsx.
+      (function () {
+        try {
+          var stored = localStorage.getItem('gearsnitch.theme');
+          var theme = stored || 'dark';
+          var resolved =
+            theme === 'system'
+              ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+              : theme;
+          var root = document.documentElement;
+          root.classList.remove('light', 'dark');
+          root.classList.add(resolved);
+          root.style.colorScheme = resolved;
+        } catch (_) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
-  <body class="bg-black">
+  <body class="bg-background">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
