@@ -231,6 +231,7 @@ struct GearSnitchWidgetBundle: WidgetBundle {
         GearSnitchCaloriesWidget()
         GearSnitchStartWorkoutWidget()
         GymSessionLiveActivityWidget()
+        WorkoutLiveActivityWidget()
     }
 }
 

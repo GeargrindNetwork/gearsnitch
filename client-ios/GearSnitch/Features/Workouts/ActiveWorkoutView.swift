@@ -41,6 +41,77 @@ struct ActiveWorkoutView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: viewModel.restTimer == nil)
+        // Pick up any workout session that the scene delegate recovered
+        // before this view appeared (iOS 26+, item #10).
+        .onAppear {
+            consumeRecoveredSessionIfNeeded()
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: workoutRecoveryNotificationName)
+        ) { note in
+            if #available(iOS 26.0, *) {
+                if let session = note.object as? IPhoneWorkoutSession {
+                    viewModel.attachRecovered(session)
+                }
+            }
+        }
+        .overlay(alignment: .top) {
+            if let toast = viewModel.recoveryToast {
+                recoveryToastView(toast)
+            }
+        }
+    }
+
+    // MARK: - Source Tag
+
+    private var workoutSourceIconName: String {
+        switch viewModel.workoutSource {
+        case .watch: return "applewatch"
+        case .iPhoneHealthKit: return "iphone.gen3"
+        case .timerOnly: return "timer"
+        }
+    }
+
+    // MARK: - Recovery
+
+    private var workoutRecoveryNotificationName: Notification.Name {
+        if #available(iOS 26.0, *) {
+            return SceneDelegate.recoveredWorkoutNotification
+        } else {
+            return Notification.Name("com.gearsnitch.workout.recovered.noop")
+        }
+    }
+
+    private func consumeRecoveredSessionIfNeeded() {
+        guard let any = SceneDelegate.recoveredSessionStore.consume() else { return }
+        if #available(iOS 26.0, *), let session = any as? IPhoneWorkoutSession {
+            viewModel.attachRecovered(session)
+        }
+    }
+
+    @ViewBuilder
+    private func recoveryToastView(_ toast: WorkoutRecoveryToast) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.clockwise.circle.fill")
+                .foregroundColor(.gsEmerald)
+            Text(toast.message)
+                .font(.caption.weight(.medium))
+                .foregroundColor(.gsText)
+            Spacer()
+            Button {
+                viewModel.recoveryToast = nil
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption2)
+                    .foregroundColor(.gsTextSecondary)
+            }
+        }
+        .padding(12)
+        .background(Color.gsSurfaceRaised)
+        .cornerRadius(10)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
 
     // MARK: - Start
@@ -87,6 +158,32 @@ struct ActiveWorkoutView: View {
                 Text("Elapsed Time")
                     .font(.caption)
                     .foregroundColor(.gsTextSecondary)
+
+                // "Powered by:" tag — tells the user whether their workout is
+                // being tracked by the Watch, iPhone HealthKit, or just the
+                // wall-clock timer (backlog item #10).
+                HStack(spacing: 6) {
+                    Image(systemName: workoutSourceIconName)
+                        .font(.caption2)
+                        .foregroundColor(.gsTextSecondary)
+                    Text(viewModel.workoutSource.displayTag)
+                        .font(.caption2)
+                        .foregroundColor(.gsTextSecondary)
+                    if let bpm = viewModel.currentBPM {
+                        Text("•")
+                            .font(.caption2)
+                            .foregroundColor(.gsTextSecondary)
+                        HStack(spacing: 3) {
+                            Image(systemName: "heart.fill")
+                                .font(.caption2)
+                                .foregroundColor(.gsDanger)
+                            Text("\(bpm) BPM")
+                                .font(.caption2.weight(.medium))
+                                .foregroundColor(.gsText)
+                        }
+                    }
+                }
+                .padding(.top, 2)
             }
             .padding(.vertical, 20)
 
