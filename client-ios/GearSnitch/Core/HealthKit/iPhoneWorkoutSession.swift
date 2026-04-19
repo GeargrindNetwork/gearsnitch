@@ -362,6 +362,9 @@ final class IPhoneWorkoutSession: NSObject, ObservableObject {
     @Published private(set) var bpm: Int?
     @Published private(set) var distanceMeters: Double?
 
+    /// Heart-rate callback set by the viewmodel. Stub never invokes it.
+    var onHeartRateSample: ((Double, Date) -> Void)?
+
     init(activityType: HKWorkoutActivityType, locationType: HKWorkoutSessionLocationType) throws {
         throw IPhoneWorkoutSessionError.builderBeginFailed
     }
@@ -375,10 +378,15 @@ final class IPhoneWorkoutSession: NSObject, ObservableObject {
     func resume() {}
     func end() async throws -> HKWorkout? { nil }
     var elapsedTime: TimeInterval { 0 }
-    var snapshot: ActiveWorkoutSnapshot { ActiveWorkoutSnapshot() }
+    func snapshot() -> ActiveWorkoutSnapshot { ActiveWorkoutSnapshot() }
 }
 
-struct ActiveWorkoutSnapshot: Equatable {}
+struct ActiveWorkoutSnapshot: Equatable {
+    var startedAt: Date = Date()
+    var elapsedSeconds: Int = 0
+    var currentBPM: Int? = nil
+    var totalDistanceMeters: Double = 0
+}
 
 enum IPhoneWorkoutSessionError: LocalizedError {
     case builderBeginFailed
