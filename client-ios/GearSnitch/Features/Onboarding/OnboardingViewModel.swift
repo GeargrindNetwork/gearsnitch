@@ -228,23 +228,14 @@ final class OnboardingViewModel: ObservableObject {
         advance()
         return
         #else
-        let authorization = CBManager.authorization
-
-        if authorization != .notDetermined {
-            if authorization == .allowedAlways {
-                bluetoothGranted = true
-                Task { await syncPermissionsState() }
-                advance()
-            } else {
-                openAppSettings()
-                error = "Bluetooth access is required to monitor your gear. Please enable it in Settings."
-            }
-            return
-        }
-        #endif
-
-        // Create a CBCentralManager to trigger the system prompt.
-        // We hold a strong reference to the delegate to keep it alive.
+        // Always instantiate a fresh CBCentralManager and read authorization
+        // from the delegate callback rather than the cached static
+        // `CBManager.authorization`. The static can lag behind after a user
+        // toggles the app's Bluetooth permission in Settings — the previous
+        // code path would then permanently short-circuit with an error even
+        // when the user had just granted access. The delegate reflects
+        // real-time state once the manager transitions to a definite state
+        // (`.poweredOn`, `.poweredOff`, or `.unauthorized`).
         bleDelegate = BLEAuthorizationDelegate { [weak self] authorized in
             Task { @MainActor in
                 self?.bluetoothGranted = authorized
@@ -252,7 +243,14 @@ final class OnboardingViewModel: ObservableObject {
                 if authorized {
                     self?.advance()
                 } else {
-                    self?.error = "Bluetooth access is required to monitor your gear. Please enable it in Settings."
+                    // Only nudge the user to Settings if the OS explicitly
+                    // denied — not if the state is simply "not yet decided"
+                    // (CBCentralManager triggers the system prompt on first
+                    // init, so no Settings bounce is needed in that case).
+                    if CBManager.authorization == .denied || CBManager.authorization == .restricted {
+                        self?.openAppSettings()
+                        self?.error = "Bluetooth access is required to monitor your gear. Please enable it in Settings."
+                    }
                 }
             }
         }
@@ -261,6 +259,7 @@ final class OnboardingViewModel: ObservableObject {
             queue: nil,
             options: [CBCentralManagerOptionShowPowerAlertKey: true]
         )
+        #endif
     }
 
     func requestLocationWhenInUse() {
