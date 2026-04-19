@@ -12,6 +12,7 @@
     "test": "jest --forceExit --detectOpenHandles"
   },
   "dependencies": {
+    "app-store-server-api": "^0.17.3",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.34.0",
     "compression": "^1.7.5",
