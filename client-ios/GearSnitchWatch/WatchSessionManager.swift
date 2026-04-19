@@ -143,6 +143,11 @@ final class WatchSessionManager: NSObject, ObservableObject {
             activeAlertCount = message["count"] as? Int ?? 0
             latestAlertMessage = message["latestMessage"] as? String
 
+        case .paceCoachHaptic:
+            // Backlog item #21: iPhone-driven pace-coach haptic.
+            // Dispatch to the singleton which handles dedupe + WKHaptic play.
+            WatchPaceHapticDispatcher.shared.handle(message: message)
+
         default:
             break
         }

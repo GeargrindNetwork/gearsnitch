@@ -134,6 +134,24 @@ final class WatchSyncManager: NSObject, ObservableObject {
         session.sendMessage(message, replyHandler: nil, errorHandler: nil)
     }
 
+    /// Sends a pace-coach haptic nudge to the Watch (Backlog item #21).
+    ///
+    /// Fire-and-forget: if the Watch is unreachable we drop the message
+    /// (the coaching moment has passed — there's no value in queuing
+    /// an out-of-date "speed up" buzz for later).
+    ///
+    /// The Watch side (`WatchPaceHapticDispatcher`) dedupes on a 30s
+    /// window, matching the throttle applied on the iPhone side, so
+    /// any duplicate deliveries from WCSession are harmless.
+    func sendPaceCoachHaptic(kind: String) {
+        guard let session, session.isReachable else { return }
+
+        let payload = PaceCoachHapticMessage(kind: kind, sentAt: Date())
+        session.sendMessage(payload.toMessage(), replyHandler: nil) { [weak self] error in
+            self?.logger.debug("Pace-coach haptic sendMessage failed: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Handle Watch Commands
 
     private func handleWatchMessage(_ message: [String: Any]) {
