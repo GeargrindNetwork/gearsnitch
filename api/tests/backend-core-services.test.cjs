@@ -46,20 +46,26 @@ describe('backend core services regression sweep', () => {
     expect(deviceRoutes).not.toContain('Remove device — not yet implemented');
   });
 
-  test('gym routes are wired to live CRUD/default handlers and keep deferred flows explicit', () => {
+  test('gym routes are wired to live CRUD/default and geofence/check-in handlers', () => {
     expect(gymRoutes).toContain('gymService.listGyms(');
     expect(gymRoutes).toContain('gymService.createGym(');
     expect(gymRoutes).toContain('gymService.getGym(');
     expect(gymRoutes).toContain('gymService.updateGym(');
     expect(gymRoutes).toContain('gymService.setDefaultGym(');
     expect(gymRoutes).toContain('gymService.deleteGym(');
+    expect(gymRoutes).toContain('gymService.evaluateLocation(');
+    expect(gymRoutes).toContain('gymService.findNearby(');
+    expect(gymRoutes).toContain('gymService.checkIn(');
     expect(gymRoutes).not.toContain('List gyms — not yet implemented');
     expect(gymRoutes).not.toContain('Get gym details — not yet implemented');
-    expect((gymRoutes.match(/StatusCodes\.NOT_IMPLEMENTED/g) || []).length).toBe(3);
-    expect(gymRoutes).toContain("router.post('/evaluate', isAuthenticated");
+    // The four 501 deferrals are now all live — no NOT_IMPLEMENTED markers.
+    expect((gymRoutes.match(/StatusCodes\.NOT_IMPLEMENTED/g) || []).length).toBe(0);
+    expect(gymRoutes).toContain("router.post(\n  '/evaluate',\n  isAuthenticated");
     expect(gymRoutes).toContain("'/events',");
     expect(gymRoutes).toContain("router.get('/nearby', isAuthenticated");
-    expect(gymRoutes).toContain("router.post('/:id/check-in', isAuthenticated");
+    expect(gymRoutes).toContain("'/:id/evaluate-location',");
+    expect(gymRoutes).toContain("'/:id/checkin',");
+    expect(gymRoutes).toContain("'/:id/check-in',");
   });
 
   test('users/me aggregation reads live device and order collections', () => {

@@ -312,9 +312,52 @@ router.delete('/me', isAuthenticated, async (req: Request, res: Response) => {
   }
 });
 
-// GET /users/:id
-router.get('/:id', isAuthenticated, (_req, res) => {
-  successResponse(res, { message: 'Get user by ID — not yet implemented' }, 501);
+// GET /users/:id — privacy-scoped read. The caller sees their own full
+// profile; any other user is surfaced only as the public trio
+// (_id, displayName, photoUrl). Auth-provider IDs, email, referralCode,
+// stripeCustomerId, and permissionsState are never leaked cross-user.
+router.get('/:id', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const callerId = (req.user as JwtPayload).sub;
+    const targetId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    if (!targetId || !/^[a-fA-F0-9]{24}$/.test(targetId)) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+      return;
+    }
+
+    if (callerId === targetId) {
+      const profile = await buildProfileResponse(callerId);
+      if (!profile) {
+        errorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+        return;
+      }
+      successResponse(res, profile);
+      return;
+    }
+
+    const target = await User.findById(targetId)
+      .select({ _id: 1, displayName: 1, photoUrl: 1 })
+      .lean();
+
+    if (!target) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+      return;
+    }
+
+    successResponse(res, {
+      _id: target._id.toString(),
+      displayName: target.displayName,
+      photoUrl: target.photoUrl ?? null,
+    });
+  } catch (err) {
+    errorResponse(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to get user',
+      err instanceof Error ? err.message : String(err),
+    );
+  }
 });
 
 function inchesToCm(inches: number): number {
