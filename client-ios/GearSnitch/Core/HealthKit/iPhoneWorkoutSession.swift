@@ -366,7 +366,7 @@ final class IPhoneWorkoutSession: NSObject, ObservableObject {
         throw IPhoneWorkoutSessionError.builderBeginFailed
     }
 
-    init(recovered: HKWorkoutSession) {
+    init(recovered: HKWorkoutSession, healthStore: HKHealthStore = HKHealthStore()) {
         super.init()
     }
 
