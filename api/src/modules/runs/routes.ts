@@ -14,6 +14,7 @@ import { User } from '../../models/User.js';
 import { enqueuePushNotification } from '../../services/pushNotificationQueue.js';
 import logger from '../../utils/logger.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
+import { checkAndAwardFor } from '../achievements/service.js';
 
 /**
  * Item #27 — run-completion summary push. Mirrors the workout flow but with
@@ -670,6 +671,11 @@ router.post(
         },
         req.requestId,
       );
+
+      // Backlog item #39 — evaluate achievement badges (first_run,
+      // hundred_miles, streaks). Best-effort; failures are logged inside
+      // the service and never bubble to the caller.
+      await checkAndAwardFor(run.userId, 'runCompleted', req.requestId);
 
       successResponse(res, serializeRunDetail(run.toObject()));
     } catch (error) {

@@ -24,6 +24,9 @@ struct ProfileView: View {
                 // Devices section (moved from dashboard)
                 devicesSectionView
 
+                // Badges section (backlog item #39)
+                badgesSection
+
                 // Subscription card
                 subscriptionCard
 
@@ -443,6 +446,44 @@ struct ProfileView: View {
         case "disconnected", "inactive": return .gsWarning
         default: return .gsTextSecondary
         }
+    }
+
+    // MARK: - Badges (backlog item #39)
+
+    private var badgesSection: some View {
+        NavigationLink {
+            AchievementsView()
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "rosette")
+                    .font(.title2)
+                    .foregroundColor(.gsEmerald)
+                    .frame(width: 44, height: 44)
+                    .background(Color.gsEmerald.opacity(0.12))
+                    .cornerRadius(10)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Badges")
+                        .font(.caption)
+                        .foregroundColor(.gsTextSecondary)
+                    Text("View achievements")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.gsText)
+                }
+
+                Spacer()
+
+                Text("See All")
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(.gsEmerald)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+            }
+            .cardStyle()
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Subscription
