@@ -7,3 +7,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gearsnitch.app
+    entitlements:
+      path: GearSnitch/GearSnitch.entitlements
+      properties:
+        com.apple.developer.in-app-payments:
+          - merchant.gearsnitch.app

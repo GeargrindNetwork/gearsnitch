@@ -11,25 +11,23 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 2 | Post-install referral attribution | merged | [#46](https://github.com/GeargrindNetwork/gearsnitch/pull/46) |
 | 3 | Stripe Customer Portal deep-link into iOS | merged | [#47](https://github.com/GeargrindNetwork/gearsnitch/pull/47) |
 | — | APNs push sender (item #19 prep) | merged | [#48](https://github.com/GeargrindNetwork/gearsnitch/pull/48) |
-| 5 | Weekly reconciliation cron for subscription state drift | merged | [#50](https://github.com/GeargrindNetwork/gearsnitch/pull/50) |
-| 35 | Dark-mode consistency pass | merged | [#53](https://github.com/GeargrindNetwork/gearsnitch/pull/53) |
 
 ## Queued — ranked by impact × (1/complexity)
 
 | # | Title | Impact | Complexity | Tier | Layers | Status | Notes |
 |---|---|---|---|---|---|---|---|
-| 4 | Gear retirement + component mileage alerts (shoe/chain/tire) | 9 | S | 2 | ios,api,worker | pr-open | Strava GAP per DC Rainmaker; push at user-set threshold. Core gear-tracking moat. PR pending. |
-| 5 | Weekly reconciliation cron for subscription state drift | 8 | M | 2 | api,worker | merged | Landed as #50. |
+| 4 | Gear retirement + component mileage alerts (shoe/chain/tire) | 9 | S | 2 | ios,api,worker | pending | Strava GAP per DC Rainmaker; push at user-set threshold. Core gear-tracking moat. |
+| 5 | Weekly reconciliation cron for subscription state drift | 8 | M | 2 | api,worker | in-progress | Agent building now. |
 | 6 | AccessorySetupKit for one-tap BLE gear pairing | 8 | S | 2 | ios | pending | iOS 26.3 DMA expansion. Replaces CoreBluetooth permission prompt with AirPods-style sheet. |
-| 7 | HealthKit Medications API sync for peptide/dosing log | 8 | S | 2 | ios | pending | WWDC25. Bi-directional med log sync; differentiator vs Whoop/Strava. |
+| 7 | HealthKit Medications API sync for peptide/dosing log | 8 | S | 2 | ios | pr-open | WWDC25. Bi-directional med log sync; differentiator vs Whoop/Strava. [PR #57](https://github.com/GeargrindNetwork/gearsnitch/pull/57) |
 | 8 | External HR sensor intake on iPhone (BLE HR profile + Powerbeats Pro 2) | 8 | S | 2 | ios | pending | iOS 26 HKLiveWorkoutDataSource. Expands Watch-less cohort. |
 | 9 | Strava-style auto-gear assignment by activity type | 8 | S | 2 | ios,api | pending | Default gear per workout + manual override. Table-stakes. |
 | 10 | iPhone-native workout session + crash recovery | 8 | M | 2 | ios | pending | WWDC25 HKWorkoutSession on iPhone. Retention win for non-Watch owners. |
-| 11 | App Intents for Lock Screen workout control | 7 | S | 2 | ios | pending | INStartWorkoutIntent family. Compounds with #10. |
+| 11 | App Intents for Lock Screen workout control | 7 | S | 2 | ios | pr-open | Modern `AppIntent` family (Start/Pause/Resume/End) + Lock Screen Start Workout widget. Seam for #10. PR: https://github.com/GeargrindNetwork/gearsnitch/pull/63 |
 | 12 | Racquet-sport activity types (Padel, Pickleball) | 7 | XS | 3 | ios | pending | Strava shipped Padel/Basketball/Volleyball/Cricket/Dance 2025. |
-| 13 | Apple Pay capability in XcodeGen project.yml | 7 | XS | 2 | infra | pending | Prevents silent Apple Pay regression on pbxproj regen. |
+| 13 | Apple Pay capability in XcodeGen project.yml | 7 | XS | 2 | infra | pr-open | Prevents silent Apple Pay regression on pbxproj regen. PR [#71](https://github.com/GeargrindNetwork/gearsnitch/pull/71). |
 | 14 | tsconfig `ignoreDeprecations:5.0` vs TS 6 mismatch | 6 | XS | 2 | infra | pending | `npm run build` currently fails. Bump to `"6.0"`. |
-| 15 | Widget extension target — compile + ship | 6 | M | 2 | ios | pending | Widgets exist in source; target not regenerated via XcodeGen. |
+| 15 | Widget extension target — compile + ship | 6 | M | 2 | ios | pr-open ([#68](https://github.com/GeargrindNetwork/gearsnitch/pull/68)) | Audit case A: target already in project.yml + pbxproj; xcodegen regen aligned drift. Both schemes build, widget appex embeds w/ App Intents metadata. |
 | 16 | Rest timer between sets | 6 | S | 2 | ios | pending | 30s/60s/90s/custom. Background audio cue. |
 | 17 | BLE battery level (0x180F) | 6 | S | 2 | ios | pending | Read + surface on DeviceDetailView. Low-battery push at <20%. Route through AccessorySetupKit (see #6). |
 | 18 | Auto-pause run on >60s inactivity | 6 | S | 2 | ios | pending | RunTrackingManager low-motion detection. |
@@ -41,7 +39,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 24 | Web test framework (Vitest + RTL) | 5 | M | 2 | web | pending | Tier 1 surfaces first. |
 | 25 | Referral dashboard polish (referrer-side) | 4 | S | 2 | ios | pending | Earlier proposal from item #2 agent. |
 | 26 | App Store review prompting | 5 | S | 2 | ios | pending | SKStoreReviewController on 3rd workout / 5th device pair. |
-| 27 | Workout summary push after session end | 5 | M | 2 | api,worker,ios | pending | Uses new APNs sender. |
+| 27 | Workout summary push after session end | 5 | M | 2 | api,worker,ios | pr-open | Uses new APNs sender. [PR #69](https://github.com/GeargrindNetwork/gearsnitch/pull/69). |
 | 28 | Stripe Checkout for web subscriptions | 5 | M | 2 | web,api | pending | External-web-only path; no iOS-initiated links (App Store 3.1.1). |
 | 29 | iOS CI workflow (macos-14 + xcodebuild test) | 4 | M | 2 | infra | pending | |
 | 30 | Cloud Run auto-rollback on deploy 5xx | 4 | M | 2 | infra | pending | Per guard rail #3. |
@@ -49,7 +47,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 32 | Admin dashboard API (currently 501) | 4 | L | 2 | api,web | pending | Gated on `user.roles.includes('admin')`. |
 | 33 | Content module / CMS (currently 501) | 3 | M | 2 | api,web | pending | Blog posts / marketing. |
 | 34 | Feature flag system (Redis-backed) | 5 | M | 2 | api | pending | Per-user / per-tier overrides. |
-| 35 | Dark-mode consistency pass | 3 | S | 2 | web | merged | Landed as #53. |
+| 35 | Dark-mode consistency pass | 3 | S | 2 | web | pending | Manual audit. |
 | 36 | Landing page A/B framework | 4 | M | 2 | web | pending | Two variants, cookie-based bucketing. |
 | 37 | GPS run polylines + route map | 5 | L | 2 | ios,api | pending | CoreLocation + MapKit. |
 | 38 | Apple Watch companion workout sync | 5 | L | 2 | ios | pending | **Affected by #10** — model must handle iPhone-originated workouts with Watch as optional sensor. |

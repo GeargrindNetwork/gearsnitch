@@ -3,7 +3,7 @@ import Footer from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
-const EFFECTIVE_DATE = 'April 10, 2026';
+const EFFECTIVE_DATE = '2026-04-18';
 const SUPPORT_EMAIL = 'support@gearsnitch.com';
 
 export default function PrivacyPolicyPage() {
@@ -16,15 +16,19 @@ export default function PrivacyPolicyPage() {
           Privacy Policy
         </h1>
         <p className="mt-2 text-sm text-zinc-500">
-          Effective Date: {EFFECTIVE_DATE}
+          Last updated: {EFFECTIVE_DATE}
         </p>
         <p className="mt-4 max-w-3xl text-sm leading-relaxed text-zinc-400">
-          This Privacy Policy explains how GearSnitch collects, uses, shares,
-          and protects information when you use{' '}
-          <span className="text-zinc-200">www.gearsnitch.com</span>, the
-          GearSnitch mobile application, and related products or support
-          services. It is intended to serve as the public privacy policy linked
-          from both the website and the application.
+          This Privacy Policy describes the personal data that GearSnitch
+          (&quot;GearSnitch,&quot; &quot;we,&quot; &quot;our,&quot; or
+          &quot;us&quot;) collects when you use the GearSnitch iOS app, the
+          GearSnitch website at{' '}
+          <span className="text-zinc-200">www.gearsnitch.com</span>, and any
+          related services. It enumerates every data category we collect, why
+          we collect it, who we share it with, how long we keep it, and the
+          rights you have over it. This policy is intended to satisfy Apple
+          App Store Review Guideline 5.1 and the App Privacy disclosures in
+          App Store Connect.
         </p>
 
         <Separator className="my-8 bg-white/5" />
@@ -32,132 +36,192 @@ export default function PrivacyPolicyPage() {
         <div className="space-y-8">
           <Card className="border-0 bg-zinc-900/60 ring-white/5">
             <CardHeader>
-              <CardTitle className="text-white">Who We Are</CardTitle>
+              <CardTitle className="text-white">Data We Collect</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
-              <p>
-                GearSnitch (&quot;GearSnitch,&quot; &quot;we,&quot; &quot;our,&quot; or
-                &quot;us&quot;) operates the GearSnitch website, app, and
-                supporting services. This policy describes how we handle
-                personal information that relates to those services.
-              </p>
-              <p>
-                By accessing or using GearSnitch, you acknowledge this Privacy
-                Policy. If you do not agree with it, do not use the service.
-              </p>
+            <CardContent className="space-y-5 text-sm leading-relaxed text-zinc-400">
+              <div>
+                <h3 className="mb-2 font-semibold text-zinc-200">
+                  Account data
+                </h3>
+                <ul className="list-inside list-disc space-y-1 pl-2">
+                  <li>Email address</li>
+                  <li>Hashed password (bcrypt; we never store plaintext)</li>
+                  <li>Display name</li>
+                  <li>Optional profile photo</li>
+                  <li>
+                    Sign-in-with-Apple / Sign-in-with-Google identifier when
+                    you use those providers
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="mb-2 font-semibold text-zinc-200">
+                  Health and fitness data
+                </h3>
+                <ul className="list-inside list-disc space-y-1 pl-2">
+                  <li>
+                    Heart rate read from paired BLE devices, AirPods, Apple
+                    Watch, and Powerbeats Pro 2
+                  </li>
+                  <li>
+                    Workouts (type, duration, distance, calories, perceived
+                    effort)
+                  </li>
+                  <li>
+                    Runs, including GPS polylines if you choose to share a run
+                  </li>
+                  <li>Gym sessions and gear-usage logs</li>
+                  <li>
+                    ECG readings (read-only, surfaced from Apple HealthKit when
+                    you grant permission)
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="mb-2 font-semibold text-zinc-200">
+                  Medication and supplement data
+                </h3>
+                <p>
+                  Doses, schedules, and notes for peptides, supplements, and
+                  medications you log inside GearSnitch. On iOS 18.4 and later
+                  this data is bidirectionally synced with the Apple Health
+                  Medications database when you opt in. We do not infer
+                  diagnoses from this data and we do not share it with any
+                  advertiser, broker, or insurer.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="mb-2 font-semibold text-zinc-200">
+                  Location data
+                </h3>
+                <p>
+                  Precise location is used only to detect when you arrive at a
+                  saved gym (geofence check-in). GearSnitch does not track
+                  location continuously in the background and does not build a
+                  location history outside the gym-session record.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="mb-2 font-semibold text-zinc-200">
+                  Bluetooth data
+                </h3>
+                <p>
+                  Bluetooth Low Energy device identifiers (UUIDs / MAC-derived
+                  IDs) and RSSI signal-strength trends for gear you have paired
+                  with the app. Used for connection state, separation alerts,
+                  and battery diagnostics.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="mb-2 font-semibold text-zinc-200">
+                  Payment data
+                </h3>
+                <ul className="list-inside list-disc space-y-1 pl-2">
+                  <li>Subscription tier and renewal status</li>
+                  <li>
+                    Apple StoreKit transaction IDs for in-app purchases
+                  </li>
+                  <li>
+                    Stripe customer ID and the last four digits of your card
+                    (issued by Stripe; we never receive the full PAN, expiry,
+                    or CVV)
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="mb-2 font-semibold text-zinc-200">
+                  Referral data
+                </h3>
+                <ul className="list-inside list-disc space-y-1 pl-2">
+                  <li>
+                    <code className="rounded bg-zinc-800 px-1 py-0.5 text-zinc-200">
+                      gs_ref
+                    </code>{' '}
+                    attribution cookie (HttpOnly, SameSite=Lax, 30-day expiry)
+                  </li>
+                  <li>
+                    A <code className="rounded bg-zinc-800 px-1 py-0.5 text-zinc-200">user.referredBy</code>{' '}
+                    reference linking you to the user who invited you
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="mb-2 font-semibold text-zinc-200">
+                  Device and diagnostic data
+                </h3>
+                <ul className="list-inside list-disc space-y-1 pl-2">
+                  <li>Apple Push Notification service (APNs) device token</li>
+                  <li>App version, OS version, device model</li>
+                  <li>
+                    Crash logs and non-fatal error reports (no screen
+                    recordings, no keystrokes)
+                  </li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
 
           <Card className="border-0 bg-zinc-900/60 ring-white/5">
             <CardHeader>
               <CardTitle className="text-white">
-                Information We Collect
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm leading-relaxed text-zinc-400">
-              <div>
-                <h3 className="mb-2 font-semibold text-zinc-200">
-                  Account and identity information
-                </h3>
-                <p>
-                  When you create or use a GearSnitch account, we may collect
-                  your email address, display name, profile image, account
-                  identifier, and login-provider details. If you sign in with
-                  Apple or Google, we receive the information those providers
-                  make available to us, such as your name, email address, and
-                  provider account identifier.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="mb-2 font-semibold text-zinc-200">
-                  Device, app, and log information
-                </h3>
-                <p>
-                  We collect technical information needed to operate and secure
-                  the service, including device type, operating system, app
-                  version, browser or user agent, IP address, request logs,
-                  session identifiers, and crash or diagnostic events.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="mb-2 font-semibold text-zinc-200">
-                  Fitness, gear, and feature data
-                </h3>
-                <p>
-                  Depending on the features you use, we may collect Bluetooth
-                  device identifiers, workout or activity records, gym or
-                  geofence data, notification preferences, emergency contact
-                  information, nutrition or health-related entries you provide,
-                  and similar account-linked content needed to deliver the app.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="mb-2 font-semibold text-zinc-200">
-                  Location and permission-based data
-                </h3>
-                <p>
-                  If you grant permission, GearSnitch may use foreground or
-                  background location information and Bluetooth access to power
-                  monitoring, gym detection, alerts, or related features. These
-                  permissions are optional, but some features may not work
-                  without them.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="mb-2 font-semibold text-zinc-200">
-                  Purchases and subscription information
-                </h3>
-                <p>
-                  If you purchase subscriptions or products, we receive order,
-                  billing, subscription, fulfillment, and transaction metadata.
-                  Payment card details are typically processed by payment
-                  providers and are not stored by GearSnitch in full.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="mb-2 font-semibold text-zinc-200">
-                  Support and communications
-                </h3>
-                <p>
-                  If you contact us, complete a form, or respond to a support
-                  request, we collect the information you choose to provide,
-                  such as your name, email address, and message contents.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 bg-zinc-900/60 ring-white/5">
-            <CardHeader>
-              <CardTitle className="text-white">
-                How We Use Information
+                Data We Do Not Collect
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
-              <p>We use personal information to:</p>
               <ul className="list-inside list-disc space-y-2 pl-2">
-                <li>create and maintain user accounts;</li>
-                <li>authenticate users and link sign-in providers;</li>
-                <li>deliver app, website, store, and support functionality;</li>
                 <li>
-                  process orders, subscriptions, renewals, cancellations, and
-                  refunds;
+                  No cross-site web-tracking identifiers and no advertising
+                  identifier (IDFA).
                 </li>
                 <li>
-                  send service communications, alerts, support responses, and
-                  security notices;
+                  No third-party SDK that sells, brokers, or monetizes your
+                  data.
                 </li>
                 <li>
-                  analyze usage, troubleshoot issues, and improve the service;
+                  No microphone audio, camera frames, or screen recordings.
                 </li>
-                <li>protect against fraud, abuse, and unauthorized access;</li>
                 <li>
-                  comply with legal obligations and enforce our agreements.
+                  No contacts, calendar entries, photos, or files outside the
+                  ones you explicitly attach.
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 bg-zinc-900/60 ring-white/5">
+            <CardHeader>
+              <CardTitle className="text-white">How We Use It</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
+              <ul className="list-inside list-disc space-y-2 pl-2">
+                <li>
+                  <span className="text-zinc-200">App functionality:</span>{' '}
+                  authenticate you, sync workouts and gear, deliver alerts,
+                  process subscriptions, and run referral rewards.
+                </li>
+                <li>
+                  <span className="text-zinc-200">Customer support:</span>{' '}
+                  diagnose tickets you send to our support inbox or in-app
+                  support form.
+                </li>
+                <li>
+                  <span className="text-zinc-200">
+                    Product analytics (aggregate):
+                  </span>{' '}
+                  measure feature adoption, performance, and crash rate. We
+                  use first-party event logging only.
+                </li>
+                <li>
+                  <span className="text-zinc-200">Legal compliance:</span>{' '}
+                  fulfill tax, accounting, fraud-prevention, and lawful-request
+                  obligations.
                 </li>
               </ul>
             </CardContent>
@@ -166,102 +230,144 @@ export default function PrivacyPolicyPage() {
           <Card className="border-0 bg-zinc-900/60 ring-white/5">
             <CardHeader>
               <CardTitle className="text-white">
-                When We Share Information
+                Sharing and Third Parties
               </CardTitle>
             </CardHeader>
+            <CardContent className="space-y-4 text-sm leading-relaxed text-zinc-400">
+              <p>
+                We share the minimum data needed to operate the service. The
+                vendors below are processors acting on our instructions:
+              </p>
+              <ul className="list-inside list-disc space-y-2 pl-2">
+                <li>
+                  <span className="text-zinc-200">Apple Inc.</span> &mdash;
+                  receives APNs push tokens to deliver notifications and
+                  StoreKit transaction data when you make in-app purchases.
+                  Apple HealthKit data stays on your device unless you
+                  explicitly export it.
+                </li>
+                <li>
+                  <span className="text-zinc-200">Stripe, Inc.</span> &mdash;
+                  processes credit-card subscription payments. Stripe receives
+                  your name, email, billing address, and payment-instrument
+                  data directly; we receive only the customer ID, last-4, card
+                  brand, and transaction status.
+                </li>
+                <li>
+                  <span className="text-zinc-200">Cloud hosting providers</span>{' '}
+                  storing encrypted database records, log files, and backups.
+                </li>
+                <li>
+                  <span className="text-zinc-200">
+                    HIPAA-covered partners (when applicable):
+                  </span>{' '}
+                  any vendor that touches health data is bound by a Business
+                  Associate Agreement before any transfer occurs.
+                </li>
+              </ul>
+              <p>
+                We do not share your personal data with advertisers, data
+                brokers, or social networks. We do not sell personal data and
+                we do not engage in cross-context behavioral advertising as
+                those terms are defined under the CCPA and equivalent laws.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 bg-zinc-900/60 ring-white/5">
+            <CardHeader>
+              <CardTitle className="text-white">Retention</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
-              <p>
-                We may share information with service providers that help us run
-                GearSnitch, such as hosting, analytics, payment, customer
-                support, communications, and infrastructure vendors.
-              </p>
-              <p>
-                We may also disclose information when reasonably necessary to
-                comply with the law, respond to legal requests, investigate
-                misuse, protect our users or business, or as part of a merger,
-                acquisition, financing, or asset sale.
-              </p>
-              <p>
-                GearSnitch does not sell personal information for money. We also
-                do not knowingly share personal information for cross-context
-                behavioral advertising.
-              </p>
+              <ul className="list-inside list-disc space-y-2 pl-2">
+                <li>
+                  <span className="text-zinc-200">Active subscribers:</span>{' '}
+                  account and content data retained for as long as your
+                  account remains active.
+                </li>
+                <li>
+                  <span className="text-zinc-200">Cancelled accounts:</span>{' '}
+                  data is purged within 90 days of cancellation, except where
+                  retention is required for legal, tax, or fraud-prevention
+                  reasons.
+                </li>
+                <li>
+                  <span className="text-zinc-200">Per-row content:</span>{' '}
+                  workouts, runs, gym sessions, and medication logs are kept
+                  until you delete them individually.
+                </li>
+                <li>
+                  <span className="text-zinc-200">Backups:</span> encrypted
+                  backups roll off within 35 days.
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 bg-zinc-900/60 ring-white/5">
+            <CardHeader>
+              <CardTitle className="text-white">Your Rights</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
+              <ul className="list-inside list-disc space-y-2 pl-2">
+                <li>
+                  <span className="text-zinc-200">Access and export:</span>{' '}
+                  email{' '}
+                  <a
+                    href={`mailto:${SUPPORT_EMAIL}`}
+                    className="text-cyan-400 underline hover:text-cyan-300"
+                  >
+                    {SUPPORT_EMAIL}
+                  </a>{' '}
+                  to receive a machine-readable export of your data.
+                </li>
+                <li>
+                  <span className="text-zinc-200">Deletion:</span> use the
+                  in-app path Account &rarr; Delete Account, or visit{' '}
+                  <a
+                    href="/delete-account"
+                    className="text-cyan-400 underline hover:text-cyan-300"
+                  >
+                    /delete-account
+                  </a>
+                  .
+                </li>
+                <li>
+                  <span className="text-zinc-200">Correction:</span> update
+                  most fields in-app; email support for anything you cannot
+                  edit yourself.
+                </li>
+                <li>
+                  <span className="text-zinc-200">
+                    Withdraw consent / opt out:
+                  </span>{' '}
+                  revoke HealthKit, Bluetooth, location, or notification
+                  permissions in iOS Settings at any time.
+                </li>
+              </ul>
             </CardContent>
           </Card>
 
           <Card className="border-0 bg-zinc-900/60 ring-white/5">
             <CardHeader>
               <CardTitle className="text-white">
-                Cookies, Analytics, and Similar Technologies
+                Children&apos;s Privacy
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
               <p>
-                Our website and services may use cookies, local storage,
-                session tokens, and analytics tools to remember your session,
-                understand performance, secure the service, and improve the
-                experience.
-              </p>
-              <p>
-                You can usually control cookies through your browser settings
-                and control app permissions through your device settings.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 bg-zinc-900/60 ring-white/5">
-            <CardHeader>
-              <CardTitle className="text-white">Data Retention</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
-              <p>
-                We retain information for as long as reasonably necessary to
-                provide the service, maintain your account, comply with legal
-                obligations, resolve disputes, and enforce our agreements.
-              </p>
-              <p>
-                Retention periods vary by data type. For example, account and
-                purchase records may be retained longer than temporary session
-                or cache data. When data is no longer needed, we delete or
-                de-identify it where practical.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 bg-zinc-900/60 ring-white/5">
-            <CardHeader>
-              <CardTitle className="text-white">
-                Your Choices and Privacy Rights
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
-              <p>
-                Depending on where you live, you may have rights to access,
-                correct, delete, export, or limit certain uses of your personal
-                information. You may also have the right to opt out of certain
-                communications.
-              </p>
-              <p>
-                You can request account deletion through our{' '}
-                <a
-                  href="/delete-account"
-                  className="text-cyan-400 underline hover:text-cyan-300"
-                >
-                  Delete Account
-                </a>{' '}
-                page or by contacting us. We may need to keep limited
-                information where required for security, fraud prevention,
-                accounting, or legal compliance.
-              </p>
-              <p>
-                To make a privacy request, email{' '}
+                GearSnitch is rated for users aged 13 and up. We do not
+                knowingly collect personal data from anyone under 13, and the
+                service is not intended to be used by children under that age.
+                If you believe a child under 13 has provided personal data to
+                us, contact{' '}
                 <a
                   href={`mailto:${SUPPORT_EMAIL}`}
                   className="text-cyan-400 underline hover:text-cyan-300"
                 >
                   {SUPPORT_EMAIL}
-                </a>
-                .
+                </a>{' '}
+                and we will delete it.
               </p>
             </CardContent>
           </Card>
@@ -272,58 +378,46 @@ export default function PrivacyPolicyPage() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
               <p>
-                We use administrative, technical, and organizational safeguards
-                designed to protect personal information. These may include
-                encryption in transit, access controls, authentication tokens,
-                monitoring, and vendor security measures.
+                Data in transit is protected with TLS 1.2+. Passwords are
+                hashed with bcrypt. Database backups and at-rest storage are
+                encrypted. Access to production systems is restricted to a
+                small set of named operators.
               </p>
               <p>
-                No system is perfectly secure, and we cannot guarantee absolute
-                security. You should also protect your own devices, accounts,
-                and login credentials.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 bg-zinc-900/60 ring-white/5">
-            <CardHeader>
-              <CardTitle className="text-white">Children&apos;s Privacy</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
-              <p>
-                GearSnitch is not directed to children under 13, and we do not
-                knowingly collect personal information from them. If you believe
-                a child has provided personal information to us, contact us so
-                we can investigate and take appropriate action.
+                No system is perfectly secure. Use a strong, unique password
+                and enable platform-level protections (Face ID, device
+                passcode) on your phone.
               </p>
             </CardContent>
           </Card>
 
           <Card className="border-0 bg-zinc-900/60 ring-white/5">
             <CardHeader>
-              <CardTitle className="text-white">Changes to This Policy</CardTitle>
+              <CardTitle className="text-white">
+                Changes to This Policy
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
               <p>
-                We may update this Privacy Policy from time to time. If we make
-                material changes, we will post the updated version here and
-                revise the effective date above. Your continued use of
-                GearSnitch after the update takes effect means the revised
-                policy applies to your future use.
+                When we make material changes we will revise the &quot;Last
+                updated&quot; date above and, where required by law, give you
+                advance notice. Continued use of GearSnitch after the changes
+                take effect means you accept the revised policy.
               </p>
             </CardContent>
           </Card>
 
           <Card className="border-0 bg-zinc-900/60 ring-white/5">
             <CardHeader>
-              <CardTitle className="text-white">Contact Us</CardTitle>
+              <CardTitle className="text-white">Contact</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
               <p>
-                For privacy questions, requests, or complaints, contact us at:
+                For privacy questions, data-export requests, or complaints,
+                email us:
               </p>
               <div className="mt-2 rounded-lg bg-zinc-800/50 p-4">
-                <p className="font-medium text-zinc-200">GearSnitch Support</p>
+                <p className="font-medium text-zinc-200">GearSnitch Privacy</p>
                 <p>
                   Email:{' '}
                   <a

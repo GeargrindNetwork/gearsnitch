@@ -8,7 +8,191 @@ import { Workout } from '../../models/Workout.js';
 import { GymSession } from '../../models/GymSession.js';
 import { Run } from '../../models/Run.js';
 import { Device } from '../../models/Device.js';
+import { User } from '../../models/User.js';
+import { enqueuePushNotification } from '../../services/pushNotificationQueue.js';
+import logger from '../../utils/logger.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
+
+/**
+ * Item #27 — workout-completion summary push.
+ *
+ * The minimum number of seconds a workout must run before we'll bother
+ * sending a summary push. Anything shorter is almost certainly an
+ * accidental tap-and-finish (e.g. user opens the app, presses Start,
+ * realises they tapped the wrong thing, presses Stop). Apple-native
+ * Fitness uses a similar "no credit for sub-minute workouts" floor.
+ */
+const WORKOUT_SUMMARY_PUSH_MIN_DURATION_SECONDS = 60;
+
+interface WorkoutSummaryPushContext {
+  userId: Types.ObjectId;
+  workoutId: Types.ObjectId;
+  startedAt: Date;
+  endedAt: Date;
+  durationSeconds: number;
+  exerciseCount: number;
+  setCount: number;
+  source: string;
+  // Calories aren't tracked on the Workout model today (the schema is
+  // weights-based: exercises[].sets[].reps/weightKg). The field is here so
+  // the push body can include calories the moment Workout.calories ships
+  // (e.g. via #10 iPhone-native HKWorkoutSession import). When undefined
+  // the body just lists duration + exercises.
+  calories?: number | null;
+  distanceMeters?: number | null;
+}
+
+interface WorkoutSummaryPushPayload {
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+}
+
+export function buildWorkoutSummaryPushPayload(
+  ctx: WorkoutSummaryPushContext,
+): WorkoutSummaryPushPayload {
+  const durationMin = Math.max(1, Math.round(ctx.durationSeconds / 60));
+  const parts: string[] = [];
+  parts.push(`${durationMin} min`);
+  if (typeof ctx.calories === 'number' && ctx.calories > 0) {
+    parts.push(`${Math.round(ctx.calories)} cal`);
+  }
+  if (ctx.exerciseCount > 0) {
+    parts.push(`${ctx.exerciseCount} exercise${ctx.exerciseCount === 1 ? '' : 's'}`);
+  }
+  if (typeof ctx.distanceMeters === 'number' && ctx.distanceMeters > 0) {
+    const km = Math.round((ctx.distanceMeters / 1_000) * 10) / 10;
+    parts.push(`${km} km`);
+  }
+
+  return {
+    title: 'Nice work!',
+    body: `Workout complete — ${parts.join(', ')}.`,
+    data: {
+      type: 'workout_summary',
+      workoutId: String(ctx.workoutId),
+      durationSec: ctx.durationSeconds,
+      exerciseCount: ctx.exerciseCount,
+      setCount: ctx.setCount,
+      ...(typeof ctx.calories === 'number' ? { calories: Math.round(ctx.calories) } : {}),
+      ...(typeof ctx.distanceMeters === 'number'
+        ? { distanceMeters: Math.round(ctx.distanceMeters) }
+        : {}),
+    },
+  };
+}
+
+/**
+ * Decide whether a freshly-completed workout should fire a summary push.
+ * Returns the skip reason (string) if not, or `null` if the push should
+ * proceed. Pure function so it's trivial to unit-test the skip cases
+ * without spinning up Mongo / Express.
+ */
+export function shouldSkipWorkoutSummaryPush(args: {
+  durationSeconds: number;
+  exerciseCount: number;
+  setCount: number;
+  source: string;
+  preferences: {
+    pushEnabled?: boolean;
+    workoutSummaryPushDisabled?: boolean;
+  } | null | undefined;
+}): string | null {
+  const prefs = args.preferences ?? {};
+  if (prefs.pushEnabled === false) {
+    return 'push_disabled';
+  }
+  if (prefs.workoutSummaryPushDisabled === true) {
+    return 'workout_summary_disabled';
+  }
+  if (args.source === 'manual' || args.source === 'apple_health') {
+    // Manual / Apple-Health backfill — don't notify the user about a
+    // workout they're typing in or one HealthKit synced from history.
+    return 'manual_or_backfill';
+  }
+  if (args.durationSeconds < WORKOUT_SUMMARY_PUSH_MIN_DURATION_SECONDS) {
+    return 'too_short';
+  }
+  if (args.exerciseCount === 0 && args.setCount === 0) {
+    return 'no_metrics';
+  }
+  return null;
+}
+
+async function maybeEnqueueWorkoutSummaryPush(
+  workout: {
+    _id: Types.ObjectId;
+    userId: Types.ObjectId;
+    startedAt: Date;
+    endedAt: Date;
+    exercises: Array<{ sets?: Array<unknown> }>;
+    source: string;
+  },
+  requestId?: string,
+): Promise<void> {
+  try {
+    const durationSeconds = computeDurationSeconds(workout.startedAt, workout.endedAt);
+    const exerciseCount = Array.isArray(workout.exercises) ? workout.exercises.length : 0;
+    const setCount = Array.isArray(workout.exercises)
+      ? workout.exercises.reduce(
+          (total, exercise) => total + (Array.isArray(exercise.sets) ? exercise.sets.length : 0),
+          0,
+        )
+      : 0;
+
+    const userDoc = await User.findById(workout.userId)
+      .select({ preferences: 1 })
+      .lean();
+    const preferences = userDoc?.preferences ?? null;
+
+    const skip = shouldSkipWorkoutSummaryPush({
+      durationSeconds,
+      exerciseCount,
+      setCount,
+      source: workout.source,
+      preferences,
+    });
+    if (skip) {
+      logger.info('Workout summary push skipped', {
+        correlationId: requestId,
+        workoutId: String(workout._id),
+        userId: String(workout.userId),
+        reason: skip,
+      });
+      return;
+    }
+
+    const payload = buildWorkoutSummaryPushPayload({
+      userId: workout.userId,
+      workoutId: workout._id,
+      startedAt: workout.startedAt,
+      endedAt: workout.endedAt,
+      durationSeconds,
+      exerciseCount,
+      setCount,
+      source: workout.source,
+    });
+
+    await enqueuePushNotification({
+      userId: String(workout.userId),
+      type: 'workout_summary',
+      title: payload.title,
+      body: payload.body,
+      data: payload.data,
+      // Idempotent — the worker dedupes per workoutId so re-completing the
+      // same workout won't re-notify the user.
+      dedupeKey: `workout-summary:${String(workout._id)}`,
+    });
+  } catch (err) {
+    // Best-effort: workout completion succeeded, push enqueue is bonus.
+    logger.warn('Workout summary push enqueue failed (non-fatal)', {
+      correlationId: requestId,
+      workoutId: String(workout._id),
+      userId: String(workout.userId),
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
 
 const router = Router();
 
@@ -641,6 +825,7 @@ router.patch(
         workout.startedAt = new Date(body.startedAt);
       }
 
+      const wasAlreadyCompleted = workout.endedAt != null;
       if (body.endedAt !== undefined) {
         workout.endedAt = body.endedAt ? new Date(body.endedAt) : null;
       }
@@ -663,6 +848,24 @@ router.patch(
       const updatedWorkout = await Workout.findById(workout._id)
         .populate('gymId', 'name')
         .lean();
+
+      // Treat a PATCH that transitions endedAt from null → set as a
+      // completion event (some clients ship completion via PATCH instead
+      // of POST /:id/complete). Same first-time-only guard as the
+      // dedicated complete endpoint.
+      if (!wasAlreadyCompleted && workout.endedAt) {
+        await maybeEnqueueWorkoutSummaryPush(
+          {
+            _id: workout._id,
+            userId: workout.userId,
+            startedAt: workout.startedAt,
+            endedAt: workout.endedAt,
+            exercises: workout.exercises ?? [],
+            source: workout.source,
+          },
+          req.requestId,
+        );
+      }
 
       successResponse(res, serializeWorkout(updatedWorkout ?? workout.toObject()));
     } catch (err) {
@@ -740,6 +943,8 @@ router.post(
         return;
       }
 
+      const wasAlreadyCompleted = workout.endedAt != null;
+
       workout.endedAt = endedAt;
       workout.durationMinutes = computeDurationMinutes(workout.startedAt, endedAt);
       await workout.save();
@@ -748,13 +953,29 @@ router.post(
         .populate('gymId', 'name')
         .lean();
 
-      // TODO(gemini-insights): once PR #69 (feat/workout-summary-push-item-27)
-      // merges, wire `generateWorkoutInsight({...})` from
-      // `../../services/geminiClient` into the workout-summary push path here
-      // and append the returned string (if non-null) to the push body,
-      // keeping total body < 230 chars. The geminiClient is feature-flagged
-      // via GEMINI_INSIGHTS_ENABLED and fails closed, so this wire-up is
-      // safe to add without further guarding.
+      // Only fire the summary push on the *first* completion. Re-completing
+      // a workout (e.g. user editing endedAt on an already-finished one)
+      // should not spam them with another push.
+      //
+      // Follow-up: wire `generateWorkoutInsight` from ../../services/geminiClient
+      // into `maybeEnqueueWorkoutSummaryPush` so the push body includes a
+      // Gemini-generated coaching sentence. The geminiClient is feature-flagged
+      // via GEMINI_INSIGHTS_ENABLED and fails closed, so wiring it is safe.
+      if (!wasAlreadyCompleted) {
+        await maybeEnqueueWorkoutSummaryPush(
+          {
+            _id: workout._id,
+            userId: workout.userId,
+            startedAt: workout.startedAt,
+            endedAt,
+            exercises: workout.exercises ?? [],
+            source: workout.source,
+          },
+          req.requestId,
+        );
+      }
+
+
       successResponse(res, serializeWorkout(completedWorkout ?? workout.toObject()));
     } catch (err) {
       errorResponse(
