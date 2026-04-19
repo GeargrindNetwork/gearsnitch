@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import fs from 'fs'
 import { execSync } from 'child_process'
 import { defineConfig } from 'vite'
@@ -39,5 +40,13 @@ export default defineConfig({
     __APP_BUILD_ID__: JSON.stringify(buildId),
     __APP_BUILD_TIME__: JSON.stringify(buildTime),
     __APP_GIT_SHA__: JSON.stringify(gitSha),
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache'],
   },
 })

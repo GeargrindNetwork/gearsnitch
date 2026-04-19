@@ -1,12 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect } from 'react';
 import { initGA, trackPageView } from './lib/analytics';
 import { useLocation } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
-import { AuthProvider, RequireAuth, RequireAdmin } from './lib/auth';
-import { ReleaseProvider, RequireSupportedRelease } from './lib/release';
+import { AuthProvider, RequireAdmin } from './lib/auth';
+import { ReleaseProvider } from './lib/release';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ProtectedAppRoute } from './routes/ProtectedAppRoute';
 
 import LandingPage from './pages/LandingPage';
 import StorePage from './pages/StorePage';
@@ -37,14 +38,6 @@ function PageTracker() {
   const location = useLocation();
   useEffect(() => { trackPageView(location.pathname); }, [location]);
   return null;
-}
-
-function ProtectedAppRoute({ children }: { children: ReactNode }) {
-  return (
-    <RequireAuth>
-      <RequireSupportedRelease>{children}</RequireSupportedRelease>
-    </RequireAuth>
-  );
 }
 
 export default function App() {
