@@ -45,6 +45,10 @@ const updateMeSchema = z.object({
   displayName: z.string().trim().min(1).max(120).optional(),
   avatarURL: z.string().trim().min(1).max(2048).optional(),
   preferences: z.record(z.string()).optional(),
+  // Top-level structured boolean preferences. Kept separate from the free-form
+  // string `preferences` map so the schema stays explicit and we don't have to
+  // shoehorn booleans into the `custom` string-only record.
+  workoutSummaryPushDisabled: z.boolean().optional(),
   onboardingCompletedAt: z.string().datetime().optional(),
   permissionsState: z.object({
     bluetooth: z.enum(PERMISSION_STATE_VALUES).optional(),
@@ -147,11 +151,12 @@ router.patch(
         };
       }
 
-      if (body.preferences !== undefined) {
+      if (body.preferences !== undefined || body.workoutSummaryPushDisabled !== undefined) {
         const existingPreferences = user.preferences ?? {
           pushEnabled: false,
           panicAlertsEnabled: false,
           disconnectAlertsEnabled: false,
+          workoutSummaryPushDisabled: false,
           custom: {},
         };
 
@@ -160,9 +165,13 @@ router.patch(
           panicAlertsEnabled: existingPreferences.panicAlertsEnabled ?? false,
           disconnectAlertsEnabled:
             existingPreferences.disconnectAlertsEnabled ?? false,
+          workoutSummaryPushDisabled:
+            body.workoutSummaryPushDisabled
+            ?? existingPreferences.workoutSummaryPushDisabled
+            ?? false,
           custom: {
             ...(existingPreferences.custom ?? {}),
-            ...body.preferences,
+            ...(body.preferences ?? {}),
           },
         };
       }

@@ -22,6 +22,14 @@ export interface IMedicationDose extends Document {
   occurredAt: Date;
   notes: string | null;
   source: MedicationDoseSource;
+  /**
+   * HealthKit `HKMedicationDose` UUID (string form). Sparse — only set when the
+   * dose was either pushed to or pulled from Apple Health via the iOS
+   * HealthKit Medications sync (item #7). Used to dedupe round-trips so a dose
+   * created in GearSnitch and then read back from HealthKit on the next pull
+   * does not get re-inserted as a duplicate row.
+   */
+  appleHealthDoseId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,6 +63,7 @@ const MedicationDoseSchema = new Schema<IMedicationDose>(
       enum: ['manual', 'ios', 'web', 'imported'],
       default: 'manual',
     },
+    appleHealthDoseId: { type: String, default: null, sparse: true, index: true },
   },
   { timestamps: true },
 );
@@ -62,5 +71,12 @@ const MedicationDoseSchema = new Schema<IMedicationDose>(
 MedicationDoseSchema.index({ userId: 1, dateKey: 1, category: 1, occurredAt: -1 });
 MedicationDoseSchema.index({ userId: 1, dayOfYear: 1, occurredAt: -1 });
 MedicationDoseSchema.index({ userId: 1, cycleId: 1, occurredAt: -1 });
+// Sparse compound index — used to dedupe HealthKit-originated doses on a
+// per-user basis. Only the rows that have been touched by the iOS HealthKit
+// Medications sync (item #7) carry this field, so the index stays small.
+MedicationDoseSchema.index(
+  { userId: 1, appleHealthDoseId: 1 },
+  { unique: true, sparse: true },
+);
 
 export const MedicationDose = mongoose.model<IMedicationDose>('MedicationDose', MedicationDoseSchema);

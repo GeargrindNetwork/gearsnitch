@@ -36,6 +36,14 @@ const medicationDoseAmountSchema = z.object({
   unit: medicationDoseUnitSchema,
 });
 
+const appleHealthDoseIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(128)
+  .nullable()
+  .optional();
+
 const createMedicationDoseSchema = z.object({
   cycleId: z.string().min(1).nullable().optional(),
   dateKey: medicationDateKeySchema.optional(),
@@ -45,6 +53,7 @@ const createMedicationDoseSchema = z.object({
   occurredAt: z.string().datetime(),
   notes: z.union([z.string().trim().max(4000), z.null()]).optional().default(null),
   source: medicationDoseSourceSchema.optional().default('manual'),
+  appleHealthDoseId: appleHealthDoseIdSchema,
 });
 
 const updateMedicationDoseSchema = z
@@ -57,6 +66,7 @@ const updateMedicationDoseSchema = z
     occurredAt: z.string().datetime().optional(),
     notes: z.union([z.string().trim().max(4000), z.null()]).optional(),
     source: medicationDoseSourceSchema.optional(),
+    appleHealthDoseId: appleHealthDoseIdSchema,
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field must be provided',
@@ -80,6 +90,7 @@ type MedicationDoseRecord = {
   occurredAt: Date | string;
   notes?: string | null;
   source: MedicationDoseSource;
+  appleHealthDoseId?: string | null;
   createdAt?: Date | string;
   updatedAt?: Date | string;
 };
@@ -135,6 +146,7 @@ function serializeMedicationDose(dose: MedicationDoseRecord) {
     occurredAt: toIsoString(dose.occurredAt),
     notes: dose.notes ?? null,
     source: dose.source,
+    appleHealthDoseId: dose.appleHealthDoseId ?? null,
     createdAt: toIsoString(dose.createdAt),
     updatedAt: toIsoString(dose.updatedAt),
   };
@@ -159,6 +171,7 @@ function buildPersistedMedicationDose(
     occurredAt,
     notes: body.notes ?? null,
     source: body.source ?? 'manual',
+    appleHealthDoseId: body.appleHealthDoseId ?? null,
   };
 }
 
@@ -195,6 +208,9 @@ function buildMedicationDosePatch(body: UpdateMedicationDoseBody) {
   if (body.dose) {
     patch.dose = body.dose;
     patch.doseMg = normalizeDoseToMg(body.dose.value, body.dose.unit);
+  }
+  if ('appleHealthDoseId' in body) {
+    patch.appleHealthDoseId = body.appleHealthDoseId ?? null;
   }
 
   return patch;
@@ -269,9 +285,44 @@ router.post(
       const userId = new Types.ObjectId(user.sub);
       const body = req.body as CreateMedicationDoseBody;
 
+      // HealthKit dedupe: if this dose carries an appleHealthDoseId we have
+      // already ingested for this user (e.g. the iOS app pulled it from
+      // HealthKit on a later foreground sync after also pushing it on local
+      // log), return the existing row instead of inserting a duplicate. The
+      // sparse unique compound index `{userId, appleHealthDoseId}` would
+      // otherwise reject on E11000 — handle it explicitly so the client can
+      // treat the call as idempotent.
+      if (body.appleHealthDoseId) {
+        const existing = await MedicationDose.findOne({
+          userId,
+          appleHealthDoseId: body.appleHealthDoseId,
+        }).lean();
+        if (existing) {
+          successResponse(res, { dose: serializeMedicationDose(existing) }, StatusCodes.OK);
+          return;
+        }
+      }
+
       const dose = await MedicationDose.create(buildPersistedMedicationDose(userId, body));
       successResponse(res, { dose: serializeMedicationDose(dose) }, StatusCodes.CREATED);
     } catch (err) {
+      // Race-window guard: another concurrent POST may have inserted the same
+      // appleHealthDoseId between the findOne and the create. Mongo throws
+      // E11000 — treat as a successful idempotent retry.
+      if ((err as { code?: number }).code === 11000) {
+        const userIdObj = new Types.ObjectId((req.user as JwtPayload).sub);
+        const body = req.body as CreateMedicationDoseBody;
+        if (body.appleHealthDoseId) {
+          const existing = await MedicationDose.findOne({
+            userId: userIdObj,
+            appleHealthDoseId: body.appleHealthDoseId,
+          }).lean();
+          if (existing) {
+            successResponse(res, { dose: serializeMedicationDose(existing) }, StatusCodes.OK);
+            return;
+          }
+        }
+      }
       errorResponse(
         res,
         StatusCodes.INTERNAL_SERVER_ERROR,

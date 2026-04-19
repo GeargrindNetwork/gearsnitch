@@ -10,7 +10,21 @@ import {
   logAutoGearAssigned,
   incrementGearForWorkoutMetrics,
 } from '../gear/autoAttach.js';
+import { User } from '../../models/User.js';
+import { enqueuePushNotification } from '../../services/pushNotificationQueue.js';
+import logger from '../../utils/logger.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
+
+/**
+ * Item #27 — run-completion summary push. Mirrors the workout flow but with
+ * run-specific copy (distance, pace, optional avg HR if it's ever wired in).
+ *
+ * Floor below which we skip the push entirely. Apple Fitness ignores anything
+ * shorter than ~1 minute / a few hundred metres; we use the same idea so the
+ * user isn't pinged for a 5-second accidental Start→Stop.
+ */
+const RUN_SUMMARY_PUSH_MIN_DURATION_SECONDS = 60;
+const RUN_SUMMARY_PUSH_MIN_DISTANCE_METERS = 50;
 
 const router = Router();
 const EARTH_RADIUS_METERS = 6_371_000;
@@ -173,6 +187,159 @@ function serializeRunSummary(run: Record<string, any>) {
     createdAt: run.createdAt,
     updatedAt: run.updatedAt,
   };
+}
+
+function formatPaceMinPerKm(secondsPerKm: number | null): string | null {
+  if (!secondsPerKm || secondsPerKm <= 0) {
+    return null;
+  }
+  const minutes = Math.floor(secondsPerKm / 60);
+  const seconds = Math.round(secondsPerKm - minutes * 60);
+  return `${minutes}:${String(seconds).padStart(2, '0')}/km`;
+}
+
+interface RunSummaryPushPayload {
+  title: string;
+  body: string;
+  data: Record<string, unknown>;
+}
+
+interface RunSummaryPushContext {
+  userId: Types.ObjectId;
+  runId: Types.ObjectId;
+  durationSeconds: number;
+  distanceMeters: number;
+  averagePaceSecondsPerKm: number | null;
+  // Avg HR isn't tracked on the Run model today (no HR field on RunSchema).
+  // Plumbed through so once #21 / external HR sources land, the body can
+  // append "(avg HR 154)" without a second deploy.
+  averageHeartRateBpm?: number | null;
+}
+
+export function buildRunSummaryPushPayload(
+  ctx: RunSummaryPushContext,
+): RunSummaryPushPayload {
+  const km = Math.round((ctx.distanceMeters / 1_000) * 10) / 10;
+  const pace = formatPaceMinPerKm(ctx.averagePaceSecondsPerKm);
+  const durationMin = Math.max(1, Math.round(ctx.durationSeconds / 60));
+  const headline = pace
+    ? `${km} km in ${pace}`
+    : `${km} km in ${durationMin} min`;
+  const hrSuffix =
+    typeof ctx.averageHeartRateBpm === 'number' && ctx.averageHeartRateBpm > 0
+      ? ` (avg HR ${Math.round(ctx.averageHeartRateBpm)})`
+      : '';
+
+  return {
+    title: 'Run complete!',
+    body: `${headline}${hrSuffix}`,
+    data: {
+      type: 'run_summary',
+      runId: String(ctx.runId),
+      durationSec: ctx.durationSeconds,
+      distanceMeters: Math.round(ctx.distanceMeters),
+      ...(ctx.averagePaceSecondsPerKm
+        ? { averagePaceSecondsPerKm: ctx.averagePaceSecondsPerKm }
+        : {}),
+      ...(typeof ctx.averageHeartRateBpm === 'number'
+        ? { averageHeartRateBpm: Math.round(ctx.averageHeartRateBpm) }
+        : {}),
+    },
+  };
+}
+
+/**
+ * Pure skip-decision helper for the run summary push. Same shape as the
+ * workout side so tests can hit identical assertions.
+ */
+export function shouldSkipRunSummaryPush(args: {
+  durationSeconds: number;
+  distanceMeters: number;
+  source: string;
+  preferences: {
+    pushEnabled?: boolean;
+    workoutSummaryPushDisabled?: boolean;
+  } | null | undefined;
+}): string | null {
+  const prefs = args.preferences ?? {};
+  if (prefs.pushEnabled === false) {
+    return 'push_disabled';
+  }
+  if (prefs.workoutSummaryPushDisabled === true) {
+    return 'workout_summary_disabled';
+  }
+  if (args.source === 'manual') {
+    return 'manual_or_backfill';
+  }
+  if (
+    args.durationSeconds < RUN_SUMMARY_PUSH_MIN_DURATION_SECONDS
+    && args.distanceMeters < RUN_SUMMARY_PUSH_MIN_DISTANCE_METERS
+  ) {
+    return 'too_short';
+  }
+  if (args.distanceMeters <= 0 && args.durationSeconds <= 0) {
+    return 'no_metrics';
+  }
+  return null;
+}
+
+async function maybeEnqueueRunSummaryPush(
+  run: {
+    _id: Types.ObjectId;
+    userId: Types.ObjectId;
+    durationSeconds: number;
+    distanceMeters: number;
+    averagePaceSecondsPerKm: number | null;
+    source: string;
+  },
+  requestId?: string,
+): Promise<void> {
+  try {
+    const userDoc = await User.findById(run.userId)
+      .select({ preferences: 1 })
+      .lean();
+    const preferences = userDoc?.preferences ?? null;
+
+    const skip = shouldSkipRunSummaryPush({
+      durationSeconds: run.durationSeconds,
+      distanceMeters: run.distanceMeters,
+      source: run.source,
+      preferences,
+    });
+    if (skip) {
+      logger.info('Run summary push skipped', {
+        correlationId: requestId,
+        runId: String(run._id),
+        userId: String(run.userId),
+        reason: skip,
+      });
+      return;
+    }
+
+    const payload = buildRunSummaryPushPayload({
+      userId: run.userId,
+      runId: run._id,
+      durationSeconds: run.durationSeconds,
+      distanceMeters: run.distanceMeters,
+      averagePaceSecondsPerKm: run.averagePaceSecondsPerKm,
+    });
+
+    await enqueuePushNotification({
+      userId: String(run.userId),
+      type: 'run_summary',
+      title: payload.title,
+      body: payload.body,
+      data: payload.data,
+      dedupeKey: `run-summary:${String(run._id)}`,
+    });
+  } catch (err) {
+    logger.warn('Run summary push enqueue failed (non-fatal)', {
+      correlationId: requestId,
+      runId: String(run._id),
+      userId: String(run.userId),
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 function serializeRunDetail(run: Record<string, any>) {
@@ -450,6 +617,21 @@ router.post(
           },
         );
       }
+
+      // Best-effort summary push (item #27). The earlier `run.endedAt`
+      // guard above already prevents double-completion, so we don't need
+      // a separate first-completion check here.
+      await maybeEnqueueRunSummaryPush(
+        {
+          _id: run._id,
+          userId: run.userId,
+          durationSeconds: run.durationSeconds,
+          distanceMeters: run.distanceMeters,
+          averagePaceSecondsPerKm: run.averagePaceSecondsPerKm,
+          source: run.source,
+        },
+        req.requestId,
+      );
 
       successResponse(res, serializeRunDetail(run.toObject()));
     } catch (error) {
