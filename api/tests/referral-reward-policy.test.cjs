@@ -14,7 +14,11 @@ describe('referral reward policy regression sweep', () => {
   const supportRoutes = read('api/src/modules/support/routes.ts');
   const supportPage = read('web/src/pages/SupportPage.tsx');
   const accountPage = read('web/src/pages/AccountPage.tsx');
-  const landingPage = read('web/src/pages/LandingPage.tsx');
+  // Item #36 split `LandingPage.tsx` into a 2-variant dispatcher that
+  // delegates to `LandingV1.tsx` (control) / `LandingV2.tsx` (variant).
+  // The referral policy copy lives on the control; v2 is marketing-focused
+  // and intentionally does not mention reward days.
+  const landingV1 = read('web/src/pages/landing/LandingV1.tsx');
 
   test('reward policy is 28 bonus days and enforced from the live API path', () => {
     expect(referralModel).toContain('rewardDays: { type: Number, default: 28 },');
@@ -33,6 +37,6 @@ describe('referral reward policy regression sweep', () => {
     expect(supportRoutes).toContain('28 bonus days');
     expect(supportPage).toContain('28 bonus days');
     expect(accountPage).toContain('28 bonus days');
-    expect(landingPage).toContain('28 bonus days');
+    expect(landingV1).toContain('28 bonus days');
   });
 });
