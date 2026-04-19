@@ -45,7 +45,10 @@ describe('stripe subscription contract', () => {
   });
 
   test('POST validates tier against price map', () => {
-    expect(routes).toContain('STRIPE_PRICE_MAP[tier]');
+    // Validation now goes through the type-safe `isWebSubscriptionTier` guard
+    // (see checkoutService.ts) — STRIPE_PRICE_MAP remains as the human-facing
+    // tier-name reference but is no longer the validator key.
+    expect(routes).toMatch(/isWebSubscriptionTier|STRIPE_PRICE_MAP\[tier\]/);
     expect(routes).toContain('Invalid tier');
   });
 

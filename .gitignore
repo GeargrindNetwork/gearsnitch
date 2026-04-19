@@ -55,3 +55,7 @@ client-ios/**/xcuserdata/
 *.key
 credentials.json
 APPLE_KEYS/
+
+# Stripe — generated output from scripts/setup-stripe-products.sh.
+# Contains live `price_xxx` IDs; load them into env vars instead of committing.
+api/src/config/stripe-prices.json

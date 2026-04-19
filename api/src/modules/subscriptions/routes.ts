@@ -16,6 +16,13 @@ import { handleAppleSignedNotification } from './appleServerNotifications.js';
 import { PaymentService, PaymentError } from '../../services/PaymentService.js';
 import { User } from '../../models/User.js';
 import logger from '../../utils/logger.js';
+import {
+  CheckoutSessionError,
+  createSubscriptionCheckoutSession,
+  getTierConfig,
+  isWebSubscriptionTier,
+  type WebSubscriptionTier,
+} from './checkoutService.js';
 
 const APPLE_MANAGE_URL = 'https://apps.apple.com/account/subscriptions';
 const paymentService = new PaymentService();
@@ -151,60 +158,113 @@ router.post('/apple/notifications', async (req: Request, res: Response) => {
 });
 
 // ─── Stripe Web Subscription Flow ─────────────────────────────────────────
+//
+// External-web-only conversion path. Per App Store guideline 3.1.1 the iOS
+// binary must NOT link to these endpoints — users hit `/subscribe` in Safari
+// directly. iOS subscribers continue to use StoreKit IAP (see
+// `/validate-apple` above + `appleServerNotifications.ts`).
 
+// Tier metadata still surfaced to legacy clients of POST /subscriptions.
+// Real Stripe Price IDs are loaded from env via checkoutService.ts so live
+// IDs never land in the repo.
 const STRIPE_PRICE_MAP: Record<string, { tier: string; plan: string; price: number }> = {
   hustle: { tier: 'monthly', plan: 'HUSTLE', price: 499 },
   hwmf: { tier: 'annual', plan: 'HWMF', price: 6000 },
   babyMomma: { tier: 'lifetime', plan: 'BABY MOMMA', price: 9900 },
 };
 
-// POST /subscriptions — create Stripe Checkout session
-router.post('/', isAuthenticated, async (req: Request, res: Response) => {
-  try {
-    const { tier, successUrl } = req.body as {
-      tier?: string;
-      successUrl?: string;
-      cancelUrl?: string;
-    };
+interface CheckoutBody {
+  tier?: string;
+  successUrl?: string;
+  cancelUrl?: string;
+}
 
-    if (!tier || !STRIPE_PRICE_MAP[tier]) {
-      errorResponse(res, StatusCodes.BAD_REQUEST, `Invalid tier. Must be one of: ${Object.keys(STRIPE_PRICE_MAP).join(', ')}`);
+async function createCheckoutHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const userId = req.user!.sub;
+  const { tier, successUrl, cancelUrl } = (req.body ?? {}) as CheckoutBody;
+
+  if (!tier || !isWebSubscriptionTier(tier)) {
+    errorResponse(
+      res,
+      StatusCodes.BAD_REQUEST,
+      `Invalid tier. Must be one of: ${Object.keys(STRIPE_PRICE_MAP).join(', ')}`,
+    );
+    return;
+  }
+
+  if (!successUrl || typeof successUrl !== 'string') {
+    errorResponse(res, StatusCodes.BAD_REQUEST, 'successUrl is required');
+    return;
+  }
+  if (!cancelUrl || typeof cancelUrl !== 'string') {
+    errorResponse(res, StatusCodes.BAD_REQUEST, 'cancelUrl is required');
+    return;
+  }
+
+  try {
+    const result = await createSubscriptionCheckoutSession({
+      userId,
+      tier: tier as WebSubscriptionTier,
+      successUrl,
+      cancelUrl,
+    });
+
+    const tierCfg = getTierConfig(tier as WebSubscriptionTier);
+
+    successResponse(
+      res,
+      {
+        checkoutUrl: result.checkoutUrl,
+        sessionId: result.sessionId,
+        tier: tierCfg.plan,
+        mode: tierCfg.mode,
+      },
+      StatusCodes.CREATED,
+    );
+  } catch (err) {
+    if (err instanceof CheckoutSessionError) {
+      errorResponse(res, err.statusCode, err.message);
       return;
     }
-
-    const plan = STRIPE_PRICE_MAP[tier];
-
-    // TODO: Replace with actual Stripe Checkout session creation
-    // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    // const session = await stripe.checkout.sessions.create({
-    //   mode: plan.tier === 'lifetime' ? 'payment' : 'subscription',
-    //   line_items: [{ price: plan.stripePriceId, quantity: 1 }],
-    //   success_url: successUrl,
-    //   cancel_url: cancelUrl,
-    //   client_reference_id: userId,
-    //   metadata: { tier, userId },
-    // });
-
-    successResponse(res, {
-      checkoutUrl: successUrl || '/account',
-      tier: plan.plan,
-      price: plan.price / 100,
-      currency: 'USD',
-      message: 'Stripe Checkout integration pending — subscription recorded locally',
-    }, StatusCodes.CREATED);
-  } catch (err) {
-    errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to create subscription', (err as Error).message);
+    const message = err instanceof Error ? err.message : 'Failed to create checkout session';
+    logger.error('subscription.checkout.failed', { userId, tier, error: message });
+    errorResponse(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to create checkout session',
+      message,
+    );
   }
-});
+}
+
+// POST /subscriptions/checkout — create a Stripe Checkout Session and return
+// the redirect URL. This is the canonical web subscribe endpoint (item #28).
+router.post('/checkout', isAuthenticated, createCheckoutHandler);
+
+// POST /subscriptions — backward-compatible alias. Older callers (and the
+// `createSubscription` helper in web/src/lib/api.ts) post here. Same behavior.
+router.post('/', isAuthenticated, createCheckoutHandler);
 
 // PATCH /subscriptions — upgrade subscription tier
+//
+// Implemented as "open a fresh Checkout Session for the new tier and let
+// Stripe handle proration / payment-method collection". This avoids
+// shipping a half-baked direct subscription-update flow that would also
+// need to handle invoice generation, dunning, and SCA challenges.
 router.patch('/', isAuthenticated, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.sub;
-    const { tier } = req.body as { tier?: string };
+    const { tier, successUrl, cancelUrl } = (req.body ?? {}) as CheckoutBody;
 
-    if (!tier || !STRIPE_PRICE_MAP[tier]) {
-      errorResponse(res, StatusCodes.BAD_REQUEST, `Invalid tier. Must be one of: ${Object.keys(STRIPE_PRICE_MAP).join(', ')}`);
+    if (!tier || !isWebSubscriptionTier(tier)) {
+      errorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        `Invalid tier. Must be one of: ${Object.keys(STRIPE_PRICE_MAP).join(', ')}`,
+      );
       return;
     }
 
@@ -214,18 +274,61 @@ router.patch('/', isAuthenticated, async (req: Request, res: Response) => {
       return;
     }
 
-    const plan = STRIPE_PRICE_MAP[tier];
+    if (!successUrl || !cancelUrl) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'successUrl and cancelUrl are required');
+      return;
+    }
 
-    // TODO: Call Stripe to update the subscription
-    // await stripe.subscriptions.update(currentSub.stripeSubscriptionId, { items: [{ price: newPriceId }] });
+    const result = await createSubscriptionCheckoutSession({
+      userId,
+      tier: tier as WebSubscriptionTier,
+      successUrl,
+      cancelUrl,
+    });
+
+    const tierCfg = getTierConfig(tier as WebSubscriptionTier);
 
     successResponse(res, {
-      tier: plan.plan,
-      price: plan.price / 100,
-      message: 'Stripe upgrade integration pending',
+      checkoutUrl: result.checkoutUrl,
+      sessionId: result.sessionId,
+      tier: tierCfg.plan,
+      mode: tierCfg.mode,
     });
   } catch (err) {
-    errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to upgrade subscription', (err as Error).message);
+    if (err instanceof CheckoutSessionError) {
+      errorResponse(res, err.statusCode, err.message);
+      return;
+    }
+    errorResponse(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to upgrade subscription',
+      (err as Error).message,
+    );
+  }
+});
+
+// POST /subscriptions/stripe/webhook — Stripe-signed subscription events.
+//
+// Subscription-lifecycle alias for the same handler used at
+// `/store/payments/webhook`. Useful when configuring Stripe → multiple
+// webhook endpoints for separation of concerns. Both paths are
+// signature-verified and idempotent on `event.id`.
+router.post('/stripe/webhook', async (req: Request, res: Response) => {
+  try {
+    const signature = req.headers['stripe-signature'];
+    if (!signature || typeof signature !== 'string') {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'Missing stripe-signature header');
+      return;
+    }
+
+    const event = paymentService.constructWebhookEvent(req.body as Buffer, signature);
+    await paymentService.handleWebhookEvent(event);
+
+    successResponse(res, { received: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Webhook processing failed';
+    errorResponse(res, StatusCodes.BAD_REQUEST, message);
   }
 });
 

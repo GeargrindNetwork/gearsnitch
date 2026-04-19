@@ -938,24 +938,53 @@ export async function getSubscription(): Promise<SubscriptionStatus> {
   return res.data;
 }
 
+export type WebSubscriptionTier = 'hustle' | 'hwmf' | 'babyMomma';
+
+export interface CheckoutSessionResponse {
+  checkoutUrl: string;
+  sessionId: string;
+  tier: string;
+  mode: 'subscription' | 'payment';
+}
+
 /**
- * @deprecated DO NOT USE. The backing `POST /subscriptions` endpoint is currently a stub:
- * it returns a fake `checkoutUrl` (the `successUrl` echoed back) without ever creating a
- * real Stripe Checkout Session or a Subscription row. Calling this from the UI and then
- * redirecting the user produces a misleading "subscribed" success state — a P0 trust bug.
- *
- * This function is intentionally retained (not deleted) to avoid breaking any other
- * in-flight callers, but no UI surface should invoke it until the real Stripe Checkout
- * integration ships in the Wave B PR. Route new purchase flows through the iOS app.
+ * Create a real Stripe Checkout Session for one of the three web subscription
+ * tiers (item #28). The caller is expected to redirect the browser to
+ * `checkoutUrl` immediately. The Subscription row is created server-side by
+ * the `checkout.session.completed` webhook handler.
+ */
+export async function createSubscriptionCheckout(input: {
+  tier: WebSubscriptionTier;
+  successUrl?: string;
+  cancelUrl?: string;
+}): Promise<CheckoutSessionResponse> {
+  const successUrl =
+    input.successUrl ?? `${window.location.origin}/account/subscription/success`;
+  const cancelUrl = input.cancelUrl ?? `${window.location.origin}/subscribe`;
+
+  const res = await api.post<CheckoutSessionResponse>('/subscriptions/checkout', {
+    tier: input.tier,
+    successUrl,
+    cancelUrl,
+  });
+  if (!res.success || !res.data) {
+    throw new Error(res.error?.message || 'Failed to create checkout session');
+  }
+  return res.data;
+}
+
+/**
+ * @deprecated Use {@link createSubscriptionCheckout} instead. Kept as a thin
+ * shim for any in-flight callers — now points to the real Stripe Checkout
+ * endpoint and returns the real Stripe-hosted URL (no longer a fake echo).
  */
 export async function createSubscription(tier: string): Promise<{ checkoutUrl: string; tier: string; price: number }> {
-  const res = await api.post<{ checkoutUrl: string; tier: string; price: number }>('/subscriptions', {
-    tier,
-    successUrl: `${window.location.origin}/account?subscribed=true`,
-    cancelUrl: `${window.location.origin}/account`,
+  const session = await createSubscriptionCheckout({
+    tier: tier as WebSubscriptionTier,
+    successUrl: `${window.location.origin}/account/subscription/success`,
+    cancelUrl: `${window.location.origin}/subscribe`,
   });
-  if (!res.success || !res.data) throw new Error(res.error?.message || 'Failed to create subscription');
-  return res.data;
+  return { checkoutUrl: session.checkoutUrl, tier: session.tier, price: 0 };
 }
 
 export async function cancelSubscription(): Promise<void> {
