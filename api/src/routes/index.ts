@@ -29,6 +29,7 @@ import medicationsRoutes from '../modules/medications/routes.js';
 import labsRoutes from '../modules/labs/routes.js';
 import emergencyContactsRoutes from '../modules/emergency-contacts/routes.js';
 import metricsRoutes from '../modules/metrics/routes.js';
+import ecgRoutes from '../modules/ecg/routes.js';
 
 const router = Router();
 
@@ -97,5 +98,6 @@ router.use('/medications', medicationsRoutes);
 router.use('/labs', labsRoutes);
 router.use('/emergency-contacts', emergencyContactsRoutes);
 router.use('/metrics', metricsRoutes);
+router.use('/ecg', ecgRoutes);
 
 export default router;

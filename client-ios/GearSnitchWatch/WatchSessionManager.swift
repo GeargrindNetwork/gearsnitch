@@ -115,6 +115,14 @@ final class WatchSessionManager: NSObject, ObservableObject {
     }
 
     private func handleLiveMessage(_ message: [String: Any]) {
+        // Dispatch ECG commands from the iPhone to WatchECGController before
+        // the WatchMessageType switch (the ECG command type lives outside the
+        // enum so the shared enum stays stable across targets).
+        if let typeRaw = message["type"] as? String, typeRaw == "ecgCommand" {
+            WatchECGController.shared.handleCommand(dictionary: message)
+            return
+        }
+
         guard let typeRaw = message["type"] as? String,
               let type = WatchMessageType(rawValue: typeRaw) else { return }
 
