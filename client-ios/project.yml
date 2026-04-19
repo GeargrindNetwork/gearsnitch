@@ -79,11 +79,17 @@ targets:
       # - package: GoogleSignIn
       - target: GearSnitchWidgets
         embed: true
+        codeSign: true
       # Embed the Watch app so it installs on the paired Apple Watch when
       # the iPhone app installs. Without this, GearSnitch.app/Watch/ is
       # empty and the Watch app never reaches the user's wrist.
+      # `codeSign: true` makes xcodegen emit `CodeSignOnCopy` in the pbxproj
+      # ATTRIBUTES so the embed phase is "Embed & Sign" rather than
+      # "Embed Without Signing" — the Watch install will fail on device
+      # with the Watch app unsigned ("could not be installed at this time").
       - target: GearSnitchWatch
         embed: true
+        codeSign: true
     scheme:
       testTargets:
         - GearSnitchTests
@@ -147,6 +153,7 @@ targets:
     dependencies:
       - target: GearSnitchWatchWidgets
         embed: true
+        codeSign: true
 
   GearSnitchWatchWidgets:
     type: app-extension
