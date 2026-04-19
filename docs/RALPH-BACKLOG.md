@@ -13,7 +13,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | — | APNs push sender (item #19 prep) | merged | [#48](https://github.com/GeargrindNetwork/gearsnitch/pull/48) |
 | 5 | Weekly reconciliation cron for subscription state drift | merged | [#50](https://github.com/GeargrindNetwork/gearsnitch/pull/50) |
 | 35 | Dark-mode consistency pass | merged | [#53](https://github.com/GeargrindNetwork/gearsnitch/pull/53) |
-| S2 | 3-tab nav rebuild (Gear / Train / Chemistry + avatar) | pr-open | _PR URL pending_ |
+| S2 | 3-tab nav rebuild (Gear / Train / Chemistry + avatar) | pr-open | [#88](https://github.com/GeargrindNetwork/gearsnitch/pull/88) |
 
 ## Queued — ranked by impact × (1/complexity)
 
