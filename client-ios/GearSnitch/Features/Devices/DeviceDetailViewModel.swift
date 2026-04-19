@@ -57,6 +57,10 @@ final class DeviceDetailViewModel: ObservableObject {
     @Published var error: String?
     @Published var showDeleteConfirm = false
     @Published var didDelete = false
+    /// Gear components (shoe, chain, ...) linked to this paired BLE device.
+    /// Populated lazily after the device payload arrives so the badge renders
+    /// without blocking the primary device-detail load.
+    @Published var linkedGear: [GearComponentDTO] = []
 
     let deviceId: String
     private let apiClient = APIClient.shared
@@ -88,6 +92,23 @@ final class DeviceDetailViewModel: ObservableObject {
         }
 
         isLoading = false
+        // Fire-and-forget — the gear list loads asynchronously and is purely
+        // additive UI (a badge). Failures are silent so the primary device
+        // experience stays unaffected.
+        Task { await loadLinkedGear() }
+    }
+
+    /// Loads gear components linked to this device so we can show a small
+    /// "Shoes — 312/400mi" badge inline on DeviceDetailView. Silent on
+    /// failure — the badge is purely additive.
+    func loadLinkedGear() async {
+        do {
+            let all = try await GearService.shared.list()
+            linkedGear = all.filter { $0.deviceId == deviceId }
+        } catch {
+            // Silent — badge is non-critical.
+            linkedGear = []
+        }
     }
 
     func toggleMonitoring() async {

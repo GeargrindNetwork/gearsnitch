@@ -63,6 +63,12 @@ struct DeviceDetailView: View {
                 // Bluetooth info
                 bluetoothInfoSection(device)
 
+                // Linked gear badges (item #4 — surface tracked components
+                // associated with this BLE device, e.g. "Shoes — 312/400mi").
+                if !viewModel.linkedGear.isEmpty {
+                    linkedGearSection
+                }
+
                 // Device info
                 infoSection(device)
 
@@ -162,6 +168,52 @@ struct DeviceDetailView: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.gsBorder, lineWidth: 1)
             )
+        }
+    }
+
+    // MARK: - Linked Gear
+
+    private var linkedGearSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Tracked Gear", systemImage: "shoeprints.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.gsText)
+
+            VStack(spacing: 8) {
+                ForEach(viewModel.linkedGear) { gear in
+                    NavigationLink {
+                        GearDetailView(componentId: gear.id)
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(gear.name)
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundColor(.gsText)
+                                    .lineLimit(1)
+                                Text("\(formatValue(gear.currentValue))/\(formatValue(gear.lifeLimit)) \(gear.unit)")
+                                    .font(.caption)
+                                    .foregroundColor(.gsTextSecondary)
+                            }
+                            Spacer()
+                            Text("\(Int((gear.usagePct * 100).rounded()))%")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(bandColor(gear.usageBand))
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundColor(.gsTextSecondary)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(Color.gsSurface)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.gsBorder, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
 
