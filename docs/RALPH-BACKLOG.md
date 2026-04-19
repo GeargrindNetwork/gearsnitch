@@ -54,6 +54,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 37 | GPS run polylines + route map | 5 | L | 2 | ios,api | pending | CoreLocation + MapKit. |
 | 38 | Apple Watch companion workout sync | 5 | L | 2 | ios | pending | **Affected by #10** — model must handle iPhone-originated workouts with Watch as optional sensor. |
 | 39 | Achievement badges (streaks, milestones) | 5 | M | 2 | ios,api | pending | 7d/30d streaks, 100 sessions, first run, first purchase. |
+| 40 | Labs v1 — Rupa Health integration | 9 | L | 1 | api,worker,ios | pending | **Founder decision 2026-04-18: Rupa selected.** Blood-only launch, reuse Rupa Services as physician-of-record. Implement all 6 `NotImplementedError` endpoints in `RupaHealthProvider.ts`, order status polling worker, results-ready push, iOS results view. **Blocked on pricing-model sub-decision** (pass-through vs practitioner-pay). See `docs/prds/prd-labs-launch-decision.md`. |
 
 ## Blocked
 
@@ -72,7 +73,7 @@ Items escalated here require explicit user approval before spawning a coding age
 | S3 | Onboarding "first win" restructure | Requires pillar decision | Defer permission gauntlet; let user pair a device / log a gym / browse store first. |
 | S4 | Retire / demote unused features (Mesh Chat, Stopwatch, BMI calc) | Requires product decision | Per ultrathink redesign. |
 | S5 | KMS envelope encryption on PHI — scope expansion (BAA inventory + audit-log retention) | Tier 1 (encryption keys + PHI) | 2026 HIPAA guidance: AES-256 at rest + TLS 1.3 + audit logs + BAAs. |
-| S6 | Lab PDF upload + biomarker extraction (WHOOP Advanced Labs parity) | Biomarker storage may qualify as PHI | WHOOP 2025 launch; our lab-draw scheduler is stubbed, this unblocks without Rupa/LabCorp. High impact (9) but needs storage-design signoff. |
+| S6 | Lab PDF upload + biomarker extraction (WHOOP Advanced Labs parity) | Biomarker storage may qualify as PHI | WHOOP 2025 launch; complementary to item #40 (Rupa integration — founder chose Rupa on 2026-04-18). High impact (9) but needs storage-design signoff. |
 
 ## Tick protocol
 
