@@ -1,8 +1,10 @@
+import Charts
 import MapKit
 import SwiftUI
 
 struct DeviceDetailView: View {
     @StateObject private var viewModel: DeviceDetailViewModel
+    @StateObject private var signalHistoryViewModel: SignalHistoryViewModel
     @ObservedObject private var bleManager = BLEManager.shared
     @ObservedObject private var batteryReader = BLEManager.shared.batteryLevelReader
     @Environment(\.dismiss) private var dismiss
@@ -13,6 +15,9 @@ struct DeviceDetailView: View {
 
     init(deviceId: String) {
         _viewModel = StateObject(wrappedValue: DeviceDetailViewModel(deviceId: deviceId))
+        _signalHistoryViewModel = StateObject(
+            wrappedValue: SignalHistoryViewModel(deviceId: deviceId)
+        )
     }
 
     var body: some View {
@@ -50,6 +55,7 @@ struct DeviceDetailView: View {
         }
         .task {
             await viewModel.loadDevice()
+            await signalHistoryViewModel.load()
         }
     }
 
@@ -63,6 +69,9 @@ struct DeviceDetailView: View {
 
                 // Bluetooth info
                 bluetoothInfoSection(device)
+
+                // Signal history chart + weekly-drop warning (item #19).
+                signalHistorySection
 
                 // Linked gear badges (item #4 — surface tracked components
                 // associated with this BLE device, e.g. "Shoes — 312/400mi").
@@ -182,6 +191,117 @@ struct DeviceDetailView: View {
                     .stroke(Color.gsBorder, lineWidth: 1)
             )
         }
+    }
+
+    // MARK: - Signal History (item #19)
+
+    private var signalHistorySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Signal History", systemImage: "waveform.path.ecg")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.gsText)
+
+            if signalHistoryViewModel.shouldShowWeeklyDropWarning {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.subheadline)
+                        .foregroundColor(.gsWarning)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Signal dropped \(signalHistoryViewModel.weeklyDropDbm)+ dBm this week.")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.gsText)
+                        Text("Check device placement or battery.")
+                            .font(.caption)
+                            .foregroundColor(.gsTextSecondary)
+                    }
+                    Spacer()
+                }
+                .padding(12)
+                .background(Color.gsWarning.opacity(0.15))
+                .cornerRadius(12)
+            }
+
+            Group {
+                if signalHistoryViewModel.isLoading && signalHistoryViewModel.history == nil {
+                    signalHistoryShimmer
+                } else if let history = signalHistoryViewModel.history,
+                          !history.buckets.isEmpty {
+                    signalHistoryChart(buckets: history.buckets)
+                } else {
+                    emptySignalHistoryPlaceholder
+                }
+            }
+            .frame(height: 180)
+            .padding(12)
+            .background(Color.gsSurface)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.gsBorder, lineWidth: 1)
+            )
+
+            if let lifetimeAvg = signalHistoryViewModel.history?.lifetimeAvg {
+                Text("7-day average: \(Int(lifetimeAvg.rounded())) dBm")
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+            }
+        }
+    }
+
+    private func signalHistoryChart(buckets: [SignalHistoryBucket]) -> some View {
+        Chart(buckets) { bucket in
+            LineMark(
+                x: .value("Time", bucket.ts),
+                y: .value("RSSI", bucket.avgRssi)
+            )
+            .foregroundStyle(Color.gsEmerald)
+            .interpolationMethod(.catmullRom)
+        }
+        .chartYScale(domain: -100 ... -30)
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel(format: .dateTime.hour())
+            }
+        }
+        .chartYAxis {
+            AxisMarks(values: .automatic(desiredCount: 4)) { value in
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel {
+                    if let v = value.as(Double.self) {
+                        Text("\(Int(v)) dBm")
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
+    }
+
+    private var signalHistoryShimmer: some View {
+        // Lightweight pulsing placeholder while the GET is inflight.
+        RoundedRectangle(cornerRadius: 8)
+            .fill(Color.gsBorder.opacity(0.35))
+            .overlay(
+                ProgressView()
+                    .tint(.gsEmerald)
+            )
+    }
+
+    private var emptySignalHistoryPlaceholder: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "antenna.radiowaves.left.and.right.slash")
+                .font(.title3)
+                .foregroundColor(.gsTextSecondary)
+            Text("No signal history yet.")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+            Text("Samples start collecting on the next scan.")
+                .font(.caption2)
+                .foregroundColor(.gsTextSecondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Linked Gear

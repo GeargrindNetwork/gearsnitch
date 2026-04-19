@@ -1,10 +1,18 @@
 # PRD — Labs Launch Decision (v1 critical path)
 
-**Status:** Draft — awaiting founder decision
+**Status:** DECIDED — founder selected **Option B: Rupa Health (v1)** on 2026-04-18
 **Owner:** Founder (compliance + revenue model) / Eng (execution)
-**Target decision date:** 72 hours. THIS GATES THE LAUNCH CRITICAL PATH.
+**Decided:** 2026-04-18
 **Blocks:** v1 submission date, App Review category, HIPAA/BAA scope, Chemistry tab content
 **Source:** existing labs abstraction in `api/src/modules/labs/*`; `ScheduleLabsView` in iOS; `docs/RALPH-BACKLOG.md` S6
+
+## Decision summary (2026-04-18)
+
+**Chosen: Rupa Health (Option B).** Blood-only launch scope, reuse Rupa
+Services as physician-of-record. Integration work queued as a new Ralph
+backlog item ("Labs v1 — Rupa Health integration"). Pricing model
+(pass-through vs practitioner-pay) remains open and will be resolved in a
+follow-up discussion before implementation kickoff.
 
 ## Context: current state
 
@@ -84,20 +92,19 @@ Three sentences:
 
 ## Decision table
 
-| Option | Founder choice (X one) | Decision date | Rationale (1–2 sentences) |
+| Option | Founder choice | Decision date | Rationale (1–2 sentences) |
 |---|---|---|---|
-| A — Ship v1 without labs (recommended) | | | |
-| B — Ship v1 with Rupa Health | | | |
+| A — Ship v1 without labs | | | |
+| **B — Ship v1 with Rupa Health** | **Chosen: Rupa Health** | 2026-04-18 | Ships the labs differentiator in the v1 window while Rupa absorbs physician-of-record + BAA scope; LabCorp's 8–16 week timeline doesn't fit. |
 | C — Ship v1 with LabCorp direct | | | |
 
-**If B or C selected, sub-decisions:**
+**Sub-decisions (B selected):**
 
 | Sub-decision | Choice | Rationale |
 |---|---|---|
-| Pricing model (pass-through vs practitioner-pay) | | |
-| Physician of record (own vs Rupa Services) | | |
-| Launch scope (blood-only vs full at-home suite) | | |
+| Pricing model (pass-through vs practitioner-pay) | **OPEN — follow-up discussion required** | Founder deferred; revisit before Rupa integration agent is spawned. Default assumption while deferred is pass-through for v1. |
+| Physician of record (own vs Rupa Services) | **Rupa Services** | Reuse Rupa's physician network for v1; revisit at 500 orders/month. |
+| Launch scope (blood-only vs full at-home suite) | **Blood-only** | Minimum viable loop; one self-collect + one phlebotomy partner. Saliva + stool deferred. |
 
-**Target decision date:** within 72 hours of this doc being opened — labs is the single largest scope-vs-timeline lever remaining for v1.
-**Decided by:** ____________________
-**If A: follow-up tickets** — (1) hide `ScheduleLabsView` nav entry, (2) return 503 + `coming_soon` payload from `api/src/modules/labs/routes.ts`, (3) write "Labs fast-follow" spec targeting v1.1.
+**Decided by:** Founder, 2026-04-18
+**Next step:** Ralph backlog item "Labs v1 — Rupa Health integration" (pending) will be built in a future agent spawn once pricing-model sub-decision is resolved.

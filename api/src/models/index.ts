@@ -22,6 +22,9 @@ export type { IDeviceEvent } from './DeviceEvent';
 export { DeviceShare } from './DeviceShare';
 export type { IDeviceShare } from './DeviceShare';
 
+export { RssiSample } from './RssiSample';
+export type { IRssiSample } from './RssiSample';
+
 export { Gym } from './Gym';
 export type { IGym } from './Gym';
 
