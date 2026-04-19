@@ -8,6 +8,12 @@ export interface INotificationToken extends Document {
   environment: 'sandbox' | 'production';
   active: boolean;
   lastUsedAt?: Date;
+  /**
+   * Set by the worker when APNs reports `Unregistered` or `BadDeviceToken`
+   * for this token. We keep the row around for audit / analytics but flip
+   * `active` to false so it isn't retried.
+   */
+  unregisteredAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,9 +27,11 @@ const NotificationTokenSchema = new Schema<INotificationToken>(
       type: String,
       enum: ['sandbox', 'production'],
       required: true,
+      default: 'production',
     },
     active: { type: Boolean, default: true },
     lastUsedAt: { type: Date },
+    unregisteredAt: { type: Date },
   },
   { timestamps: true }
 );
