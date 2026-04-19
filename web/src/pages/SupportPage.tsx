@@ -121,10 +121,11 @@ const faqs: Faq[] = [
     answer: (
       <p>
         Share your referral link or QR code (Account &rarr; Referrals). When
-        someone signs up through it and starts a paid plan, both of you receive
-        a 28-day subscription bonus. Share via Universal Link, the in-app QR
-        sheet, or any messaging app. There is no cap on how many people you
-        can refer.
+        someone signs up through it and starts a paid plan, you earn{' '}
+        <span className="text-white">28 bonus days</span> on your active paid
+        subscription (and they get their own welcome bonus). Share via
+        Universal Link, the in-app QR sheet, or any messaging app. There is
+        no cap on how many people you can refer.
       </p>
     ),
   },
