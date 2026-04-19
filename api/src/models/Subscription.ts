@@ -1,12 +1,22 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
+export type SubscriptionStatus =
+  | 'active'
+  | 'expired'
+  | 'grace_period'
+  | 'cancelled'
+  | 'past_due'
+  | 'refunded'
+  | 'revoked';
+
 export interface ISubscription extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   provider: string;
   providerOriginalTransactionId: string;
+  originalTransactionId?: string;
   productId: string;
-  status: 'active' | 'expired' | 'grace_period' | 'cancelled' | 'past_due';
+  status: SubscriptionStatus;
   purchaseDate: Date;
   expiryDate: Date;
   lastValidatedAt: Date;
@@ -24,10 +34,19 @@ const SubscriptionSchema = new Schema<ISubscription>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     provider: { type: String, default: 'apple' },
     providerOriginalTransactionId: { type: String, required: true },
+    originalTransactionId: { type: String },
     productId: { type: String, required: true },
     status: {
       type: String,
-      enum: ['active', 'expired', 'grace_period', 'cancelled', 'past_due'],
+      enum: [
+        'active',
+        'expired',
+        'grace_period',
+        'cancelled',
+        'past_due',
+        'refunded',
+        'revoked',
+      ],
       required: true,
     },
     purchaseDate: { type: Date, required: true },
@@ -48,7 +67,8 @@ SubscriptionSchema.index(
 );
 SubscriptionSchema.index({ userId: 1, status: 1 });
 SubscriptionSchema.index({ expiryDate: 1 });
-SubscriptionSchema.index({ stripeSubscriptionId: 1 }, { sparse: true });
+SubscriptionSchema.index({ originalTransactionId: 1 });
+// `stripeSubscriptionId` already has a sparse index from the field def.
 
 export const Subscription = mongoose.model<ISubscription>(
   'Subscription',

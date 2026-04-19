@@ -1,16 +1,18 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 /**
- * Tracks Stripe webhook events we have already processed so duplicate
- * deliveries become idempotent no-ops.
+ * Tracks webhook events (Apple App Store Server Notifications v2,
+ * Stripe, etc.) that have already been processed so duplicate deliveries
+ * become idempotent no-ops.
  *
  * TTL: documents expire ~7 days after insert. Stripe retries for up to
- * 3 days, so 7 days gives us headroom without bloating the collection.
+ * 3 days; Apple retries for up to 5 days. 7 days gives headroom without
+ * bloating the collection.
  */
 export interface IProcessedWebhookEvent extends Document {
-  eventId: string;
-  provider: string;
-  type: string;
+  eventId: string;       // Stripe event.id OR Apple notificationUUID
+  provider: string;      // 'stripe' | 'apple'
+  type: string;          // Stripe event type OR Apple notificationType
   createdAt: Date;
 }
 

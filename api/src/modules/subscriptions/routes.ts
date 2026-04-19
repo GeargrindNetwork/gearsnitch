@@ -12,6 +12,7 @@ import {
   processOutstandingReferralRewardsForReferrer,
   processReferralQualificationForReferredUser,
 } from '../referrals/referralService.js';
+import { handleAppleSignedNotification } from './appleServerNotifications.js';
 import { PaymentService, PaymentError } from '../../services/PaymentService.js';
 import { User } from '../../models/User.js';
 import logger from '../../utils/logger.js';
@@ -104,6 +105,48 @@ router.post('/validate-apple', isAuthenticated, async (req: Request, res: Respon
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Validation failed';
     errorResponse(res, StatusCodes.BAD_REQUEST, message);
+  }
+});
+
+// POST /subscriptions/apple/notifications — App Store Server Notifications v2
+//
+// Apple posts signed JWS payloads to this endpoint on subscription lifecycle
+// events (DID_RENEW, REFUND, REVOKE, EXPIRED, GRACE_PERIOD_EXPIRED,
+// DID_CHANGE_RENEWAL_STATUS, DID_FAIL_TO_RENEW, SUBSCRIBED, ...). The signature
+// IS the authentication — Apple does not send a bearer token, so this route
+// must NOT use isAuthenticated. Configure the URL in App Store Connect under
+// App Information > App Store Server Notifications.
+router.post('/apple/notifications', async (req: Request, res: Response) => {
+  try {
+    const { signedPayload } = req.body as { signedPayload?: unknown };
+
+    if (typeof signedPayload !== 'string' || !signedPayload.trim()) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'signedPayload is required');
+      return;
+    }
+
+    const result = await handleAppleSignedNotification(signedPayload);
+
+    if (result.status === 'invalid') {
+      errorResponse(res, StatusCodes.BAD_REQUEST, result.reason);
+      return;
+    }
+
+    // Always ack with 200 — Apple retries on 5xx, so duplicates, unknown types,
+    // and successfully processed notifications all return 200 to avoid storms.
+    successResponse(res, {
+      received: true,
+      status: result.status,
+      notificationType: 'notificationType' in result ? result.notificationType : undefined,
+    });
+  } catch (err) {
+    // Log internally but still return 5xx so Apple retries — this is the one
+    // case where a retry is genuinely useful (transient DB failure).
+    logger.error('Failed to process Apple server notification', {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to process notification');
   }
 });
 
