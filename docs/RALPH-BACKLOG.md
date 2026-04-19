@@ -41,7 +41,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 23 | Notifications history page | 5 | S | 2 | web | pending | Surfaces APNs/push-log per user. |
 | 24 | Web test framework (Vitest + RTL) | 5 | M | 2 | web | pending | Tier 1 surfaces first. |
 | 25 | Referral dashboard polish (referrer-side) | 4 | S | 2 | ios | pending | Earlier proposal from item #2 agent. |
-| 26 | App Store review prompting | 5 | S | 2 | ios | pr-open | SKStoreReviewController gated on 3rd workout / 5th pair / 7th session + 14-day install age + 30-day cooldown. PR: _pending push_ |
+| 26 | App Store review prompting | 5 | S | 2 | ios | pr-open | SKStoreReviewController gated on 3rd workout / 5th pair / 7th session + 14-day install age + 30-day cooldown. PR: [#93](https://github.com/GeargrindNetwork/gearsnitch/pull/93) |
 | 27 | Workout summary push after session end | 5 | M | 2 | api,worker,ios | merged | Landed as [#69](https://github.com/GeargrindNetwork/gearsnitch/pull/69). |
 | 28 | Stripe Checkout for web subscriptions | 5 | M | 2 | web,api | merged | Landed as [#70](https://github.com/GeargrindNetwork/gearsnitch/pull/70). |
 | 29 | iOS CI workflow (macos-14 + xcodebuild test) | 4 | M | 2 | infra | merged | Landed as [#60](https://github.com/GeargrindNetwork/gearsnitch/pull/60). |
