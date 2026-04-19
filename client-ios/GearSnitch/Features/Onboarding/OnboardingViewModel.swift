@@ -217,6 +217,17 @@ final class OnboardingViewModel: ObservableObject {
     // MARK: - Permission Requests
 
     func requestBluetoothPermission() {
+        #if targetEnvironment(simulator)
+        // iOS Simulator doesn't have Bluetooth radio — CBCentralManager
+        // state stays `.unsupported` forever and the delegate never fires,
+        // which strands the user on the Bluetooth onboarding step. Auto-
+        // advance with `granted: true` so the rest of the flow can be
+        // exercised; real-device builds still request the real permission.
+        bluetoothGranted = true
+        Task { await syncPermissionsState() }
+        advance()
+        return
+        #else
         let authorization = CBManager.authorization
 
         if authorization != .notDetermined {
@@ -230,6 +241,7 @@ final class OnboardingViewModel: ObservableObject {
             }
             return
         }
+        #endif
 
         // Create a CBCentralManager to trigger the system prompt.
         // We hold a strong reference to the delegate to keep it alive.

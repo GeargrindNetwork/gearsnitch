@@ -39,16 +39,19 @@ final class BatteryLevelReader: NSObject, ObservableObject {
 
     // MARK: - Constants
 
-    static let batteryServiceUUID = CBUUID(string: "180F")
-    static let batteryLevelCharacteristicUUID = CBUUID(string: "2A19")
+    nonisolated static let batteryServiceUUID = CBUUID(string: "180F")
+    nonisolated static let batteryLevelCharacteristicUUID = CBUUID(string: "2A19")
 
     /// Threshold (percent) below which the low-battery handler fires.
-    static let lowBatteryThreshold = 20
+    /// `nonisolated` so the default-argument expression on
+    /// `crossedLowBattery(threshold:)` (evaluated in a nonisolated call
+    /// context) can reference it without Swift 6 concurrency diagnostics.
+    nonisolated static let lowBatteryThreshold = 20
 
     /// Minimum interval between outbound `PATCH /devices/:id/battery`
     /// posts for the same device. Covers chatty peripherals that notify
     /// every few seconds.
-    static let postRateLimit: TimeInterval = 5 * 60
+    nonisolated static let postRateLimit: TimeInterval = 5 * 60
 
     // MARK: - Published
 

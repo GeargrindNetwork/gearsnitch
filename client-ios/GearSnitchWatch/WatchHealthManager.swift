@@ -185,8 +185,12 @@ final class WatchHealthManager: NSObject, ObservableObject {
         guard workoutState == .running || workoutState == .paused else { return }
         let endDate = Date()
         workoutSession?.end()
-        workoutBuilder?.endCollection(withEnd: endDate) { [weak self] _, _ in
-            self?.workoutBuilder?.finishWorkout { _, _ in
+        // Capture builder locally so the Sendable completion closures don't
+        // have to reach back through the MainActor-isolated `self` to access
+        // `self.workoutBuilder` (Swift 6 strict concurrency warning).
+        let builder = workoutBuilder
+        builder?.endCollection(withEnd: endDate) { _, _ in
+            builder?.finishWorkout { [weak self] _, _ in
                 Task { @MainActor in
                     guard let self else { return }
                     self.workoutState = .ended

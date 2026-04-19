@@ -96,6 +96,13 @@ public struct HealthKitMedicationDoseSample: Equatable {
 
 /// Seam that isolates the HealthKit-bound calls from the rest of the app so
 /// the sync flow can be exercised with a fake in unit tests.
+///
+/// Isolated to `@MainActor` because the concrete implementation
+/// (`HealthKitMedicationsSync`) owns `HKHealthStore` which — by our
+/// convention — is only touched on the main actor. Matching the protocol's
+/// actor isolation to the conforming type avoids Swift 6 "conformance
+/// crosses into main actor-isolated code" data-race diagnostics.
+@MainActor
 public protocol HealthKitMedicationsAPI: AnyObject {
     /// True only on iOS 18.4+ with HealthKit available on the device.
     var isMedicationsAvailable: Bool { get }

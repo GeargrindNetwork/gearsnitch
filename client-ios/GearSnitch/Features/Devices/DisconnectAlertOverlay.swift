@@ -68,7 +68,7 @@ struct DisconnectAlertOverlay: View {
             perfLog.info("DisconnectAlertOverlay disappeared for device: \(self.deviceName, privacy: .public)")
             countdownTask?.cancel()
         }
-        .onChange(of: bleManager.connectedDevices.map(\.identifier)) { connected in
+        .onChange(of: bleManager.connectedDevices.map(\.identifier)) { _, connected in
             perfLog.info("Connected devices changed. Monitoring reconnection for: \(self.deviceIdentifier.uuidString, privacy: .public)")
             // Auto-clear if device reconnects
             if connected.contains(deviceIdentifier) {
