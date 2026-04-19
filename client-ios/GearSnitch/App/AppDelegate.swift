@@ -26,6 +26,26 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         return true
     }
 
+    // MARK: - Scene Configuration
+    //
+    // Routes new scene connections to `SceneDelegate`, which hooks iOS 26's
+    // `HKHealthStore.recoverActiveWorkoutSession(completion:)` so a workout
+    // in flight when the app crashed is re-attached to
+    // `ActiveWorkoutViewModel` (backlog item #10 — iPhone-native workout
+    // session + crash recovery).
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let config = UISceneConfiguration(
+            name: "Default",
+            sessionRole: connectingSceneSession.role
+        )
+        config.delegateClass = SceneDelegate.self
+        return config
+    }
+
     // MARK: - Remote Notifications
 
     func application(
