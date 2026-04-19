@@ -33,7 +33,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 16 | Rest timer between sets | 6 | S | 2 | ios | pr-open | 30s/60s/90s/custom. Background audio cue. PR: [#75](https://github.com/GeargrindNetwork/gearsnitch/pull/75) |
 | 17 | BLE battery level (0x180F) | 6 | S | 2 | ios | pending | Read + surface on DeviceDetailView. Low-battery push at <20%. Route through AccessorySetupKit (see #6). |
 | 18 | Auto-pause run on >60s inactivity | 6 | S | 2 | ios | pr-open | RunTrackingManager low-motion detection. PR: [#80](https://github.com/GeargrindNetwork/gearsnitch/pull/80) |
-| 19 | Signal history chart (RSSI trends per device, 24h) | 5 | M | 2 | ios,api | pending | Store RSSI samples, render line chart. |
+| 19 | Signal history chart (RSSI trends per device, 24h) | 5 | M | 2 | ios,api | pr-open | Store RSSI samples, render line chart. PR pending. |
 | 20 | Dashboard trend charts (week/month/year) | 5 | M | 2 | web | pending | Pick Recharts or visx. |
 | 21 | Run pace coach — Watch haptic + headphone cadence tone | 7 | M | 2 | ios | pending | Watch haptic at drift >5%; metronome over music. |
 | 22 | Billing history page | 5 | S | 2 | web | pending | Lists Stripe invoices via `GET /subscriptions/invoices`. |

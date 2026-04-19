@@ -8,6 +8,7 @@ import { errorResponse, successResponse } from '../../utils/response.js';
 import { DeviceService, DeviceServiceError } from './deviceService.js';
 import { DeviceShare } from '../../models/DeviceShare.js';
 import { Device } from '../../models/Device.js';
+import { RssiSample } from '../../models/RssiSample.js';
 import { User } from '../../models/User.js';
 import { enqueuePushNotification } from '../../services/pushNotificationQueue.js';
 
@@ -91,6 +92,128 @@ const updateBatterySchema = z.object({
   level: z.number().int().min(0).max(100),
   readAt: z.coerce.date().optional(),
 });
+
+// RSSI history endpoints (backlog item #19).
+//
+// The iOS `RssiSampleBuffer` batches per-device RSSI readings while
+// scanning/monitoring and POSTs them in chunks. Values are in dBm and
+// should land in `[-120, 0]` (typical `[-100, -30]`). We cap the batch
+// size at 100 so a chatty peripheral or buggy client can't overwhelm a
+// single insertMany.
+export const RSSI_BATCH_LIMIT = 100;
+
+const rssiSampleSchema = z.object({
+  rssi: z.number().finite().min(-120).max(0),
+  sampledAt: z.coerce.date().optional(),
+});
+
+const ingestRssiSchema = z.object({
+  samples: z
+    .array(rssiSampleSchema)
+    .min(1, 'At least one sample is required')
+    .max(RSSI_BATCH_LIMIT, `Batch cannot exceed ${RSSI_BATCH_LIMIT} samples`),
+});
+
+const rssiHistoryQuerySchema = z.object({
+  windowHours: z.coerce.number().int().min(1).max(168).default(24),
+  buckets: z.coerce.number().int().min(1).max(240).default(60),
+});
+
+/** Single bucket in the RSSI history time-series response. */
+export interface RssiHistoryBucket {
+  ts: string;
+  avgRssi: number;
+  count: number;
+}
+
+/**
+ * Pure bucketing helper. Exposed for unit tests.
+ *
+ * Partitions `samples` across `bucketCount` equal-width buckets that
+ * span `[windowStart, windowEnd)`. Each bucket's `ts` is its start
+ * timestamp; its `avgRssi` is the mean of samples whose `sampledAt`
+ * falls inside it (buckets with no samples are omitted). The result is
+ * returned in chronological order.
+ */
+export function bucketRssiSamples(
+  samples: Array<{ rssi: number; sampledAt: Date }>,
+  windowStart: Date,
+  windowEnd: Date,
+  bucketCount: number,
+): RssiHistoryBucket[] {
+  if (bucketCount <= 0) return [];
+
+  const startMs = windowStart.getTime();
+  const endMs = windowEnd.getTime();
+  const totalMs = endMs - startMs;
+  if (totalMs <= 0) return [];
+
+  const bucketWidth = totalMs / bucketCount;
+  const sums = new Array<number>(bucketCount).fill(0);
+  const counts = new Array<number>(bucketCount).fill(0);
+
+  for (const sample of samples) {
+    const ts = sample.sampledAt.getTime();
+    if (ts < startMs || ts >= endMs) continue;
+    const idx = Math.min(
+      bucketCount - 1,
+      Math.floor((ts - startMs) / bucketWidth),
+    );
+    sums[idx] += sample.rssi;
+    counts[idx] += 1;
+  }
+
+  const result: RssiHistoryBucket[] = [];
+  for (let i = 0; i < bucketCount; i += 1) {
+    const count = counts[i];
+    if (count === 0) continue;
+    const avg = sums[i] / count;
+    const bucketStart = new Date(startMs + i * bucketWidth);
+    result.push({
+      ts: bucketStart.toISOString(),
+      avgRssi: Math.round(avg * 10) / 10,
+      count,
+    });
+  }
+  return result;
+}
+
+/**
+ * Computes the week-over-week average RSSI delta (this-week mean minus
+ * prior-week mean, in dBm). Positive = signal got stronger. Returns
+ * `null` if either window has no samples, so the UI can hide the
+ * warning banner instead of flashing a misleading "+0 dBm" on a new
+ * device. Exposed for unit tests.
+ */
+export function computeWeekOverWeekDelta(
+  samples: Array<{ rssi: number; sampledAt: Date }>,
+  now: Date,
+): number | null {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const thisWeekStart = now.getTime() - 7 * dayMs;
+  const priorWeekStart = now.getTime() - 14 * dayMs;
+
+  let thisSum = 0;
+  let thisCount = 0;
+  let priorSum = 0;
+  let priorCount = 0;
+
+  for (const s of samples) {
+    const ts = s.sampledAt.getTime();
+    if (ts >= thisWeekStart && ts <= now.getTime()) {
+      thisSum += s.rssi;
+      thisCount += 1;
+    } else if (ts >= priorWeekStart && ts < thisWeekStart) {
+      priorSum += s.rssi;
+      priorCount += 1;
+    }
+  }
+
+  if (thisCount === 0 || priorCount === 0) return null;
+  const thisAvg = thisSum / thisCount;
+  const priorAvg = priorSum / priorCount;
+  return Math.round((thisAvg - priorAvg) * 10) / 10;
+}
 
 // Server-side 12h cooldown between low-battery pushes per device. Tied to
 // `device.lastLowBatteryNotifiedAt` so a device that flaps below 20% every
@@ -345,6 +468,136 @@ router.patch(
     }
   },
 );
+
+// POST /devices/:id/rssi — iOS `BLEManager` POSTs a batch of RSSI
+// samples here (backlog item #19). Samples are bulk-inserted into the
+// `RssiSample` collection which is TTL-bounded to 7 days.
+router.post(
+  '/:id/rssi',
+  isAuthenticated,
+  validateBody(ingestRssiSchema),
+  async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const deviceId = getRouteParam(req, 'id');
+      const { samples } = req.body as z.infer<typeof ingestRssiSchema>;
+
+      const device = await Device.findOne({ _id: deviceId, userId }).lean();
+      if (!device) {
+        errorResponse(res, StatusCodes.NOT_FOUND, 'Device not found');
+        return;
+      }
+
+      const now = new Date();
+      const docs = samples.map((s) => ({
+        userId: device.userId,
+        deviceId: device._id,
+        rssi: s.rssi,
+        sampledAt: s.sampledAt ?? now,
+      }));
+
+      const inserted = await RssiSample.insertMany(docs, { ordered: false });
+
+      // Bonus: keep `lastSignalStrength` fresh using the latest sample
+      // in the batch so existing UI that reads it (Bluetooth info card
+      // on DeviceDetailView) doesn't go stale.
+      let latest = samples[0];
+      for (const s of samples) {
+        const sampledAt = s.sampledAt ?? now;
+        const latestAt = latest.sampledAt ?? now;
+        if (sampledAt >= latestAt) latest = s;
+      }
+      await Device.updateOne(
+        { _id: deviceId, userId },
+        {
+          $set: {
+            lastSignalStrength: Math.round(latest.rssi),
+            lastSeenAt: latest.sampledAt ?? now,
+          },
+        },
+      );
+
+      successResponse(res, {
+        inserted: inserted.length,
+      }, StatusCodes.CREATED);
+    } catch (err) {
+      handleDeviceError(req, res, err, 'Failed to ingest RSSI samples', {
+        operation: 'ingestRssiSamples',
+        deviceId: getRouteParam(req, 'id'),
+      });
+    }
+  },
+);
+
+// GET /devices/:id/rssi/history — returns bucketed RSSI time-series
+// for `DeviceDetailView`'s Signal History chart (backlog item #19).
+router.get('/:id/rssi/history', isAuthenticated, async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const deviceId = getRouteParam(req, 'id');
+
+    const parsed = rssiHistoryQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      errorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        'Invalid query parameters',
+        parsed.error.flatten(),
+      );
+      return;
+    }
+    const { windowHours, buckets } = parsed.data;
+
+    const device = await Device.findOne({ _id: deviceId, userId }).lean();
+    if (!device) {
+      errorResponse(res, StatusCodes.NOT_FOUND, 'Device not found');
+      return;
+    }
+
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - windowHours * 60 * 60 * 1000);
+    const wowStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    // Pull everything we need for both the chart window and the WoW
+    // delta in a single query so we don't double-hit the index.
+    const rangeStart = wowStart < windowStart ? wowStart : windowStart;
+    const samples = await RssiSample.find(
+      {
+        deviceId: device._id,
+        sampledAt: { $gte: rangeStart, $lte: now },
+      },
+      { rssi: 1, sampledAt: 1, _id: 0 },
+    )
+      .sort({ sampledAt: 1 })
+      .lean();
+
+    const windowSamples = samples.filter(
+      (s) => s.sampledAt >= windowStart && s.sampledAt <= now,
+    );
+    const bucketsOut = bucketRssiSamples(windowSamples, windowStart, now, buckets);
+
+    // Lifetime average across everything we still have (bounded to 7
+    // days by the TTL index, which is plenty for a "recent baseline").
+    const lifetimeAvg = samples.length
+      ? Math.round((samples.reduce((acc, s) => acc + s.rssi, 0) / samples.length) * 10) / 10
+      : null;
+
+    const weekOverWeekDelta = computeWeekOverWeekDelta(samples, now);
+
+    successResponse(res, {
+      deviceId: String(device._id),
+      windowHours,
+      buckets: bucketsOut,
+      lifetimeAvg,
+      weekOverWeekDelta,
+    });
+  } catch (err) {
+    handleDeviceError(req, res, err, 'Failed to load RSSI history', {
+      operation: 'getRssiHistory',
+      deviceId: getRouteParam(req, 'id'),
+    });
+  }
+});
 
 // POST /devices/:id/events
 router.post(
