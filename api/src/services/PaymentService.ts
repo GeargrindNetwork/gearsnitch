@@ -188,26 +188,71 @@ export class PaymentService {
 
   /**
    * Get or create a Stripe customer for the user.
+   *
+   * Resolution order:
+   *   1. If `user.stripeCustomerId` is persisted, retrieve it from Stripe.
+   *      If Stripe replies with `resource_missing` (customer was deleted),
+   *      fall through to create a fresh one and re-link.
+   *   2. Backfill path for legacy users (no persisted id): look up by email
+   *      via `stripe.customers.list` and accept a match only when
+   *      `metadata.userId` equals this user's id. This avoids cross-linking
+   *      two users who happen to share an email.
+   *   3. Create a new Stripe customer with `metadata.userId` set.
+   *
+   * In every branch that resolves a customer, `user.stripeCustomerId` is
+   * persisted so subsequent calls skip the list/create paths entirely.
    */
   async getOrCreateStripeCustomer(
     userId: string,
     email: string,
   ): Promise<string> {
-    // Search for existing customer by metadata
-    const existing = await stripe.customers.list({
-      email,
-      limit: 1,
-    });
-
-    if (existing.data.length > 0) {
-      return existing.data[0].id;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new PaymentError('User not found', 'USER_NOT_FOUND');
     }
 
+    // 1. Fast path: we already know the Stripe customer id.
+    if (user.stripeCustomerId) {
+      try {
+        const existing = await stripe.customers.retrieve(user.stripeCustomerId);
+        if (existing && !(existing as { deleted?: boolean }).deleted) {
+          return existing.id;
+        }
+        // Deleted customer object returned — fall through to recreate.
+      } catch (err: unknown) {
+        const code = (err as { code?: string }).code;
+        const message = (err as { message?: string }).message ?? '';
+        const isMissing =
+          code === 'resource_missing' || /No such customer/i.test(message);
+        if (!isMissing) {
+          throw err;
+        }
+        // Stale id — recreate below.
+      }
+    }
+
+    // 2. Backfill path: look up by email but only trust it if the Stripe
+    //    customer's metadata.userId matches us.
+    const existing = await stripe.customers.list({ email, limit: 1 });
+    const match = existing.data.find(
+      (c) =>
+        !(c as { deleted?: boolean }).deleted &&
+        c.metadata?.userId === userId,
+    );
+    if (match) {
+      user.stripeCustomerId = match.id;
+      await user.save();
+      return match.id;
+    }
+
+    // 3. Nothing usable — create a new customer and persist the link.
     const customer = await stripe.customers.create({
       email,
       metadata: { userId },
     });
 
+    user.stripeCustomerId = customer.id;
+    await user.save();
     return customer.id;
   }
 
