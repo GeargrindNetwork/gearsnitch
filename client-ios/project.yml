@@ -57,6 +57,20 @@ targets:
         com.apple.developer.healthkit: true
         com.apple.security.application-groups:
           - group.com.gearsnitch.app
+        # ---------------------------------------------------------------
+        # Apple Pay capability — DO NOT REMOVE.
+        # ---------------------------------------------------------------
+        # The merchant id below (matched against the provisioned cert
+        # `merchant.gearsnitch.app`) is the canonical declaration of the
+        # Apple Pay capability for the GearSnitch target. XcodeGen
+        # regenerates GearSnitch.entitlements from this block on every
+        # `xcodegen generate`, so as long as this stays here the
+        # entitlement survives every pbxproj rebuild.
+        #
+        # History: PR #25 first added this after a previous regen had
+        # silently stripped it. This is enforced by
+        # `scripts/check-launch-readiness.sh` (item #13 in the backlog).
+        # If you remove this line, launch-readiness CI will fail.
         com.apple.developer.in-app-payments:
           - merchant.gearsnitch.app
     dependencies:
@@ -76,6 +90,8 @@ targets:
       - path: GearSnitch/Features/Widgets
       - path: GearSnitch/Shared/Extensions/Color+GearSnitch.swift
       - path: GearSnitch/Shared/Widgets
+      - path: GearSnitch/Features/Workouts/WorkoutAppIntents.swift
+      - path: GearSnitch/Features/Workouts/WorkoutCoordinator.swift
     settings:
       base:
         INFOPLIST_FILE: GearSnitchWidgetExtension/Resources/Info.plist

@@ -49,6 +49,8 @@ const updatePreferencesSchema = z
     pushEnabled: z.boolean().optional(),
     panicAlertsEnabled: z.boolean().optional(),
     disconnectAlertsEnabled: z.boolean().optional(),
+    // Item #27 — opt-out for the post-session summary push.
+    workoutSummaryPushDisabled: z.boolean().optional(),
     custom: z.record(z.string()).optional(),
   })
   .refine(
@@ -282,6 +284,7 @@ router.patch('/preferences', isAuthenticated, async (req, res) => {
       pushEnabled: false,
       panicAlertsEnabled: false,
       disconnectAlertsEnabled: false,
+      workoutSummaryPushDisabled: false,
       custom: {},
     }
 
@@ -292,6 +295,10 @@ router.patch('/preferences', isAuthenticated, async (req, res) => {
       disconnectAlertsEnabled:
         body.disconnectAlertsEnabled
         ?? existingPreferences.disconnectAlertsEnabled
+        ?? false,
+      workoutSummaryPushDisabled:
+        body.workoutSummaryPushDisabled
+        ?? existingPreferences.workoutSummaryPushDisabled
         ?? false,
       custom: {
         ...(existingPreferences.custom ?? {}),

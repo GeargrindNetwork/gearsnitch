@@ -1,0 +1,16 @@
+name: GearSnitch
+settings:
+  base:
+    DEVELOPMENT_TEAM: TUZYDM227C
+targets:
+  GearSnitch:
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gearsnitch.app
+    # entitlements block intentionally lacks com.apple.developer.in-app-payments —
+    # simulates a bad future xcodegen regen / refactor that strips the Apple Pay
+    # capability from project.yml. Item #13 regression case.
+    entitlements:
+      path: GearSnitch/GearSnitch.entitlements
+      properties:
+        aps-environment: development

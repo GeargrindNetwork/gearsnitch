@@ -10,6 +10,10 @@ struct NotificationPreferencesView: View {
     @State private var mealReminders = false
     @State private var waterReminders = false
     @State private var promotions = false
+    /// Item #27 — post-session summary push ("Nice work! 32 min, 12 sets").
+    /// Defaults ON. Stored on the API as `preferences.workoutSummaryPushDisabled`
+    /// (inverted so a `false` server value = toggle ON in the UI).
+    @State private var workoutSummaryPush = true
     @State private var isSaving = false
 
     var body: some View {
@@ -31,10 +35,14 @@ struct NotificationPreferencesView: View {
 
             Section {
                 notifToggle("Workout Reminders", icon: "figure.run", isOn: $workoutReminders)
+                notifToggle("Workout Summary Pushes", icon: "checkmark.seal", isOn: $workoutSummaryPush)
                 notifToggle("Meal Reminders", icon: "fork.knife", isOn: $mealReminders)
                 notifToggle("Water Reminders", icon: "drop", isOn: $waterReminders)
             } header: {
                 Text("Health & Fitness")
+                    .foregroundColor(.gsTextSecondary)
+            } footer: {
+                Text("Workout summaries fire a push the moment a session ends — duration, exercises, distance.")
                     .foregroundColor(.gsTextSecondary)
             }
             .listRowBackground(Color.gsSurface)
@@ -94,12 +102,16 @@ struct NotificationPreferencesView: View {
             "notif_tamperDetected": tamperDetected ? "true" : "false",
             "notif_motionDetected": motionDetected ? "true" : "false",
             "notif_workoutReminders": workoutReminders ? "true" : "false",
+            "notif_workoutSummaryPush": workoutSummaryPush ? "true" : "false",
             "notif_mealReminders": mealReminders ? "true" : "false",
             "notif_waterReminders": waterReminders ? "true" : "false",
             "notif_promotions": promotions ? "true" : "false",
         ]
 
-        let body = UpdateUserBody(preferences: prefs)
+        let body = UpdateUserBody(
+            preferences: prefs,
+            workoutSummaryPushDisabled: !workoutSummaryPush
+        )
 
         do {
             let _: UserDTO = try await APIClient.shared.request(APIEndpoint.Users.updateMe(body))
@@ -108,6 +120,17 @@ struct NotificationPreferencesView: View {
         }
 
         isSaving = false
+    }
+
+    /// Inverts the on-the-wire `workoutSummaryPushDisabled` (server stores
+    /// the *opt-out*) into the UI's "summary push enabled" boolean. Pulled
+    /// out as a static helper so the binding is unit-testable without
+    /// touching SwiftUI state.
+    static func workoutSummaryPushEnabled(forDisabledFlag disabled: Bool?) -> Bool {
+        // Default behaviour: feature is ON unless the user has explicitly
+        // opted out. A `nil` flag (e.g. older account that predates this
+        // field) is treated as ON, matching the server-side default.
+        return disabled != true
     }
 }
 
