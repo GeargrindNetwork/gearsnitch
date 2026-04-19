@@ -748,6 +748,13 @@ router.post(
         .populate('gymId', 'name')
         .lean();
 
+      // TODO(gemini-insights): once PR #69 (feat/workout-summary-push-item-27)
+      // merges, wire `generateWorkoutInsight({...})` from
+      // `../../services/geminiClient` into the workout-summary push path here
+      // and append the returned string (if non-null) to the push body,
+      // keeping total body < 230 chars. The geminiClient is feature-flagged
+      // via GEMINI_INSIGHTS_ENABLED and fails closed, so this wire-up is
+      // safe to add without further guarding.
       successResponse(res, serializeWorkout(completedWorkout ?? workout.toObject()));
     } catch (err) {
       errorResponse(
