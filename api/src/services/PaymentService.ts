@@ -18,20 +18,20 @@ const FLAT_SHIPPING = 599; // $5.99 in cents
 // Lazy-init: don't construct the Stripe SDK until first use. Avoids
 // throwing at module-load when STRIPE_SECRET_KEY is absent (tests, lint,
 // type-check, CI lanes that don't actually hit Stripe).
-let _stripe: StripeLib | null = null;
-function stripeClient(): StripeLib {
+let _stripe: Stripe | null = null;
+function stripeClient(): Stripe {
   if (_stripe === null) {
-    _stripe = new StripeLib(config.stripeSecretKey);
+    _stripe = new StripeLib(config.stripeSecretKey) as unknown as Stripe;
   }
   return _stripe;
 }
 // Backwards-compatible Proxy: existing `stripe.xxx` callsites work
 // untouched, but the underlying SDK is only constructed on first access.
-const stripe: StripeLib = new Proxy({} as StripeLib, {
+const stripe: Stripe = new Proxy({} as Stripe, {
   get(_target, prop) {
-    return Reflect.get(stripeClient(), prop);
+    return Reflect.get(stripeClient() as object, prop);
   },
-});
+}) as Stripe;
 
 export class PaymentService {
   /**
@@ -289,9 +289,9 @@ export class PaymentService {
     //    customer's metadata.userId matches us.
     const existing = await stripe.customers.list({ email, limit: 1 });
     const match = existing.data.find(
-      (c) =>
+      (c: Stripe.Customer | Stripe.DeletedCustomer) =>
         !(c as { deleted?: boolean }).deleted &&
-        c.metadata?.userId === userId,
+        (c as Stripe.Customer).metadata?.userId === userId,
     );
     if (match) {
       user.stripeCustomerId = match.id;
