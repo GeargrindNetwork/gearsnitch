@@ -238,6 +238,7 @@ enum RootTabDestinations {
         }
     }
 
+    @MainActor
     @ViewBuilder
     static func sheet(for sheet: AppSheet) -> some View {
         switch sheet {

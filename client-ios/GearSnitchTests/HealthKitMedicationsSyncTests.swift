@@ -7,6 +7,10 @@ import XCTest
 /// Apple's `HKMedicationDose` identifiers are iOS 18.4+ only. The
 /// `HealthKitMedicationsAPI` protocol seam lets us drive the round-trip
 /// through a deterministic fake.
+// MainActor-isolated so test methods can reference the
+// `@MainActor` FakeMedicationsAPI properties synchronously (the
+// protocol was pinned to MainActor to match the production conformer).
+@MainActor
 final class HealthKitMedicationsSyncTests: XCTestCase {
 
     // MARK: - Fake

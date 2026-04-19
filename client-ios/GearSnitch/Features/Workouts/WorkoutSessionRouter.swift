@@ -39,6 +39,10 @@ enum WorkoutSource: String {
 
 /// Narrow shim over `WatchSyncManager` reachability state. Tests inject a
 /// fake so the routing branch can be exercised without a real WCSession.
+///
+/// `@MainActor`-isolated to match `WatchSyncManager` (the concrete conformer),
+/// so the conformance doesn't cross actor boundaries under Swift 6.
+@MainActor
 protocol WatchReachabilityProviding: AnyObject {
     var isWatchPaired: Bool { get }
     var isWatchReachable: Bool { get }

@@ -47,14 +47,16 @@ final class RssiSampleBuffer {
 
     /// Flush trigger: max samples buffered per device before a forced
     /// flush. Matches the backend's `RSSI_BATCH_LIMIT` guard.
-    static let defaultMaxBatchSize = 20
+    /// `nonisolated` so default-arg evaluation on the init signature
+    /// (which runs in a nonisolated caller context) doesn't trip Swift 6.
+    nonisolated static let defaultMaxBatchSize = 20
 
     /// Flush trigger: max wall-clock age of the oldest buffered
     /// sample before a forced flush, in seconds (5 minutes).
-    static let defaultFlushInterval: TimeInterval = 5 * 60
+    nonisolated static let defaultFlushInterval: TimeInterval = 5 * 60
 
     /// RSSI sentinel CoreBluetooth uses when a reading is unavailable.
-    static let invalidRssiSentinel = 127
+    nonisolated static let invalidRssiSentinel = 127
 
     // MARK: - Configuration
 
