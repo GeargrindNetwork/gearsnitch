@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { Router, type Request } from 'express';
+import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { Types } from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
@@ -20,6 +20,19 @@ const redeemSchema = z.object({
 });
 
 const REFERRAL_BASE_URL = 'https://gearsnitch.com/ref';
+
+// Universal Link landing constants. The iOS app intercepts
+// https://gearsnitch.com/r/<code> via apple-app-site-association before any
+// HTTP load. For everyone else (browsers, Android, in-app webviews) we
+// resolve the code, drop a first-party `gs_ref` cookie, and bounce them to
+// the App Store. The cookie is read on first launch by the iOS app via an
+// SFSafariViewController flow (item #2 in the backlog).
+const UNIVERSAL_LINK_BASE_URL = 'https://gearsnitch.com/r';
+const APP_STORE_FALLBACK_URL =
+  process.env.APP_STORE_URL ?? 'https://apps.apple.com/app/gearsnitch/id0000000000';
+const REFERRAL_COOKIE_NAME = 'gs_ref';
+const REFERRAL_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
+const REFERRAL_CODE_PATTERN = /^[A-Z0-9]{4,32}$/;
 
 function getUserId(req: Request): string {
   return (req.user as JwtPayload).sub;
@@ -269,5 +282,180 @@ router.post('/redeem', isAuthenticated, async (req, res) => {
     );
   }
 });
+
+// ---------------------------------------------------------------------------
+// Universal Link landing — GET /r/:code
+// ---------------------------------------------------------------------------
+//
+// Mounted on the express app *outside* the /api/v1 namespace (see app.ts) so
+// it can answer the bare https://gearsnitch.com/r/<code> URL that QR codes
+// encode. Apple's apple-app-site-association makes iOS intercept the URL
+// before it ever hits this handler when the app is installed; this code path
+// runs for browsers, Android, in-app webviews, and crawlers.
+//
+// Behavior:
+//   * Unknown / malformed code  → 404 HTML.
+//   * Known code + iOS UA       → returns the Universal Link "bridge" HTML
+//                                 (meta refresh + a fallback button) so the
+//                                 system has a chance to hand off to the app
+//                                 if AASA is freshly installed.
+//   * Known code + everyone else → 302 to the App Store with a `gs_ref`
+//                                 first-party cookie (SameSite=Lax; Secure).
+//
+// The route is INTENTIONALLY UNAUTHENTICATED — anyone scanning the QR can
+// resolve a code (Apple Pay-style public landing).
+// ---------------------------------------------------------------------------
+
+const universalLinkRouter = Router();
+
+function isIOSUserAgent(userAgent: string | undefined): boolean {
+  if (!userAgent) return false;
+  // iPhone / iPad / iPod, plus iPadOS desktop-class Safari that masquerades
+  // as Macintosh but still includes "Mobile/" in the UA string.
+  return (
+    /iPhone|iPad|iPod/i.test(userAgent)
+    || (/Macintosh/i.test(userAgent) && /Mobile\//.test(userAgent))
+  );
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function setReferralCookie(res: Response, code: string): void {
+  res.cookie(REFERRAL_COOKIE_NAME, code, {
+    path: '/',
+    maxAge: REFERRAL_COOKIE_MAX_AGE_SECONDS * 1000,
+    sameSite: 'lax',
+    secure: true,
+    httpOnly: false, // readable by the SFSafariViewController-hosted JS bridge
+  });
+}
+
+function renderNotFoundHtml(code: string): string {
+  const safeCode = escapeHtml(code);
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Referral code not found · GearSnitch</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background:#0b0f12; color:#e6e9ec; margin:0;
+         display:flex; align-items:center; justify-content:center;
+         min-height:100vh; padding:24px; box-sizing:border-box; }
+  .card { max-width: 420px; text-align:center; }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+  p { line-height: 1.5; color:#9aa4ad; margin: 0 0 20px; }
+  a.button { display:inline-block; padding:12px 20px; border-radius:12px;
+             background:#22c55e; color:#0b0f12; font-weight:600;
+             text-decoration:none; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>That referral code doesn't exist</h1>
+    <p>We couldn't find a GearSnitch referral matching <code>${safeCode}</code>.
+       Double-check the QR code or ask the person who sent it.</p>
+    <a class="button" href="${escapeHtml(APP_STORE_FALLBACK_URL)}">Get GearSnitch</a>
+  </div>
+</body>
+</html>`;
+}
+
+function renderUniversalLinkBridgeHtml(code: string): string {
+  const safeCode = escapeHtml(code);
+  const target = `${UNIVERSAL_LINK_BASE_URL}/${encodeURIComponent(code)}`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Opening GearSnitch…</title>
+<meta http-equiv="refresh" content="0; url=${escapeHtml(target)}">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background:#0b0f12; color:#e6e9ec; margin:0;
+         display:flex; align-items:center; justify-content:center;
+         min-height:100vh; padding:24px; box-sizing:border-box; }
+  .card { max-width: 420px; text-align:center; }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+  p { line-height: 1.5; color:#9aa4ad; margin: 0 0 20px; }
+  a.button { display:inline-block; padding:12px 20px; border-radius:12px;
+             background:#22c55e; color:#0b0f12; font-weight:600;
+             text-decoration:none; }
+  .muted { font-size: 12px; color:#6b7480; margin-top:24px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Opening GearSnitch…</h1>
+    <p>If the app doesn't open automatically, tap the button below.</p>
+    <a class="button" href="${escapeHtml(target)}">Open GearSnitch</a>
+    <p class="muted">Referral code: <strong>${safeCode}</strong></p>
+    <p class="muted">Don't have the app? <a href="${escapeHtml(APP_STORE_FALLBACK_URL)}" style="color:#22c55e">Download from the App Store</a>.</p>
+  </div>
+</body>
+</html>`;
+}
+
+universalLinkRouter.get('/:code', async (req, res) => {
+  const rawCode = String(req.params.code ?? '').trim();
+  const normalizedCode = rawCode.toUpperCase();
+
+  res.setHeader('Cache-Control', 'no-store');
+
+  if (!REFERRAL_CODE_PATTERN.test(normalizedCode)) {
+    res
+      .status(StatusCodes.NOT_FOUND)
+      .type('html')
+      .send(renderNotFoundHtml(rawCode));
+    return;
+  }
+
+  try {
+    // Look up either a User-owned referral code (the canonical surface that
+    // the QR generator encodes) or any historical Referral row that used the
+    // same code. Either match means the code is real and we can redirect.
+    const [referrerUser, referralRecord] = await Promise.all([
+      User.exists({ referralCode: normalizedCode }),
+      Referral.exists({ referralCode: normalizedCode }),
+    ]);
+
+    if (!referrerUser && !referralRecord) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .type('html')
+        .send(renderNotFoundHtml(rawCode));
+      return;
+    }
+
+    // Always drop the cookie so the iOS app can pick it up post-install,
+    // even if the user is bouncing through the bridge HTML.
+    setReferralCookie(res, normalizedCode);
+
+    if (isIOSUserAgent(req.get('user-agent'))) {
+      res.status(StatusCodes.OK).type('html').send(renderUniversalLinkBridgeHtml(normalizedCode));
+      return;
+    }
+
+    res.redirect(StatusCodes.MOVED_TEMPORARILY, APP_STORE_FALLBACK_URL);
+  } catch (err) {
+    errorResponse(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to resolve referral landing',
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+});
+
+export { universalLinkRouter };
 
 export default router;

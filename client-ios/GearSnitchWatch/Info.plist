@@ -10,6 +10,10 @@
 	<string>GearSnitch</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundleVersion</key>
@@ -18,5 +22,15 @@
 	<string>1.0</string>
 	<key>WKWatchOnly</key>
 	<false/>
+	<key>WKApplication</key>
+	<true/>
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>workout-processing</string>
+	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>GearSnitch reads your heart rate, workouts, and ECG results to surface real-time fitness metrics on your Watch and paired iPhone.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>GearSnitch writes workouts to the Health app so your Watch sessions appear in your activity history.</string>
 </dict>
 </plist>

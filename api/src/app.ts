@@ -10,6 +10,7 @@ import { createGlobalRateLimiter } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 import routes from './routes/index.js';
+import { universalLinkRouter } from './modules/referrals/routes.js';
 
 export function createApp(): express.Application {
   const app = express();
@@ -112,6 +113,13 @@ export function createApp(): express.Application {
 
   // 11. API routes
   app.use(`/api/${config.apiVersion}`, routes);
+
+  // 11b. Universal Link landing — public, unauthenticated, lives at /r/:code
+  // outside the /api/v1 namespace so it can answer the bare URL the QR codes
+  // encode (https://gearsnitch.com/r/<code>). Apple's AASA file makes iOS
+  // intercept this URL before it reaches HTTP when the app is installed; this
+  // handler runs for browsers, Android, in-app webviews, and crawlers.
+  app.use('/r', universalLinkRouter);
 
   // 12. 404 handler
   app.use((_req, res) => {
