@@ -105,7 +105,7 @@ export default function DeviceDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="dark min-h-screen bg-black text-white">
         <Header />
         <main className="mx-auto max-w-3xl px-4 pb-16 pt-28">
           <p className="text-zinc-400">Loading device...</p>
@@ -116,7 +116,7 @@ export default function DeviceDetailPage() {
 
   if (error || !device) {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className="dark min-h-screen bg-black text-white">
         <Header />
         <main className="mx-auto max-w-3xl px-4 pb-16 pt-28">
           <p className="text-red-400">{(error as Error)?.message || 'Device not found'}</p>
@@ -129,7 +129,7 @@ export default function DeviceDetailPage() {
   const displayName = device.nickname?.trim() || device.name;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="dark min-h-screen bg-black text-white">
       <Header />
       <main className="mx-auto max-w-3xl space-y-6 px-4 pb-16 pt-28 sm:px-6">
         {/* Status Header */}

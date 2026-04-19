@@ -304,7 +304,7 @@ export default function SignInPage() {
 
   if (status === 'bootstrapping') {
     return (
-      <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="dark min-h-screen bg-zinc-950 text-zinc-100">
         <Header />
         <section className="px-6 py-24 pt-28 lg:px-8">
           <div className="mx-auto max-w-3xl">
@@ -326,7 +326,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="dark min-h-screen bg-zinc-950 text-zinc-100">
       <Header />
 
       <section className="px-6 py-20 pt-28 lg:px-8">

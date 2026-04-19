@@ -963,7 +963,7 @@ export default function AccountPage() {
   }, [queryClient]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="dark min-h-screen bg-zinc-950 text-zinc-100">
       <Header />
       <input
         ref={avatarInputRef}
