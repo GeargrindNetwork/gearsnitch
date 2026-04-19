@@ -9,4 +9,4 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 2 | Post-install referral attribution | merged | [#46](https://github.com/GeargrindNetwork/gearsnitch/pull/46) |
 | 3 | Stripe Customer Portal deep-link into iOS | pr-open | [#47](https://github.com/GeargrindNetwork/gearsnitch/pull/47) |
 | 4 | Referral dashboard polish (referrer-side) | pending | — |
-| 35 | Dark-mode consistency pass (web) | pr-open | _pending_ |
+| 35 | Dark-mode consistency pass (web) | pr-open | [#53](https://github.com/GeargrindNetwork/gearsnitch/pull/53) |
