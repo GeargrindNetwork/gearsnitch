@@ -152,6 +152,7 @@
 		85343C617455112876109FCF /* AccessorySetupController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 908C21CDF2519F4003CCAA6A /* AccessorySetupController.swift */; };
 		85759552153562314380E06F /* HeartRateCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D4B3EA544CB999DE793A80 /* HeartRateCard.swift */; };
 		85BBA8AA90A6F84A7F713C59 /* HeatmapCalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B045FB188519FA9F441365A /* HeatmapCalendarViewModel.swift */; };
+		88DCF7F6A3267B9B369EB219 /* ReviewPromptController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEA8D89C2EA5513E1EA8172 /* ReviewPromptController.swift */; };
 		89DA5F46F0D3E1CA8FF7A425 /* WidgetSyncStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F206AF9F1EC948435DEE0768 /* WidgetSyncStore.swift */; };
 		8AC3EB3CC4A1DA239B28508B /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80109D925697C302D72E2F78 /* StoreKitManager.swift */; };
 		8B2915D2D437967F466C8858 /* RequestBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BC5E7BD7D09E97C49A0C967 /* RequestBuilderTests.swift */; };
@@ -160,6 +161,7 @@
 		8E259CFD38A69FFCB4AE29C2 /* RunTrackingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1FC16D151D7932B238C051 /* RunTrackingSettingsView.swift */; };
 		8E7AFEB928740D6583F9F1DA /* RestTimerPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94806B803CD72C47DD2C06C3 /* RestTimerPreferences.swift */; };
 		8F02A1F8B43962032B6326C2 /* WorkoutActivityPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0E21C4F3CE75D479C84C8B /* WorkoutActivityPicker.swift */; };
+		8F5D74740DB16D853FFA2134 /* ReviewPromptControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B58FE430852B5F01F1359FC /* ReviewPromptControllerTests.swift */; };
 		8F9BF3097A8C637113010AB1 /* StopwatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F66DD4AB609729A71DD1A /* StopwatchView.swift */; };
 		8FC58F52B8FD0DAE7A76F077 /* ReleaseGateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765EB0F048354608BECF6173 /* ReleaseGateManager.swift */; };
 		9168ED8EBF3FFB1B5B180BAC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34190732929A003811CFE93F /* AppDelegate.swift */; };
@@ -402,6 +404,7 @@
 		2A0FE56D7371D2AC5312C417 /* HeartRateMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateMonitor.swift; sourceTree = "<group>"; };
 		2AFD1011CD6348200610EBA3 /* CycleTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CycleTrackingView.swift; sourceTree = "<group>"; };
 		2EAC3462B1358917ADDF063A /* WorkoutActivityTypeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutActivityTypeTests.swift; sourceTree = "<group>"; };
+		2EEA8D89C2EA5513E1EA8172 /* ReviewPromptController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPromptController.swift; sourceTree = "<group>"; };
 		2FFDC5283F95A193593BFAA5 /* BLEPairingCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEPairingCapability.swift; sourceTree = "<group>"; };
 		30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymSessionAttributesTests.swift; sourceTree = "<group>"; };
 		30C1DE53A384AF785E1999E2 /* ExternalHRSourceDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalHRSourceDetectionTests.swift; sourceTree = "<group>"; };
@@ -431,6 +434,7 @@
 		497216D5518DFFDE5130E047 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4AADEB4E2DE2686C4781E1B7 /* CartViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModel.swift; sourceTree = "<group>"; };
 		4B36B16C524620D9F19754CA /* AlertDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertDetailView.swift; sourceTree = "<group>"; };
+		4B58FE430852B5F01F1359FC /* ReviewPromptControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPromptControllerTests.swift; sourceTree = "<group>"; };
 		4B66AE0569C6234BEA5970F5 /* HandPreferenceManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandPreferenceManagerTests.swift; sourceTree = "<group>"; };
 		4BED958861CEFA542CA1CE5D /* CalendarSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSyncService.swift; sourceTree = "<group>"; };
 		4E6FC728320A895C25B95E05 /* GymListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymListViewModel.swift; sourceTree = "<group>"; };
@@ -764,6 +768,7 @@
 			isa = PBXGroup;
 			children = (
 				F82C8AF98938A9BB5A17236D /* GearService.swift */,
+				2EEA8D89C2EA5513E1EA8172 /* ReviewPromptController.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -971,6 +976,7 @@
 				972DBBBF32E714B66D3D70BD /* RestTimerOverlayStateTests.swift */,
 				C25134B51860EFA45CA6E826 /* RestTimerPreferencesTests.swift */,
 				A710FE23636DE160423B76C2 /* RestTimerStateTests.swift */,
+				4B58FE430852B5F01F1359FC /* ReviewPromptControllerTests.swift */,
 				FA2CFDB27BDBC52CD6B19128 /* RootTabMappingTests.swift */,
 				67941208C4A058BF9151303A /* RootTabViewSnapshotTests.swift */,
 				16C9CAAD91D90E103DDED4DF /* RssiSampleBufferTests.swift */,
@@ -1773,6 +1779,7 @@
 				F36B06CF82F9959380FBF461 /* RestTimerOverlayStateTests.swift in Sources */,
 				57400582763B7B03625182AF /* RestTimerPreferencesTests.swift in Sources */,
 				19C335E3117E33712D102BF4 /* RestTimerStateTests.swift in Sources */,
+				8F5D74740DB16D853FFA2134 /* ReviewPromptControllerTests.swift in Sources */,
 				3B4CDDD19F4EDDDFC54CD689 /* RootTabMappingTests.swift in Sources */,
 				61CEA77D2526E872C9DDA5F7 /* RootTabViewSnapshotTests.swift in Sources */,
 				A503D3E29FD189035C2E68E6 /* RssiSampleBufferTests.swift in Sources */,
@@ -1934,6 +1941,7 @@
 				8E7AFEB928740D6583F9F1DA /* RestTimerPreferences.swift in Sources */,
 				16E9F6FDDB297898CABE4B83 /* RestTimerSoundPlayer.swift in Sources */,
 				7C3CE39425F670E6448811E1 /* RestTimerState.swift in Sources */,
+				88DCF7F6A3267B9B369EB219 /* ReviewPromptController.swift in Sources */,
 				9D21F3A44E5DB619EE199193 /* RootTabView.swift in Sources */,
 				5F90FAC2283D3E0662480F1A /* RootView.swift in Sources */,
 				84B40C915C95268AAC475A3A /* RssiSampleBuffer.swift in Sources */,

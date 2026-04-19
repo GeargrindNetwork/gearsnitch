@@ -272,6 +272,13 @@ final class ActiveWorkoutViewModel: ObservableObject {
         do {
             let _: WorkoutDTO = try await apiClient.request(APIEndpoint.Workouts.create(body))
             didComplete = true
+
+            // Backlog item #26 — record a completed workout for the
+            // review-prompt counter and (conditionally) request a
+            // review. The controller's own gate enforces min-install
+            // age, last-prompt cooldown, and the qualifying threshold.
+            ReviewPromptController.shared.recordWorkoutCompleted()
+            ReviewPromptController.shared.maybeRequestReview()
         } catch {
             self.error = error.localizedDescription
         }

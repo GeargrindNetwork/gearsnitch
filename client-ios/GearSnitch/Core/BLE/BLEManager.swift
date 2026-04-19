@@ -563,6 +563,16 @@ extension BLEManager: CBCentralManagerDelegate {
                 // `BatteryLevelReader` will subscribe to the Battery Level
                 // characteristic (0x2A19) once the characteristic surfaces.
                 self.batteryLevelReader.observe(peripheral: peripheral)
+
+                // Backlog item #26 — count successful pairs (persisted
+                // devices only) toward the App Store review-prompt
+                // threshold. We scope to `persistedId != nil` so that
+                // one-off scans of nearby broadcast-only peripherals
+                // don't inflate the counter.
+                if device.persistedId != nil {
+                    ReviewPromptController.shared.recordDevicePaired()
+                    ReviewPromptController.shared.maybeRequestReview()
+                }
             }
         }
     }

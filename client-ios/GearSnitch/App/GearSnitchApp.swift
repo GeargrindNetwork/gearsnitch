@@ -8,6 +8,14 @@ struct GearSnitchApp: App {
 
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    // MARK: - Scene Phase
+
+    /// Used by backlog item #26 to count app-session starts for the
+    /// App Store review prompt. `.active` transitions (debounced by
+    /// `ReviewPromptThresholds.sessionDebounceSeconds`) count as one
+    /// new session.
+    @Environment(\.scenePhase) private var scenePhase
+
     // MARK: - Environment Objects
 
     @StateObject private var authManager = AuthManager.shared
@@ -57,6 +65,16 @@ struct GearSnitchApp: App {
                 .animation(.easeInOut(duration: 0.25), value: referralAttribution.pendingToast)
                 .task {
                     await authManager.restoreSession()
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    // Backlog item #26 — count foreground transitions
+                    // for the App Store review-prompt heuristic. The
+                    // controller self-debounces so rapid phase toggles
+                    // don't over-count.
+                    if newPhase == .active {
+                        ReviewPromptController.shared.recordAppSessionStart()
+                        ReviewPromptController.shared.maybeRequestReview()
+                    }
                 }
                 .preferredColorScheme(.dark)
         }
