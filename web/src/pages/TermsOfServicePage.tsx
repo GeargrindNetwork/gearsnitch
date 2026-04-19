@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator';
 
 const EFFECTIVE_DATE = '2026-04-18';
 const SUPPORT_EMAIL = 'support@gearsnitch.com';
-const GOVERNING_STATE = '[STATE], USA — confirm';
+const GOVERNING_STATE = 'Nevada, USA';
 
 export default function TermsOfServicePage() {
   return (
@@ -274,10 +274,12 @@ export default function TermsOfServicePage() {
             <CardContent className="space-y-3 text-sm leading-relaxed text-zinc-400">
               <p>
                 These Terms are governed by the laws of {GOVERNING_STATE},
-                without regard to its conflict-of-laws principles. Any dispute
-                arising out of these Terms or your use of the service will be
-                brought exclusively in the state or federal courts located in
-                that jurisdiction, unless applicable law requires otherwise.
+                without regard to its conflict-of-laws principles. The courts
+                of Clark County, Nevada shall have exclusive jurisdiction over
+                any dispute arising out of these Terms or your use of the
+                service, and you consent to the personal jurisdiction and
+                venue of those courts, unless applicable law requires
+                otherwise.
               </p>
             </CardContent>
           </Card>
