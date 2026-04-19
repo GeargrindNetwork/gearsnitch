@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { Referral, type IReferral } from '../../models/Referral.js';
 import { Subscription, type ISubscription } from '../../models/Subscription.js';
-import { User, type IUser } from '../../models/User.js';
+import type { IUser } from '../../models/User.js';
 import logger from '../../utils/logger.js';
 
 export const REFERRAL_REWARD_DAYS = 28;
