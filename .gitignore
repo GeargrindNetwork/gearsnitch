@@ -63,3 +63,8 @@ api/src/config/stripe-prices.json
 # App Store Connect Playwright driver artifacts — generated at runtime.
 scripts/asc-screenshots/
 scripts/asc-metadata-playwright.log
+
+# graphify outputs — regenerated on every AST-affecting commit by the
+# `graphify watch` hook. Tracking them creates a dirty working tree
+# after almost every edit (item #31 in RALPH-BACKLOG).
+graphify-out/
