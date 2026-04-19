@@ -41,8 +41,29 @@ export function isStripeSubscriptionEvent(type: string): boolean {
 /**
  * Record an event as processed. Returns `true` if this is a new event,
  * `false` if it was already processed (duplicate delivery).
+ *
+ * Two-stage dedupe — mirrors the Apple ASSN v2 pattern in
+ * `appleServerNotifications.ts`:
+ *   1. Query `ProcessedWebhookEvent` by (provider, eventId). If present,
+ *      short-circuit — regardless of whether the unique index has been
+ *      built yet (relevant under mongoose autoIndex in tests / cold
+ *      startup, where the index can lag behind the first insert).
+ *   2. Otherwise insert; an E11000 from a concurrent writer (Stripe
+ *      retries in parallel) is also treated as "already processed".
+ *
+ * The query-first step is what makes this robust to index-creation lag:
+ * a pure `create`-with-E11000 catch silently re-processes duplicates
+ * whenever the unique index is still being built in the background.
  */
 export async function claimWebhookEvent(event: Stripe.Event): Promise<boolean> {
+  const existing = await ProcessedWebhookEvent.findOne({
+    provider: 'stripe',
+    eventId: event.id,
+  }).lean();
+  if (existing) {
+    return false;
+  }
+
   try {
     await ProcessedWebhookEvent.create({
       eventId: event.id,
@@ -53,7 +74,7 @@ export async function claimWebhookEvent(event: Stripe.Event): Promise<boolean> {
   } catch (err) {
     const code = (err as { code?: number }).code;
     if (code === 11000) {
-      // Duplicate key — already processed.
+      // Concurrent duplicate — already recorded by a parallel retry.
       return false;
     }
     throw err;
