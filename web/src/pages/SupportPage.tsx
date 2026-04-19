@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 
 const SUPPORT_EMAIL = 'support@gearsnitch.com';
 const BUG_EMAIL = 'support@gearsnitch.com';
-const STATUS_URL = 'https://status.gearsnitch.com';
+const STATUS_PATH = '/status';
 
 type Faq = {
   question: string;
@@ -146,15 +147,13 @@ const faqs: Faq[] = [
     answer: (
       <p>
         GearSnitch is available in the United States at launch. We are
-        expanding to additional regions; follow{' '}
-        <a
-          href={STATUS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
+        expanding to additional regions; follow our{' '}
+        <Link
+          to={STATUS_PATH}
           className="text-cyan-400 underline hover:text-cyan-300"
         >
-          status.gearsnitch.com
-        </a>{' '}
+          status page
+        </Link>{' '}
         for the latest availability list.
       </p>
     ),
@@ -219,14 +218,12 @@ export default function SupportPage() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-zinc-400">
               <p>Live uptime, incidents, and maintenance.</p>
-              <a
-                href={STATUS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to={STATUS_PATH}
                 className="block text-cyan-400 underline hover:text-cyan-300"
               >
-                {STATUS_URL.replace(/^https?:\/\//, '')}
-              </a>
+                gearsnitch.com/status
+              </Link>
             </CardContent>
           </Card>
         </section>

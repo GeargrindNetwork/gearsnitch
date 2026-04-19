@@ -11,9 +11,12 @@
   },
   "dependencies": {
     "@gearsnitch/shared": "*",
+    "app-store-server-api": "^0.17.3",
     "bullmq": "^5.0.0",
     "ioredis": "^5.4.0",
+    "mongodb": "^6.21.0",
     "mongoose": "^8.0.0",
+    "stripe": "^22.0.1",
     "winston": "^3.11.0",
     "winston-daily-rotate-file": "^5.0.0",
     "uuid": "^9.0.0"

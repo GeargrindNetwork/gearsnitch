@@ -18,6 +18,7 @@ import MetricsPage from './pages/MetricsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import SupportPage from './pages/SupportPage';
+import StatusPage from './pages/StatusPage';
 import DeleteAccountPage from './pages/DeleteAccountPage';
 import NotFoundPage from './pages/NotFoundPage';
 import RunMapPage from './pages/RunMapPage';
@@ -27,6 +28,7 @@ import ReferralsPage from './pages/ReferralsPage';
 import CaloriesPage from './pages/CaloriesPage';
 import AlertsPage from './pages/AlertsPage';
 import AdminPage from './pages/AdminPage';
+import DashboardPage from './pages/DashboardPage';
 
 const queryClient = new QueryClient();
 
@@ -81,6 +83,14 @@ export default function App() {
                 element={(
                   <ProtectedAppRoute>
                     <MetricsPage />
+                  </ProtectedAppRoute>
+                )}
+              />
+              <Route
+                path="/dashboard"
+                element={(
+                  <ProtectedAppRoute>
+                    <DashboardPage />
                   </ProtectedAppRoute>
                 )}
               />
@@ -143,6 +153,7 @@ export default function App() {
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsOfServicePage />} />
               <Route path="/support" element={<SupportPage />} />
+              <Route path="/status" element={<StatusPage />} />
               <Route path="/delete-account" element={<DeleteAccountPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>

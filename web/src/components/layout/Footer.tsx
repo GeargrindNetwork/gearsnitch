@@ -39,6 +39,7 @@ export default function Footer() {
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-foreground/80">Company</h3>
             <ul className="space-y-2 text-sm">
               <li><Link to="/support" className="text-muted-foreground transition-colors hover:text-foreground">Support</Link></li>
+              <li><Link to="/status" className="text-muted-foreground transition-colors hover:text-foreground">Status</Link></li>
               <li><a href="mailto:hello@gearsnitch.com" className="text-muted-foreground transition-colors hover:text-foreground">Contact</a></li>
             </ul>
           </div>

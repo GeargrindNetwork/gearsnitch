@@ -59,3 +59,7 @@ APPLE_KEYS/
 # Stripe — generated output from scripts/setup-stripe-products.sh.
 # Contains live `price_xxx` IDs; load them into env vars instead of committing.
 api/src/config/stripe-prices.json
+
+# App Store Connect Playwright driver artifacts — generated at runtime.
+scripts/asc-screenshots/
+scripts/asc-metadata-playwright.log

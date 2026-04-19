@@ -15,6 +15,7 @@ export default function Header() {
     { label: 'Store', href: '/store' },
     ...(isAuthenticated
       ? [
+          { label: 'Dashboard', href: '/dashboard', route: true },
           { label: 'Runs', href: '/runs', route: true },
           { label: 'Metrics', href: '/metrics', route: true },
           { label: 'Calories', href: '/calories', route: true },
