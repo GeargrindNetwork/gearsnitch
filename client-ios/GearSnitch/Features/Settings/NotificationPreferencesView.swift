@@ -108,10 +108,11 @@ struct NotificationPreferencesView: View {
             "notif_promotions": promotions ? "true" : "false",
         ]
 
-        let body = UpdateUserBody(
-            preferences: prefs,
-            workoutSummaryPushDisabled: !workoutSummaryPush
-        )
+        // Base patch carries the key/value preferences map. The summary-push
+        // opt-out is a strongly-typed column on the user doc, so it rides
+        // along as a separate field on the same PATCH.
+        var body = UpdateUserBody(preferences: prefs)
+        body.workoutSummaryPushDisabled = !workoutSummaryPush
 
         do {
             let _: UserDTO = try await APIClient.shared.request(APIEndpoint.Users.updateMe(body))

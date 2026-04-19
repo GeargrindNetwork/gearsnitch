@@ -14,7 +14,9 @@ import {
   type IGearComponent,
 } from '../../models/GearComponent.js';
 import { EventLog } from '../../models/EventLog.js';
+import { User } from '../../models/User.js';
 import { enqueuePushNotification } from '../../services/pushNotificationQueue.js';
+import { resolveDefaultGear } from './autoAttach.js';
 
 /**
  * Gear retirement + component mileage routes (backlog item #4).
@@ -101,6 +103,107 @@ export function evaluateThresholdCrossings(
   const crossedRetirement = previousValue < lifeLimit && newValue >= lifeLimit;
   return { crossedWarning, crossedRetirement };
 }
+
+// Backlog item #9 — default gear per HKWorkoutActivityType.
+//
+// GET /gear/default-for-activity?activityType=<string>
+//   → { gear: IGearComponent | null }
+// PUT /gear/default-for-activity
+//   body: { activityType: string, gearId: string | null }
+//   → sets user.preferences.defaultGearByActivity[activityType] = gearId
+//     (or unsets it when gearId === null). Ownership-checked.
+const activityTypeSchema = z.string().trim().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/);
+const putDefaultGearSchema = z.object({
+  activityType: activityTypeSchema,
+  gearId: z.union([z.string().regex(/^[a-fA-F0-9]{24}$/), z.null()]),
+});
+
+router.get('/default-for-activity', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const userId = new Types.ObjectId(getUserId(req));
+    const activityType = typeof req.query.activityType === 'string'
+      ? req.query.activityType
+      : '';
+    const parsed = activityTypeSchema.safeParse(activityType);
+    if (!parsed.success) {
+      errorResponse(res, StatusCodes.BAD_REQUEST, 'Invalid activityType');
+      return;
+    }
+
+    const gear = await resolveDefaultGear(userId, parsed.data);
+    successResponse(res, {
+      gear: gear ? serializeComponent(gear) : null,
+    });
+  } catch (err) {
+    errorResponse(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to resolve default gear',
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+});
+
+router.put(
+  '/default-for-activity',
+  isAuthenticated,
+  validateBody(putDefaultGearSchema),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = new Types.ObjectId(getUserId(req));
+      const { activityType, gearId } = req.body as z.infer<typeof putDefaultGearSchema>;
+
+      // Validate gear ownership before persisting — a malicious client must
+      // not be able to point their default map at another user's gear id.
+      if (gearId !== null) {
+        const gear = await GearComponent.findOne({
+          _id: new Types.ObjectId(gearId),
+          userId,
+        }).select('_id').lean();
+        if (!gear) {
+          errorResponse(res, StatusCodes.NOT_FOUND, 'Gear not found for this user');
+          return;
+        }
+      }
+
+      const user = await User.findById(userId);
+      if (!user) {
+        errorResponse(res, StatusCodes.NOT_FOUND, 'User not found');
+        return;
+      }
+
+      const map = (user.preferences?.defaultGearByActivity ?? {}) as Record<string, unknown>;
+      if (gearId === null) {
+        delete map[activityType];
+      } else {
+        map[activityType] = new Types.ObjectId(gearId);
+      }
+
+      if (!user.preferences) {
+        // Should never happen — preferences has defaults — but guard anyway.
+        (user as any).preferences = { defaultGearByActivity: map } as any;
+      } else {
+        user.preferences.defaultGearByActivity = map as Record<string, Types.ObjectId | null>;
+      }
+      // Mongoose does not dirty-track Mixed subpaths automatically.
+      user.markModified('preferences.defaultGearByActivity');
+      await user.save();
+
+      successResponse(res, {
+        activityType,
+        gearId: gearId,
+        defaultGearByActivity: map,
+      });
+    } catch (err) {
+      errorResponse(
+        res,
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        'Failed to update default gear',
+        err instanceof Error ? err.message : String(err),
+      );
+    }
+  },
+);
 
 // POST /gear — create
 router.post(
