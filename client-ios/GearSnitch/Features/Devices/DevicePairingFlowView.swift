@@ -13,6 +13,7 @@ struct DevicePairingFlowView: View {
     @State private var nickname = ""
     @State private var pinDevice = false
     @State private var savedDevices: [DeviceDTO] = []
+    @State private var airPodsInfoDevice: BLEDevice?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -76,6 +77,25 @@ struct DevicePairingFlowView: View {
                 bleManager.disconnect(from: connectedPairingDevice)
             }
             bleManager.stopScanning()
+        }
+        .alert(
+            "AirPods heart rate",
+            isPresented: Binding(
+                get: { airPodsInfoDevice != nil },
+                set: { if !$0 { airPodsInfoDevice = nil } }
+            ),
+            presenting: airPodsInfoDevice
+        ) { device in
+            Button("Save as Tracker") {
+                let target = device
+                airPodsInfoDevice = nil
+                proceedWithPairing(target)
+            }
+            Button("Cancel", role: .cancel) {
+                airPodsInfoDevice = nil
+            }
+        } message: { _ in
+            Text("AirPods Pro heart rate is read automatically through Apple Health — not Bluetooth. As long as Health permission is granted, GearSnitch will show AirPods heart rate on the Dashboard. Pair here only if you want GearSnitch to also treat these AirPods as a trackable gear item.")
         }
     }
 
@@ -403,6 +423,19 @@ struct DevicePairingFlowView: View {
             return
         }
 
+        // AirPods Pro 3 heart rate is surfaced via HealthKit, not BLE. Before
+        // we let the user pair AirPods through the BLE flow, explain that
+        // heart rate will show up on the Dashboard regardless. They can still
+        // proceed if they want to treat AirPods as a trackable gear item.
+        if device.name.lowercased().contains("airpods") {
+            airPodsInfoDevice = device
+            return
+        }
+
+        proceedWithPairing(device)
+    }
+
+    private func proceedWithPairing(_ device: BLEDevice) {
         // Also check by bluetooth identifier against persisted metadata
         let alreadySaved = bleManager.connectedDevices.contains { d in
             d.identifier != device.identifier && d.persistedId != nil
