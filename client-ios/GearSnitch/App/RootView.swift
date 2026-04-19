@@ -7,12 +7,14 @@ extension Notification.Name {
 struct RootView: View {
     @EnvironmentObject private var authManager: AuthManager
     @EnvironmentObject private var coordinator: AppCoordinator
+    @EnvironmentObject private var referralAttribution: ReferralAttributionStore
     @ObservedObject private var gateManager = PermissionGateManager.shared
     @ObservedObject private var releaseGateManager = ReleaseGateManager.shared
 
     @AppStorage("debug.forceOnboardingReset") private var forceOnboardingReset = false
     @State private var showFixPermissions = false
     @State private var onboardingComplete = false
+    @State private var showPostInstallReferralBridge = false
     @StateObject private var onboardingViewModel = OnboardingViewModel()
 
     var body: some View {
@@ -27,6 +29,25 @@ struct RootView: View {
             .task(id: authManager.isAuthenticated) {
                 guard authManager.isAuthenticated else { return }
                 await GymSessionManager.shared.processPendingWidgetActionIfNeeded()
+                // Post-install referral attribution (item #2): if the user has
+                // a stashed code from a Universal Link or post-install bridge,
+                // hand it to the API now that we have an auth token. The
+                // store internally clears the code on success / hard reject.
+                await referralAttribution.sendPendingClaim()
+            }
+            .task {
+                // First-launch post-install fallback: if the user installed
+                // from a referral link but never opened the Universal Link
+                // (and so we have no code yet), open `/r/claim.html` inside
+                // SFSafariViewController so we can inherit the `gs_ref`
+                // cookie that survives in Safari's jar.
+                triggerPostInstallReferralBridgeIfNeeded()
+            }
+            .sheet(isPresented: $showPostInstallReferralBridge) {
+                PostInstallReferralSafariBridge(url: PostInstallReferralBridge.claimURL) {
+                    showPostInstallReferralBridge = false
+                }
+                .ignoresSafeArea()
             }
             .onChange(of: authManager.authState) { _, _ in
                 onboardingViewModel.syncAuthenticationState(isAuthenticated: authManager.isAuthenticated)
@@ -97,6 +118,25 @@ struct RootView: View {
 
     private func shouldShowOnboarding(for user: GSUser) -> Bool {
         forceOnboardingReset || (!user.hasCompletedOnboarding && !onboardingComplete)
+    }
+
+    // MARK: - Post-Install Referral Bridge
+
+    /// Open the SFSafariViewController bridge that consumes the `gs_ref`
+    /// cookie set during the original `/r/<code>` Safari landing. We only do
+    /// this once per install and only when there is no code already stashed
+    /// (otherwise the Universal Link path already handled it).
+    private func triggerPostInstallReferralBridgeIfNeeded() {
+        guard !referralAttribution.hasAttemptedReferralClaim else { return }
+        guard referralAttribution.attributedCode == nil else {
+            // We already have a code from a Universal Link — no need to open
+            // the bridge. Mark as attempted so we don't second-guess later.
+            referralAttribution.markPostInstallClaimAttempted()
+            return
+        }
+        // Mark BEFORE presenting so a crash mid-presentation doesn't loop us.
+        referralAttribution.markPostInstallClaimAttempted()
+        showPostInstallReferralBridge = true
     }
 
     // MARK: - Permission Check
@@ -344,5 +384,6 @@ struct RootView: View {
         .environmentObject(AppCoordinator())
         .environmentObject(BLEManager())
         .environmentObject(LocationManager())
+        .environmentObject(ReferralAttributionStore.shared)
         .preferredColorScheme(.dark)
 }

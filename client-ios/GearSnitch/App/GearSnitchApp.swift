@@ -16,7 +16,7 @@ struct GearSnitchApp: App {
     @StateObject private var eventBus = RealtimeEventBus()
     @StateObject private var featureFlags = FeatureFlags()
     @StateObject private var coordinator = AppCoordinator()
-    @StateObject private var referralAttribution = ReferralAttributionStore()
+    @StateObject private var referralAttribution = ReferralAttributionStore.shared
 
     // MARK: - Body
 

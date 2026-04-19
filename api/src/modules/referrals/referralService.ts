@@ -1,6 +1,8 @@
 import { Types } from 'mongoose';
 import { Referral, type IReferral } from '../../models/Referral.js';
 import { Subscription, type ISubscription } from '../../models/Subscription.js';
+import type { IUser } from '../../models/User.js';
+import logger from '../../utils/logger.js';
 
 export const REFERRAL_REWARD_DAYS = 28;
 
@@ -117,6 +119,59 @@ export async function processReferralQualificationForReferredUser(
   for (const referral of referrals) {
     await qualifyReferral(referral, now);
   }
+}
+
+/**
+ * Record an attribution from `referee` to `referrer`. Creates a pending
+ * Referral row if none exists yet for the pair, then runs the qualification
+ * pipeline so already-paid referees get rewarded immediately.
+ *
+ * Idempotent: if a Referral row already exists for the pair we return it
+ * without creating a duplicate. The User.referredBy write is owned by the
+ * caller (the /referrals/claim route) — this helper only creates the
+ * Referral ledger entry.
+ */
+export async function recordAttribution(
+  referrer: Pick<IUser, '_id'>,
+  referee: Pick<IUser, '_id'>,
+  referralCode: string,
+): Promise<IReferral> {
+  if (String(referrer._id) === String(referee._id)) {
+    throw new Error('Self-referral is not allowed');
+  }
+
+  const existing = await Referral.findOne({
+    referrerUserId: referrer._id,
+    referredUserId: referee._id,
+  });
+
+  if (existing) {
+    logger.info('recordAttribution: Referral row already exists', {
+      referralId: String(existing._id),
+      referrerId: String(referrer._id),
+      refereeId: String(referee._id),
+    });
+    return existing;
+  }
+
+  const referredSubscription = await getLatestRewardEligibleSubscription(
+    referee._id,
+  );
+
+  const referral = await Referral.create({
+    referrerUserId: referrer._id,
+    referredUserId: referee._id,
+    referralCode,
+    status: 'pending',
+    rewardDays: REFERRAL_REWARD_DAYS,
+    reason: referredSubscription ? undefined : 'Awaiting qualifying subscription',
+  });
+
+  if (referredSubscription) {
+    await processReferralQualificationForReferredUser(referee._id);
+  }
+
+  return referral;
 }
 
 export async function processOutstandingReferralRewardsForReferrer(
