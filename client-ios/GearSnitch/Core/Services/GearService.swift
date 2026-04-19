@@ -129,16 +129,18 @@ struct LogGearUsageResponse: Decodable {
 final class GearService {
 
     // `nonisolated(unsafe)` so callers in nonisolated contexts (e.g. the
-    // default-argument expression on init signatures — SwiftUI viewmodel
-    // init is evaluated nonisolated) can reference it without Swift 6
-    // "main actor-isolated static property" diagnostics. Safe because the
-    // singleton is initialized once at process start before any
-    // cross-thread access could happen.
+    // default-argument expression on SwiftUI viewmodel init signatures)
+    // can reference it without Swift 6 "main actor-isolated static property"
+    // diagnostics. Safe because the singleton is initialized once at first
+    // touch and all instance methods stay MainActor-isolated.
     nonisolated(unsafe) static let shared = GearService()
 
     private let apiClient: APIClient
 
-    init(apiClient: APIClient = .shared) {
+    // `nonisolated` init so the `shared` static-let initializer (which runs
+    // in a nonisolated context since `shared` itself is `nonisolated(unsafe)`)
+    // can call it. Field assignment only; no MainActor-isolated state touched.
+    nonisolated init(apiClient: APIClient = .shared) {
         self.apiClient = apiClient
     }
 
