@@ -58,6 +58,11 @@ export interface IUser {
   status: 'active' | 'suspended' | 'deleted';
   /** Default gym for auto-monitoring */
   defaultGymId?: string;
+  /**
+   * Stripe customer ID, persisted on first payment-flow invocation. Once set,
+   * we retrieve the customer by ID rather than doing a global email lookup.
+   */
+  stripeCustomerId?: string;
   /** Timestamp when the user completed onboarding */
   onboardingCompletedAt?: string;
   permissionsState: IPermissionsState;

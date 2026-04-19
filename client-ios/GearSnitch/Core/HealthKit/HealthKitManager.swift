@@ -53,6 +53,9 @@ final class HealthKitManager {
             types.insert(workoutType)
         }
 
+        // ECG records (read-only). Capture is restricted to the Apple Watch ECG app.
+        types.insert(HKObjectType.electrocardiogramType())
+
         return types
     }()
 

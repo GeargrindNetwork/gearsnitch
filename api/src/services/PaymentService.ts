@@ -5,6 +5,12 @@ import config from '../config/index.js';
 import { StoreCart } from '../models/StoreCart.js';
 import { StoreOrder, type IStoreOrder } from '../models/StoreOrder.js';
 import { User } from '../models/User.js';
+import logger from '../utils/logger.js';
+import {
+  claimWebhookEvent,
+  dispatchStripeSubscriptionEvent,
+  isStripeSubscriptionEvent,
+} from '../modules/subscriptions/stripeSubscriptionWebhookService.js';
 
 const TAX_RATE = 0.0825; // 8.25%
 const FLAT_SHIPPING = 599; // $5.99 in cents
@@ -150,13 +156,38 @@ export class PaymentService {
 
   /**
    * Process a Stripe webhook event.
+   *
+   * Handles both store-order events (payment_intent.*, charge.refunded) and
+   * subscription lifecycle events (customer.subscription.*, invoice.*).
+   * Duplicate deliveries are suppressed via a ProcessedWebhookEvent record
+   * keyed on event.id with a 7-day TTL.
    */
   async handleWebhookEvent(event: Stripe.Event): Promise<void> {
+    // Idempotency — short-circuit on duplicate deliveries.
+    try {
+      const claimed = await claimWebhookEvent(event);
+      if (!claimed) {
+        logger.info('Stripe webhook duplicate — skipping', {
+          eventId: event.id,
+          type: event.type,
+        });
+        return;
+      }
+    } catch (err) {
+      // If the idempotency store is unavailable we still process the event;
+      // duplicate writes are bounded by Stripe's retry window and our
+      // individual handlers are written to be idempotent at the Mongo level.
+      logger.error('Failed to claim Stripe webhook event — processing anyway', {
+        eventId: event.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         await this.finalizeConfirmedIntent(paymentIntent);
-        break;
+        return;
       }
 
       case 'payment_intent.payment_failed': {
@@ -165,7 +196,7 @@ export class PaymentService {
           { paymentIntentId: paymentIntent.id },
           { status: 'cancelled' },
         );
-        break;
+        return;
       }
 
       case 'charge.refunded': {
@@ -177,37 +208,89 @@ export class PaymentService {
             { status: 'refunded' },
           );
         }
-        break;
+        return;
       }
 
       default:
-        // Unhandled event type -- ignore silently
         break;
     }
+
+    if (isStripeSubscriptionEvent(event.type)) {
+      await dispatchStripeSubscriptionEvent(event);
+      return;
+    }
+
+    // Unhandled event type -- ignore silently. We've already recorded it in
+    // ProcessedWebhookEvent so Stripe retries remain idempotent.
   }
 
   /**
    * Get or create a Stripe customer for the user.
+   *
+   * Resolution order:
+   *   1. If `user.stripeCustomerId` is persisted, retrieve it from Stripe.
+   *      If Stripe replies with `resource_missing` (customer was deleted),
+   *      fall through to create a fresh one and re-link.
+   *   2. Backfill path for legacy users (no persisted id): look up by email
+   *      via `stripe.customers.list` and accept a match only when
+   *      `metadata.userId` equals this user's id. This avoids cross-linking
+   *      two users who happen to share an email.
+   *   3. Create a new Stripe customer with `metadata.userId` set.
+   *
+   * In every branch that resolves a customer, `user.stripeCustomerId` is
+   * persisted so subsequent calls skip the list/create paths entirely.
    */
   async getOrCreateStripeCustomer(
     userId: string,
     email: string,
   ): Promise<string> {
-    // Search for existing customer by metadata
-    const existing = await stripe.customers.list({
-      email,
-      limit: 1,
-    });
-
-    if (existing.data.length > 0) {
-      return existing.data[0].id;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new PaymentError('User not found', 'USER_NOT_FOUND');
     }
 
+    // 1. Fast path: we already know the Stripe customer id.
+    if (user.stripeCustomerId) {
+      try {
+        const existing = await stripe.customers.retrieve(user.stripeCustomerId);
+        if (existing && !(existing as { deleted?: boolean }).deleted) {
+          return existing.id;
+        }
+        // Deleted customer object returned — fall through to recreate.
+      } catch (err: unknown) {
+        const code = (err as { code?: string }).code;
+        const message = (err as { message?: string }).message ?? '';
+        const isMissing =
+          code === 'resource_missing' || /No such customer/i.test(message);
+        if (!isMissing) {
+          throw err;
+        }
+        // Stale id — recreate below.
+      }
+    }
+
+    // 2. Backfill path: look up by email but only trust it if the Stripe
+    //    customer's metadata.userId matches us.
+    const existing = await stripe.customers.list({ email, limit: 1 });
+    const match = existing.data.find(
+      (c) =>
+        !(c as { deleted?: boolean }).deleted &&
+        c.metadata?.userId === userId,
+    );
+    if (match) {
+      user.stripeCustomerId = match.id;
+      await user.save();
+      return match.id;
+    }
+
+    // 3. Nothing usable — create a new customer and persist the link.
     const customer = await stripe.customers.create({
       email,
       metadata: { userId },
     });
 
+    user.stripeCustomerId = customer.id;
+    await user.save();
     return customer.id;
   }
 
@@ -265,6 +348,35 @@ export class PaymentService {
       signature,
       config.stripeWebhookSecret,
     );
+  }
+
+  /**
+   * Flag a Stripe subscription to cancel at the end of the current period.
+   * Throws a PaymentError on upstream Stripe failure so the caller can
+   * refuse to mutate local state (truth must not be rewritten on a
+   * failed upstream cancel).
+   */
+  async cancelStripeSubscriptionAtPeriodEnd(
+    stripeSubscriptionId: string,
+  ): Promise<Stripe.Subscription> {
+    if (!stripeSubscriptionId) {
+      throw new PaymentError(
+        'Missing Stripe subscription id',
+        'STRIPE_SUB_ID_MISSING',
+      );
+    }
+
+    try {
+      return await stripe.subscriptions.update(stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown Stripe error';
+      throw new PaymentError(
+        `Stripe cancel failed: ${message}`,
+        'STRIPE_CANCEL_FAILED',
+      );
+    }
   }
 
   private async finalizeConfirmedIntent(

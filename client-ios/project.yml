@@ -57,6 +57,8 @@ targets:
         com.apple.developer.healthkit: true
         com.apple.security.application-groups:
           - group.com.gearsnitch.app
+        com.apple.developer.in-app-payments:
+          - merchant.gearsnitch.app
     dependencies:
       - package: GoogleSignIn
       - target: GearSnitchWidgets

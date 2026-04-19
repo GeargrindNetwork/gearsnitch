@@ -938,6 +938,16 @@ export async function getSubscription(): Promise<SubscriptionStatus> {
   return res.data;
 }
 
+/**
+ * @deprecated DO NOT USE. The backing `POST /subscriptions` endpoint is currently a stub:
+ * it returns a fake `checkoutUrl` (the `successUrl` echoed back) without ever creating a
+ * real Stripe Checkout Session or a Subscription row. Calling this from the UI and then
+ * redirecting the user produces a misleading "subscribed" success state — a P0 trust bug.
+ *
+ * This function is intentionally retained (not deleted) to avoid breaking any other
+ * in-flight callers, but no UI surface should invoke it until the real Stripe Checkout
+ * integration ships in the Wave B PR. Route new purchase flows through the iOS app.
+ */
 export async function createSubscription(tier: string): Promise<{ checkoutUrl: string; tier: string; price: number }> {
   const res = await api.post<{ checkoutUrl: string; tier: string; price: number }>('/subscriptions', {
     tier,
