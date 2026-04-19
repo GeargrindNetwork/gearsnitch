@@ -242,6 +242,35 @@ export class PaymentService {
     );
   }
 
+  /**
+   * Flag a Stripe subscription to cancel at the end of the current period.
+   * Throws a PaymentError on upstream Stripe failure so the caller can
+   * refuse to mutate local state (truth must not be rewritten on a
+   * failed upstream cancel).
+   */
+  async cancelStripeSubscriptionAtPeriodEnd(
+    stripeSubscriptionId: string,
+  ): Promise<Stripe.Subscription> {
+    if (!stripeSubscriptionId) {
+      throw new PaymentError(
+        'Missing Stripe subscription id',
+        'STRIPE_SUB_ID_MISSING',
+      );
+    }
+
+    try {
+      return await stripe.subscriptions.update(stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown Stripe error';
+      throw new PaymentError(
+        `Stripe cancel failed: ${message}`,
+        'STRIPE_CANCEL_FAILED',
+      );
+    }
+  }
+
   private async finalizeConfirmedIntent(
     paymentIntent: Stripe.PaymentIntent,
     userIdOverride?: string,

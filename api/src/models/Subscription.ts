@@ -11,6 +11,8 @@ export interface ISubscription extends Document {
   expiryDate: Date;
   lastValidatedAt: Date;
   extensionDays: number;
+  autoRenew: boolean;
+  cancelledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +32,8 @@ const SubscriptionSchema = new Schema<ISubscription>(
     expiryDate: { type: Date, required: true },
     lastValidatedAt: { type: Date, required: true },
     extensionDays: { type: Number, default: 0 },
+    autoRenew: { type: Boolean, default: true },
+    cancelledAt: { type: Date },
   },
   { timestamps: true }
 );
