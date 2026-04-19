@@ -76,9 +76,100 @@ enum WatchMessageType: String {
     case sessionCommand
     case alertAcknowledge
     case hrMonitoring
+    case watchHRSample
+    case workoutState
 }
 
 enum WatchSessionAction: String, Codable {
     case start
     case end
+}
+
+// MARK: - Watch → iPhone HR Sample Payload
+
+/// Single heart rate sample originating on the Apple Watch (HealthKit / live workout
+/// builder). Sent both as a queued `transferUserInfo` payload (reliable, batched) and
+/// as a live `sendMessage` payload during active workouts (low-latency).
+struct WatchHRSamplePayload: Codable, Equatable {
+    let bpm: Double
+    let timestamp: Date
+    let source: String          // e.g. "Apple Watch"
+    let withinWorkout: Bool
+
+    /// Optional secondary key embedded in `userInfo` payloads so the receiver can
+    /// distinguish HR samples from other queued message types.
+    static let userInfoTypeKey = "type"
+    static let userInfoTypeValue = "watchHRSample"
+
+    func toUserInfo() -> [String: Any] {
+        guard let data = try? JSONEncoder.gearSnitchISO.encode(self),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+        var enriched = dict
+        enriched[Self.userInfoTypeKey] = Self.userInfoTypeValue
+        return enriched
+    }
+
+    static func from(userInfo: [String: Any]) -> WatchHRSamplePayload? {
+        var dict = userInfo
+        dict.removeValue(forKey: Self.userInfoTypeKey)
+        guard let data = try? JSONSerialization.data(withJSONObject: dict) else {
+            return nil
+        }
+        return try? JSONDecoder.gearSnitchISO.decode(WatchHRSamplePayload.self, from: data)
+    }
+}
+
+// MARK: - Watch → iPhone Workout State Payload
+
+enum WatchWorkoutState: String, Codable {
+    case idle
+    case running
+    case paused
+    case ended
+}
+
+struct WatchWorkoutStatePayload: Codable, Equatable {
+    let state: WatchWorkoutState
+    let startedAt: Date?
+    let endedAt: Date?
+    let totalSamples: Int
+
+    func toMessage() -> [String: Any] {
+        guard let data = try? JSONEncoder.gearSnitchISO.encode(self),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return [:]
+        }
+        var enriched = dict
+        enriched[WatchHRSamplePayload.userInfoTypeKey] = WatchMessageType.workoutState.rawValue
+        return enriched
+    }
+
+    static func from(message: [String: Any]) -> WatchWorkoutStatePayload? {
+        var dict = message
+        dict.removeValue(forKey: WatchHRSamplePayload.userInfoTypeKey)
+        guard let data = try? JSONSerialization.data(withJSONObject: dict) else {
+            return nil
+        }
+        return try? JSONDecoder.gearSnitchISO.decode(WatchWorkoutStatePayload.self, from: data)
+    }
+}
+
+// MARK: - Codable helpers
+
+extension JSONEncoder {
+    static let gearSnitchISO: JSONEncoder = {
+        let e = JSONEncoder()
+        e.dateEncodingStrategy = .iso8601
+        return e
+    }()
+}
+
+extension JSONDecoder {
+    static let gearSnitchISO: JSONDecoder = {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        return d
+    }()
 }

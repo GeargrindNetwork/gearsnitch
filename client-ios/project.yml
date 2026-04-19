@@ -57,6 +57,8 @@ targets:
         com.apple.developer.healthkit: true
         com.apple.security.application-groups:
           - group.com.gearsnitch.app
+        com.apple.developer.in-app-payments:
+          - merchant.gearsnitch.app
     dependencies:
       - package: GoogleSignIn
       - target: GearSnitchWidgets
@@ -112,6 +114,31 @@ targets:
         com.apple.security.application-groups:
           - group.com.gearsnitch.app
         aps-environment: development
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    dependencies:
+      - target: GearSnitchWatchWidgets
+        embed: true
+
+  GearSnitchWatchWidgets:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: GearSnitchWatchWidgets
+    settings:
+      base:
+        INFOPLIST_FILE: GearSnitchWatchWidgets/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.gearsnitch.app.watchkitapp.widgets
+        PRODUCT_NAME: GearSnitchWatchWidgets
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        SWIFT_VERSION: "5.9"
+    entitlements:
+      path: GearSnitchWatchWidgets/GearSnitchWatchWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.gearsnitch.app
 
   GearSnitchTests:
     type: bundle.unit-test
@@ -124,6 +151,21 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: GearSnitch
+
+  GearSnitchWatchTests:
+    type: bundle.unit-test
+    platform: watchOS
+    sources:
+      - path: GearSnitchWatchTests
+        optional: true
+      - path: GearSnitchWatchWidgets/WatchHRComplication.swift
+        buildPhase: sources
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.9"
+    dependencies:
+      - target: GearSnitchWatch
 
   GearSnitchUITests:
     type: bundle.ui-testing
