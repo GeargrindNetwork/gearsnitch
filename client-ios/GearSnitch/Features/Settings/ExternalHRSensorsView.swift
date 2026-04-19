@@ -13,8 +13,13 @@ struct ExternalHRSensorsView: View {
     @ObservedObject private var adapter = ExternalHRSensorAdapter.shared
 
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Available Sensors")
+                    .font(.headline)
+                    .foregroundColor(.gsText)
+                    .padding(.horizontal, 4)
+
                 if adapter.sensors.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("No heart-rate sensors found yet")
@@ -24,24 +29,29 @@ struct ExternalHRSensorsView: View {
                             .font(.caption)
                             .foregroundColor(.gsTextSecondary)
                     }
-                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .cardStyle()
                 } else {
-                    ForEach(adapter.sensors) { sensor in
-                        sensorRow(for: sensor)
+                    VStack(spacing: 0) {
+                        ForEach(Array(adapter.sensors.enumerated()), id: \.element.id) { index, sensor in
+                            if index > 0 {
+                                Divider().background(Color.gsBorder)
+                            }
+                            sensorRow(for: sensor)
+                        }
                     }
+                    .cardStyle(padding: 0)
                 }
-            } header: {
-                Text("Available Sensors")
-                    .foregroundColor(.gsTextSecondary)
-            } footer: {
+
                 Text("Apple Watch and AirPods Pro continue to work as before. External sensors only supplement those sources and never replace them.")
                     .font(.caption)
                     .foregroundColor(.gsTextSecondary)
+                    .padding(.horizontal, 4)
             }
-            .listRowBackground(Color.gsSurface)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("External HR Sensors")
         .navigationBarTitleDisplayMode(.inline)
@@ -56,7 +66,7 @@ struct ExternalHRSensorsView: View {
             Image(systemName: "sensor.tag.radiowaves.forward")
                 .font(.title3)
                 .foregroundColor(sensor.isStreaming ? .gsEmerald : .gsTextSecondary)
-                .frame(width: 32, height: 32)
+                .frame(width: 36, height: 36)
                 .background(Color.gsSurfaceRaised)
                 .cornerRadius(8)
 
@@ -66,7 +76,7 @@ struct ExternalHRSensorsView: View {
                     .foregroundColor(.gsText)
 
                 Text(statusText(for: sensor))
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundColor(.gsTextSecondary)
             }
 
@@ -79,7 +89,8 @@ struct ExternalHRSensorsView: View {
             .labelsHidden()
             .tint(.gsEmerald)
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private func statusText(for sensor: ExternalHRSensor) -> String {

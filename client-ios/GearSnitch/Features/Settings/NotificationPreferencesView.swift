@@ -17,79 +17,113 @@ struct NotificationPreferencesView: View {
     @State private var isSaving = false
 
     var body: some View {
-        List {
-            Section {
-                notifToggle("Device Disconnected", icon: "antenna.radiowaves.left.and.right.slash", isOn: $deviceDisconnected)
-                notifToggle("Left Safe Zone", icon: "location.slash", isOn: $deviceLeftZone)
-                notifToggle("Low Battery", icon: "battery.25", isOn: $lowBattery)
-                notifToggle("Tamper Detected", icon: "exclamationmark.shield", isOn: $tamperDetected)
-                notifToggle("Motion Detected", icon: "figure.walk.motion", isOn: $motionDetected)
-            } header: {
-                Text("Device Alerts")
-                    .foregroundColor(.gsTextSecondary)
-            } footer: {
-                Text("Critical alerts like device disconnection cannot be fully disabled. They will still appear in the app.")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
+        ScrollView {
+            VStack(spacing: 16) {
+                section(
+                    title: "Device Alerts",
+                    footer: "Critical alerts like device disconnection cannot be fully disabled. They will still appear in the app."
+                ) {
+                    notifToggle("Device Disconnected", icon: "antenna.radiowaves.left.and.right.slash", color: .gsDanger, isOn: $deviceDisconnected)
+                    divider
+                    notifToggle("Left Safe Zone", icon: "location.slash", color: .gsWarning, isOn: $deviceLeftZone)
+                    divider
+                    notifToggle("Low Battery", icon: "battery.25", color: .gsWarning, isOn: $lowBattery)
+                    divider
+                    notifToggle("Tamper Detected", icon: "exclamationmark.shield", color: .gsDanger, isOn: $tamperDetected)
+                    divider
+                    notifToggle("Motion Detected", icon: "figure.walk.motion", color: .gsCyan, isOn: $motionDetected)
+                }
 
-            Section {
-                notifToggle("Workout Reminders", icon: "figure.run", isOn: $workoutReminders)
-                notifToggle("Workout Summary Pushes", icon: "checkmark.seal", isOn: $workoutSummaryPush)
-                notifToggle("Meal Reminders", icon: "fork.knife", isOn: $mealReminders)
-                notifToggle("Water Reminders", icon: "drop", isOn: $waterReminders)
-            } header: {
-                Text("Health & Fitness")
-                    .foregroundColor(.gsTextSecondary)
-            } footer: {
-                Text("Workout summaries fire a push the moment a session ends — duration, exercises, distance.")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
+                section(
+                    title: "Health & Fitness",
+                    footer: "Workout summaries fire a push the moment a session ends — duration, exercises, distance."
+                ) {
+                    notifToggle("Workout Reminders", icon: "figure.run", color: .gsEmerald, isOn: $workoutReminders)
+                    divider
+                    notifToggle("Workout Summary Pushes", icon: "checkmark.seal", color: .gsEmerald, isOn: $workoutSummaryPush)
+                    divider
+                    notifToggle("Meal Reminders", icon: "fork.knife", color: .gsWarning, isOn: $mealReminders)
+                    divider
+                    notifToggle("Water Reminders", icon: "drop", color: .gsCyan, isOn: $waterReminders)
+                }
 
-            Section {
-                notifToggle("Promotions & Offers", icon: "tag", isOn: $promotions)
-            } header: {
-                Text("Marketing")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
+                section(title: "Marketing") {
+                    notifToggle("Promotions & Offers", icon: "tag", color: .gsEmerald, isOn: $promotions)
+                }
 
-            Section {
                 Button {
                     Task { await savePreferences() }
                 } label: {
-                    HStack {
-                        Spacer()
+                    HStack(spacing: 8) {
                         if isSaving {
-                            ProgressView().tint(.black)
-                        } else {
-                            Text("Save Preferences")
-                                .font(.headline)
+                            ProgressView().tint(.white)
                         }
-                        Spacer()
+                        Text(isSaving ? "Saving..." : "Save Preferences")
+                            .font(.headline.weight(.bold))
+                            .foregroundColor(.white)
                     }
-                    .foregroundColor(.black)
-                    .padding(.vertical, 4)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.gsEmerald.opacity(isSaving ? 0.5 : 1.0))
+                    .cornerRadius(14)
                 }
-                .listRowBackground(Color.gsEmerald)
                 .disabled(isSaving)
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("Notifications")
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func notifToggle(_ label: String, icon: String, isOn: Binding<Bool>) -> some View {
-        Toggle(isOn: isOn) {
-            Label(label, systemImage: icon)
-                .font(.subheadline)
+    @ViewBuilder
+    private func section<Content: View>(
+        title: String,
+        footer: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
                 .foregroundColor(.gsText)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 0) {
+                content()
+            }
+            .cardStyle(padding: 0)
+
+            if let footer {
+                Text(footer)
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+                    .padding(.horizontal, 4)
+            }
+        }
+    }
+
+    private var divider: some View {
+        Divider().background(Color.gsBorder)
+    }
+
+    private func notifToggle(_ label: String, icon: String, color: Color, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.body)
+                    .foregroundColor(color)
+                    .frame(width: 28)
+
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundColor(.gsText)
+            }
         }
         .tint(.gsEmerald)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 
     private func savePreferences() async {

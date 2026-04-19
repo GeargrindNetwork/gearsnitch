@@ -24,47 +24,67 @@ struct AlertsView: View {
     // MARK: - Alert List
 
     private var alertList: some View {
-        List {
-            if !viewModel.activeAlerts.isEmpty {
-                Section {
-                    ForEach(viewModel.activeAlerts) { alert in
-                        NavigationLink {
-                            AlertDetailView(alert: alert) {
-                                Task { await viewModel.acknowledgeAlert(id: alert.id) }
-                            }
-                        } label: {
-                            alertRow(alert)
+        ScrollView {
+            VStack(spacing: 16) {
+                if !viewModel.activeAlerts.isEmpty {
+                    alertSection(
+                        title: "Active",
+                        titleColor: .gsDanger,
+                        alerts: viewModel.activeAlerts,
+                        onAcknowledge: { alert in
+                            Task { await viewModel.acknowledgeAlert(id: alert.id) }
                         }
-                        .listRowBackground(Color.gsSurface)
-                    }
-                } header: {
-                    Text("Active")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.gsDanger)
+                    )
                 }
-            }
 
-            if !viewModel.acknowledgedAlerts.isEmpty {
-                Section {
-                    ForEach(viewModel.acknowledgedAlerts) { alert in
-                        NavigationLink {
-                            AlertDetailView(alert: alert)
-                        } label: {
-                            alertRow(alert)
-                        }
-                        .listRowBackground(Color.gsSurface)
-                    }
-                } header: {
-                    Text("Acknowledged")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.gsTextSecondary)
+                if !viewModel.acknowledgedAlerts.isEmpty {
+                    alertSection(
+                        title: "Acknowledged",
+                        titleColor: .gsTextSecondary,
+                        alerts: viewModel.acknowledgedAlerts,
+                        onAcknowledge: nil
+                    )
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .refreshable {
             await viewModel.loadAlerts()
+        }
+    }
+
+    private func alertSection(
+        title: String,
+        titleColor: Color,
+        alerts: [AlertDTO],
+        onAcknowledge: ((AlertDTO) -> Void)?
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+                .foregroundColor(titleColor)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 0) {
+                ForEach(Array(alerts.enumerated()), id: \.element.id) { index, alert in
+                    if index > 0 {
+                        Divider().background(Color.gsBorder)
+                    }
+                    NavigationLink {
+                        if let onAcknowledge {
+                            AlertDetailView(alert: alert) { onAcknowledge(alert) }
+                        } else {
+                            AlertDetailView(alert: alert)
+                        }
+                    } label: {
+                        alertRow(alert)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .cardStyle(padding: 0)
         }
     }
 
@@ -74,12 +94,15 @@ struct AlertsView: View {
                 .font(.title3)
                 .foregroundColor(severityColor(alert.severity))
                 .frame(width: 36, height: 36)
+                .background(severityColor(alert.severity).opacity(0.12))
+                .cornerRadius(8)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(alert.message)
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(.gsText)
                     .lineLimit(2)
+                    .multilineTextAlignment(.leading)
 
                 HStack(spacing: 8) {
                     severityBadge(alert.severity)
@@ -95,8 +118,15 @@ struct AlertsView: View {
                         .foregroundColor(.gsTextSecondary)
                 }
             }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundColor(.gsTextSecondary)
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .opacity(alert.acknowledged ? 0.6 : 1.0)
     }
 
