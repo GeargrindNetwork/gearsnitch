@@ -1,6 +1,6 @@
 import http from 'node:http';
 import mongoose from 'mongoose';
-import { Worker } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import type { Job } from 'bullmq';
 import { processAlertFanout } from './jobs/alertFanout';
@@ -9,6 +9,7 @@ import { processPushNotification } from './jobs/pushNotification';
 import { processReferralQualification } from './jobs/referralQualification';
 import { processReferralReward } from './jobs/referralReward';
 import { processStoreOrder } from './jobs/storeOrder';
+import { processSubscriptionReconciliation } from './jobs/subscriptionReconciliation';
 import { processSubscriptionValidation } from './jobs/subscriptionValidation';
 import { logger } from './utils/logger';
 import { shutdownJobRuntime } from './utils/jobRuntime';
@@ -57,10 +58,20 @@ const processors: Partial<Record<QueueName, QueueProcessor>> = {
   'referral-reward': processReferralReward,
   'push-notifications': processPushNotification,
   'subscription-validation': processSubscriptionValidation,
+  'subscription-reconciliation': processSubscriptionReconciliation,
   'alert-fanout': processAlertFanout,
   'store-order-processing': processStoreOrder,
   'data-export': processDataExport,
 };
+
+/**
+ * Repeating schedule for the subscription reconciliation cron.
+ * Sunday 03:00 UTC, weekly. `jobId` keeps BullMQ's scheduler idempotent
+ * across worker restarts — re-registering this key on each boot replaces
+ * (rather than duplicates) the prior schedule.
+ */
+const SUBSCRIPTION_RECONCILIATION_CRON = '0 3 * * 0';
+const SUBSCRIPTION_RECONCILIATION_JOB_ID = 'subscription-reconciliation-weekly';
 
 const workers: Worker[] = [];
 
@@ -105,6 +116,36 @@ async function start() {
 
     workers.push(worker);
     logger.info(`Worker started for queue: ${queueName}`);
+  }
+
+  // Register the weekly subscription reconciliation repeating job.
+  // BullMQ de-duplicates the repeat by `(name, pattern, jobId)` so it's
+  // safe to call `add` on every boot — existing schedule is reused.
+  try {
+    const reconciliationQueue = new Queue('subscription-reconciliation', {
+      connection: redisConnection,
+    });
+    await reconciliationQueue.add(
+      'subscription-reconciliation',
+      {},
+      {
+        repeat: {
+          pattern: SUBSCRIPTION_RECONCILIATION_CRON,
+          tz: 'UTC',
+        },
+        jobId: SUBSCRIPTION_RECONCILIATION_JOB_ID,
+        removeOnComplete: 20,
+        removeOnFail: 50,
+      }
+    );
+    logger.info('Registered subscription reconciliation repeating job', {
+      pattern: SUBSCRIPTION_RECONCILIATION_CRON,
+      tz: 'UTC',
+    });
+  } catch (err) {
+    logger.error('Failed to register subscription reconciliation cron', {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   workerReady = true;

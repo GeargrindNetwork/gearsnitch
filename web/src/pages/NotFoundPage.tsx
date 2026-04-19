@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="dark min-h-screen bg-black text-white">
       <Header />
       <section className="flex min-h-[60vh] flex-col items-center justify-center px-4 pt-16">
         <p className="bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-8xl font-extrabold text-transparent">

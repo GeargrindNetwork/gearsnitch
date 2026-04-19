@@ -8,7 +8,7 @@ struct HeartRateCard: View {
     /// (not BLE), and the source name on the HKSample carries "AirPods".
     private func sourceAttribution(for source: String) -> String {
         switch monitor.sourceKind {
-        case .airpods, .watch, .phone, .other:
+        case .airpods, .watch, .phone, .other, .external:
             return "via \(source)"
         case .unknown:
             return source

@@ -14,6 +14,21 @@ struct DevicePairingFlowView: View {
     @State private var pinDevice = false
     @State private var savedDevices: [DeviceDTO] = []
     @State private var airPodsInfoDevice: BLEDevice?
+    @State private var isPresentingAccessoryPicker = false
+
+    /// Resolved at view init so previews and tests can override via the
+    /// initializer. Defaults to the live runtime gate.
+    private let pairingCapability: BLEPairingCapability
+
+    init(
+        bleManager: BLEManager,
+        pairingCapability: BLEPairingCapability = .resolve(),
+        onDeviceRegistered: @escaping (DeviceDTO) -> Void
+    ) {
+        self.bleManager = bleManager
+        self.pairingCapability = pairingCapability
+        self.onDeviceRegistered = onDeviceRegistered
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -185,16 +200,40 @@ struct DevicePairingFlowView: View {
             }
 
             VStack(spacing: 12) {
-                if !bleManager.isScanning {
+                if pairingCapability == .accessorySetupKit {
                     Button {
-                        bleManager.startScanning(mode: .discovery)
+                        Task { await presentAccessorySetupPicker() }
                     } label: {
-                        Label("Start Scanning", systemImage: "antenna.radiowaves.left.and.right")
+                        Label("Pair with One Tap", systemImage: "sparkles")
                             .font(.headline)
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
                             .background(Color.gsEmerald)
+                            .cornerRadius(14)
+                    }
+                    .disabled(isPresentingAccessoryPicker || isConnecting || isSaving)
+
+                    Text("New on iOS 26.3 — uses Apple's proximity pairing sheet, no system permission prompt required.")
+                        .font(.caption2)
+                        .foregroundColor(.gsTextSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 8)
+                }
+
+                if !bleManager.isScanning {
+                    Button {
+                        bleManager.startScanning(mode: .discovery)
+                    } label: {
+                        Label(
+                            pairingCapability == .accessorySetupKit ? "Scan Manually" : "Start Scanning",
+                            systemImage: "antenna.radiowaves.left.and.right"
+                        )
+                            .font(.headline)
+                            .foregroundColor(pairingCapability == .accessorySetupKit ? .gsEmerald : .black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(pairingCapability == .accessorySetupKit ? Color.gsEmerald.opacity(0.12) : Color.gsEmerald)
                             .cornerRadius(14)
                     }
                 } else {
@@ -561,6 +600,35 @@ struct DevicePairingFlowView: View {
 
             resetSelectionState()
             error = "Unable to connect to \(device.displayName). Make sure it is powered on and nearby, then try again."
+        }
+    }
+
+    // MARK: - AccessorySetupKit (iOS 26.3+)
+
+    private func presentAccessorySetupPicker() async {
+        guard !isPresentingAccessoryPicker else { return }
+        isPresentingAccessoryPicker = true
+        defer { isPresentingAccessoryPicker = false }
+
+        error = nil
+        let controller = AccessorySetupController()
+
+        do {
+            let peripheral = try await controller.presentPicker()
+            // Hand the paired peripheral off to the existing BLEManager
+            // path so the rest of the app (state restoration, RSSI,
+            // metadata sync) is unchanged.
+            bleManager.startScanning(mode: .discovery)
+            let device = BLEDevice(peripheral: peripheral, rssi: 0)
+            proceedWithPairing(device)
+        } catch AccessorySetupController.AccessorySetupError.userCancelled {
+            // Silent — user dismissed the system sheet.
+        } catch AccessorySetupController.AccessorySetupError.unsupported {
+            // ASKit is not available at runtime despite the gate; fall
+            // back to the legacy CoreBluetooth scan flow.
+            bleManager.startScanning(mode: .discovery)
+        } catch {
+            self.error = "Pairing sheet failed: \(error.localizedDescription)"
         }
     }
 }

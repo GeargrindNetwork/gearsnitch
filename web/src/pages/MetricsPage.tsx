@@ -383,7 +383,7 @@ export default function MetricsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="dark min-h-screen bg-black text-white">
       <Header />
       <main className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 pb-16 pt-28 sm:px-6 lg:px-8">
         <section className="relative overflow-hidden rounded-[2rem] border border-white/5 bg-zinc-900/70 px-6 py-8 sm:px-8 lg:px-10">
