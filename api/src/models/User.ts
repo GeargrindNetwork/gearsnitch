@@ -8,6 +8,13 @@ export interface IUser extends Document {
   displayName: string;
   photoUrl?: string;
   referralCode?: string | null;
+  /**
+   * Post-install referral attribution: the User._id of the referrer that
+   * brought this user in (typically resolved by `POST /api/v1/referrals/claim`
+   * after a successful sign-in). Set once and only once — the claim endpoint
+   * is idempotent and refuses to overwrite an existing value.
+   */
+  referredBy?: Types.ObjectId | null;
   googleId?: string;
   appleId?: string;
   authProviders: string[];
@@ -56,6 +63,7 @@ const UserSchema = new Schema<IUser>(
     displayName: { type: String, required: true },
     photoUrl: { type: String },
     referralCode: { type: String, default: null, sparse: true },
+    referredBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     googleId: { type: String, sparse: true },
     appleId: { type: String, sparse: true },
     authProviders: { type: [String], default: [] },
@@ -109,5 +117,9 @@ UserSchema.index({ email: 1 });
 UserSchema.index({ status: 1 });
 UserSchema.index({ deletedAt: 1 });
 UserSchema.index({ stripeCustomerId: 1 }, { sparse: true });
+// Sparse index — only the small subset of users that have been attributed to
+// a referrer carry the field, and we query by it when computing referrer
+// dashboards. Keep it sparse to avoid bloating the index with NULLs.
+UserSchema.index({ referredBy: 1 }, { sparse: true });
 
 export const User = mongoose.model<IUser>('User', UserSchema);
