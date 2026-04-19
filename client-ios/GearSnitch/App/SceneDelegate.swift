@@ -34,11 +34,18 @@ final class SceneDelegate: NSObject, UIWindowSceneDelegate {
         willConnectTo session: UISceneSession,
         options connectionOptions: UIScene.ConnectionOptions
     ) {
+        // iOS-26-only: `HKHealthStore.recoverActiveWorkoutSession(completion:)`
+        // ships with the iOS 26 SDK. Xcode 16.4 (CI runner) has the iOS 18 SDK
+        // and marks that API unavailable, so we gate the call site at compile
+        // time. Mirrors the gate in `iPhoneWorkoutSession.swift`.
+        #if compiler(>=6.2) && os(iOS)
         if #available(iOS 26.0, *) {
             recoverActiveWorkoutSessionIfNeeded()
         }
+        #endif
     }
 
+    #if compiler(>=6.2) && os(iOS)
     @available(iOS 26.0, *)
     private func recoverActiveWorkoutSessionIfNeeded() {
         let healthStore = HKHealthStore()
@@ -72,6 +79,7 @@ final class SceneDelegate: NSObject, UIWindowSceneDelegate {
             }
         }
     }
+    #endif
 }
 
 /// Thread-safe box for the most recent recovered `IPhoneWorkoutSession`. The
