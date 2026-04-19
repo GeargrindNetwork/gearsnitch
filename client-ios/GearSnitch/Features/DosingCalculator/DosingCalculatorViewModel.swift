@@ -2,80 +2,11 @@ import Foundation
 import SwiftData
 import os
 
-// MARK: - Substance
-
-enum Substance: String, CaseIterable, Identifiable {
-    case bpc157 = "BPC-157"
-    case tb500 = "TB-500"
-    case cjcIpamorelin = "CJC-1295/Ipamorelin"
-    case ghkCu = "GHK-Cu"
-    case selank = "Selank"
-    case pt141 = "PT-141"
-    case custom = "Custom"
-
-    var id: String { rawValue }
-
-    /// Default vial concentration in the substance's primary unit.
-    var defaultConcentration: Double {
-        switch self {
-        case .bpc157: return 5.0        // mg/mL after standard reconstitution
-        case .tb500: return 5.0
-        case .cjcIpamorelin: return 2.5
-        case .ghkCu: return 5.0
-        case .selank: return 5.0
-        case .pt141: return 2.0
-        case .custom: return 1.0
-        }
-    }
-
-    /// Whether the substance is typically dosed in micrograms.
-    var usesMicrograms: Bool {
-        switch self {
-        case .bpc157, .selank, .ghkCu, .cjcIpamorelin, .pt141:
-            return true
-        case .tb500, .custom:
-            return false
-        }
-    }
-
-    /// Unit label based on whether the substance uses mcg or mg.
-    var unitLabel: String {
-        usesMicrograms ? "mcg" : "mg"
-    }
-
-    /// Concentration unit label.
-    var concentrationLabel: String {
-        usesMicrograms ? "mcg/mL" : "mg/mL"
-    }
-
-    /// Typical single dose in the substance's native unit.
-    var typicalDose: Double {
-        switch self {
-        case .bpc157: return 250       // mcg
-        case .tb500: return 2.5        // mg
-        case .cjcIpamorelin: return 300 // mcg
-        case .ghkCu: return 200        // mcg
-        case .selank: return 300       // mcg
-        case .pt141: return 1000       // mcg
-        case .custom: return 0
-        }
-    }
-
-    /// Brief description of the substance.
-    var info: String {
-        switch self {
-        case .bpc157: return "Body Protection Compound — gastric peptide for tissue repair"
-        case .tb500: return "Thymosin Beta-4 — cell migration and wound healing"
-        case .cjcIpamorelin: return "Growth hormone releasing peptide combination"
-        case .ghkCu: return "Copper peptide — skin and tissue regeneration"
-        case .selank: return "Synthetic peptide — anxiolytic and nootropic"
-        case .pt141: return "Bremelanotide — melanocortin receptor agonist"
-        case .custom: return "User-defined substance"
-        }
-    }
-}
-
 // MARK: - Dose History Entry (SwiftData)
+//
+// Persists the final calculated dose so the user can audit what they
+// actually drew. Only mass fields and the timestamp — nothing that
+// links this record to a specific person or device.
 
 @Model
 final class DoseHistoryEntry {
@@ -111,76 +42,128 @@ final class DoseHistoryEntry {
 @MainActor
 final class DosingCalculatorViewModel: ObservableObject {
 
-    @Published var selectedSubstance: Substance = .bpc157 {
-        didSet { applyDefaults() }
+    // --- Library -----------------------------------------------------
+    //
+    // Loaded at init from `Resources/SubstanceLibrary.json`. Keeps
+    // the view model hermetic: no network, no SwiftData lookup, no
+    // bundle indirection at read-time.
+
+    let library: SubstanceLibrary
+
+    /// All substances (peptides + steroids) plus the synthetic "Custom"
+    /// entry the user can use to enter free-form values.
+    var allSubstances: [Substance] { library.substances }
+
+    /// Currently-selected substance. `nil` means "custom" mode.
+    @Published var selectedSubstance: Substance? {
+        didSet { applyDefaultsIfSubstanceChanged(previous: oldValue) }
     }
 
-    /// Concentration in the substance's native unit per mL.
-    @Published var concentration: Double = 5.0
+    // --- Inputs ------------------------------------------------------
 
-    /// Desired dose in the substance's native unit.
+    @Published var vialConcentration: Double = 5.0
+    @Published var vialConcentrationUnit: DoseUnit = .mg
+    @Published var vialVolumeMl: Double = 2.0
     @Published var desiredDose: Double = 250
+    @Published var desiredDoseUnit: DoseUnit = .mcg
+    @Published var syringe: SyringeSize = .oneML
 
-    /// Reconstitution volume in mL (for powder vials being reconstituted).
-    @Published var reconstitutionVolume: Double = 2.0
-
-    /// Whether the user is entering a reconstitution scenario (powder vial).
-    @Published var isReconstituting: Bool = false
+    // --- History -----------------------------------------------------
 
     @Published var doseHistory: [DoseHistoryEntry] = []
 
     private let logger = Logger(subsystem: "com.gearsnitch", category: "DosingCalculator")
 
-    // MARK: - Computed
-
-    /// The effective concentration after reconstitution, or the direct concentration.
-    var effectiveConcentration: Double {
-        guard concentration > 0 else { return 0 }
-        return concentration
-    }
-
-    /// Volume to draw in mL.
-    var volumeToInject: Double {
-        guard effectiveConcentration > 0 else { return 0 }
-        let doseInSameUnit = desiredDose
-        return doseInSameUnit / effectiveConcentration
-    }
-
-    /// Syringe units for an insulin syringe (1 unit = 0.01 mL).
-    var syringeUnits: Int {
-        Int((volumeToInject * 100).rounded())
-    }
-
-    /// Fill fraction for the syringe visual (0.0 to 1.0, capped at 1.0 for display).
-    var syringeFillFraction: Double {
-        // Standard insulin syringe is 1 mL = 100 units
-        min(volumeToInject, 1.0)
-    }
-
     // MARK: - Init
 
-    init() {
+    init(library: SubstanceLibrary = SubstanceLibraryLoader.shared) {
+        self.library = library
+        self.selectedSubstance = library.substance(withId: "bpc-157") ?? library.substances.first
         applyDefaults()
         loadHistory()
+    }
+
+    // MARK: - Computed Dosing
+
+    /// Pure pass-through to `DosingCalculator.calculate`. Declared as a
+    /// computed property so SwiftUI picks up every input change with no
+    /// manual wiring.
+    var result: DosingResult {
+        DosingCalculator.calculate(
+            inputs: DosingInputs(
+                vialConcentration: vialConcentration,
+                vialConcentrationUnit: vialConcentrationUnit,
+                vialVolumeMl: vialVolumeMl,
+                desiredDose: desiredDose,
+                desiredDoseUnit: desiredDoseUnit,
+                syringe: syringe
+            ),
+            recommendedDose: selectedSubstance?.recommendedDose
+        )
+    }
+
+    // Convenience proxies so existing view code keeps working.
+    var drawVolumeMl: Double { result.drawVolumeMl }
+    var syringeTicks: Int { result.syringeTicks }
+    var concentrationPerMl: Double { result.concentrationMcgPerMl }
+    var syringeFillFraction: Double { result.syringeFillFraction }
+    var warnings: [DosingWarning] { result.warnings }
+    var hasExtremeCautionSubstance: Bool {
+        selectedSubstance?.warningSeverity == .extremeCaution
     }
 
     // MARK: - Actions
 
     func applyDefaults() {
-        concentration = selectedSubstance.defaultConcentration
-        desiredDose = selectedSubstance.typicalDose
+        applyDefaultsIfSubstanceChanged(previous: nil)
+    }
+
+    private func applyDefaultsIfSubstanceChanged(previous: Substance?) {
+        guard let substance = selectedSubstance else { return }
+        if previous?.id == substance.id { return }
+
+        let rec = substance.recommendedDose
+
+        // Desired dose — pick the midpoint of the recommended range so
+        // the user opens the calculator with a "safe by default" value.
+        let midpoint = (rec.low + rec.high) / 2
+
+        if rec.unit.isConvertibleToMassInMg {
+            desiredDoseUnit = rec.unit
+            desiredDose = midpoint
+        } else {
+            // Non-mass unit (IU, mL, mg/kg) — keep user-entered value,
+            // leave unit alone and let the view show "unsupported unit"
+            // messaging.
+            desiredDose = midpoint
+        }
+
+        // Vial concentration — sensible defaults per class.
+        // Peptides: 5 mg in 2 mL water is the standard reconstitution.
+        // Steroids: oil solutions are labeled in mg/mL directly.
+        vialVolumeMl = 2.0
+        vialConcentrationUnit = .mg
+
+        switch substance.class {
+        case .peptide:
+            vialConcentration = 5.0
+        case .steroid:
+            // Oil-based steroids are usually labeled in mg/mL on the vial.
+            // Default to the recommended-dose mid-point multiplied out so
+            // the draw is ~1 mL for a 2 mL vial.
+            vialConcentration = max(rec.high, 10.0)
+        }
     }
 
     func saveDose() {
         let entry = DoseHistoryEntry(
-            substanceName: selectedSubstance.rawValue,
-            concentration: concentration,
+            substanceName: selectedSubstance?.name ?? "Custom",
+            concentration: vialConcentration,
             desiredDose: desiredDose,
-            volumeInjected: volumeToInject,
-            syringeUnits: syringeUnits
+            volumeInjected: drawVolumeMl,
+            syringeUnits: syringeTicks
         )
 
-        // Save to SwiftData
         let context = LocalStore.shared.mainContext
         context.insert(entry)
         do {
@@ -189,7 +172,6 @@ final class DosingCalculatorViewModel: ObservableObject {
             logger.error("Failed to save dose entry: \(error.localizedDescription)")
         }
 
-        // Update in-memory list (keep last 10)
         doseHistory.insert(entry, at: 0)
         if doseHistory.count > 10 {
             doseHistory = Array(doseHistory.prefix(10))
