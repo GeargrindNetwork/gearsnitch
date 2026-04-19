@@ -66,7 +66,7 @@ extension APIEndpoint {
 @MainActor
 final class AchievementService {
 
-    nonisolated(unsafe) static let shared = AchievementService()
+    nonisolated static let shared = AchievementService()
 
     private let apiClient: APIClient
     private let cacheTTL: TimeInterval

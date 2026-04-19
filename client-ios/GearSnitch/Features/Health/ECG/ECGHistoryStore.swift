@@ -14,15 +14,17 @@ import os
 @MainActor
 final class ECGHistoryStore: ObservableObject {
 
-    static let shared = ECGHistoryStore()
+    nonisolated static let shared = ECGHistoryStore()
 
     @Published private(set) var recordings: [ECGRecording] = []
 
     private let logger = Logger(subsystem: "com.gearsnitch", category: "ECGHistoryStore")
     private let fileManager = FileManager.default
 
-    private init() {
-        loadAll()
+    nonisolated private init() {
+        Task { @MainActor in
+            self.loadAll()
+        }
     }
 
     // MARK: - Paths

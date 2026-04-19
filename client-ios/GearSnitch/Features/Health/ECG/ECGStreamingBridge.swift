@@ -21,7 +21,7 @@ import WatchConnectivity
 @MainActor
 final class ECGStreamingBridge: NSObject, ObservableObject {
 
-    static let shared = ECGStreamingBridge()
+    nonisolated static let shared = ECGStreamingBridge()
 
     /// Published raw batches during an active capture. View models observe
     /// this to append samples to the visible waveform.
@@ -33,7 +33,7 @@ final class ECGStreamingBridge: NSObject, ObservableObject {
     private var isCapturing = false
     private var activeRecordingId: String?
 
-    private override init() {
+    nonisolated private override init() {
         super.init()
     }
 
