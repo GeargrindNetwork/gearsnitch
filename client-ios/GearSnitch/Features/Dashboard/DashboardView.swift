@@ -7,7 +7,6 @@ struct DashboardView: View {
     @ObservedObject private var heartRateMonitor = HeartRateMonitor.shared
     @State private var navigateToScanner = false
     @State private var scannerTargetDevice: BLEDevice?
-    @State private var showReferralQR = false
 
     var body: some View {
         ScrollView {
@@ -37,42 +36,12 @@ struct DashboardView: View {
         .navigationTitle("Dashboard")
         .navigationBarTitleDisplayMode(.large)
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    showReferralQR = true
-                } label: {
-                    Image(systemName: "qrcode")
-                        .font(.title3)
-                        .foregroundColor(.gsEmerald)
-                }
-                .accessibilityLabel("Show referral QR code")
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                if bleManager.isDisconnectProtectionArmed {
-                    Button {
-                        bleManager.disarmDisconnectProtection(reason: "manual disarm from dashboard")
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "lock.open.fill")
-                                .font(.caption)
-                            Text("Disarm")
-                                .font(.caption.weight(.semibold))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(Color.red.opacity(0.85))
-                        .cornerRadius(8)
-                    }
-                }
-            }
-        }
+        // Shared TopNavBar overlay (rendered by RootTabView) now owns the
+        // referral QR icon and the Disarm chip. DashboardView intentionally
+        // no longer declares its own top-right buttons so layouts stay
+        // consistent across tabs.
         .refreshable {
             await viewModel.loadDashboard()
-        }
-        .sheet(isPresented: $showReferralQR) {
-            ReferralQRModalView()
         }
         .overlay {
             if viewModel.isLoading && viewModel.devices.isEmpty {

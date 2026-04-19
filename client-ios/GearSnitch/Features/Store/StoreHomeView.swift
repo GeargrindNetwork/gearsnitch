@@ -77,16 +77,10 @@ struct StoreHomeView: View {
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("Store")
         .navigationBarTitleDisplayMode(.large)
+        // Cart button is rendered by the shared TopNavBar at the
+        // RootTabView level to avoid overlapping the profile avatar.
+        // Orders stays in the overflow menu.
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                NavigationLink {
-                    CartView()
-                } label: {
-                    Image(systemName: "cart")
-                        .foregroundColor(.gsEmerald)
-                }
-            }
-
             ToolbarItem(placement: .secondaryAction) {
                 NavigationLink {
                     OrderHistoryView()
