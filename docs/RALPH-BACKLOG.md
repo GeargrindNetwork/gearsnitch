@@ -17,8 +17,8 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | # | Title | Impact | Complexity | Tier | Layers | Status | Notes |
 |---|---|---|---|---|---|---|---|
 | 4 | Gear retirement + component mileage alerts (shoe/chain/tire) | 9 | S | 2 | ios,api,worker | pending | Strava GAP per DC Rainmaker; push at user-set threshold. Core gear-tracking moat. |
-| 5 | Weekly reconciliation cron for subscription state drift | 8 | M | 2 | api,worker | in-progress | Agent building now. |
-| 6 | AccessorySetupKit for one-tap BLE gear pairing | 8 | S | 2 | ios | pending | iOS 26.3 DMA expansion. Replaces CoreBluetooth permission prompt with AirPods-style sheet. |
+| 5 | Weekly reconciliation cron for subscription state drift | 8 | M | 2 | api,worker | merged | PR #50 |
+| 6 | AccessorySetupKit for one-tap BLE gear pairing | 8 | S | 2 | ios | pr-open | iOS 26.3 DMA expansion. Replaces CoreBluetooth permission prompt with AirPods-style sheet. PR pending. |
 | 7 | HealthKit Medications API sync for peptide/dosing log | 8 | S | 2 | ios | pending | WWDC25. Bi-directional med log sync; differentiator vs Whoop/Strava. |
 | 8 | External HR sensor intake on iPhone (BLE HR profile + Powerbeats Pro 2) | 8 | S | 2 | ios | pending | iOS 26 HKLiveWorkoutDataSource. Expands Watch-less cohort. |
 | 9 | Strava-style auto-gear assignment by activity type | 8 | S | 2 | ios,api | pending | Default gear per workout + manual override. Table-stakes. |
@@ -47,7 +47,7 @@ Items the autonomous build loop ("Ralph") works through. Status values:
 | 32 | Admin dashboard API (currently 501) | 4 | L | 2 | api,web | pending | Gated on `user.roles.includes('admin')`. |
 | 33 | Content module / CMS (currently 501) | 3 | M | 2 | api,web | pending | Blog posts / marketing. |
 | 34 | Feature flag system (Redis-backed) | 5 | M | 2 | api | pending | Per-user / per-tier overrides. |
-| 35 | Dark-mode consistency pass | 3 | S | 2 | web | pending | Manual audit. |
+| 35 | Dark-mode consistency pass | 3 | S | 2 | web | merged | PR #53 |
 | 36 | Landing page A/B framework | 4 | M | 2 | web | pending | Two variants, cookie-based bucketing. |
 | 37 | GPS run polylines + route map | 5 | L | 2 | ios,api | pending | CoreLocation + MapKit. |
 | 38 | Apple Watch companion workout sync | 5 | L | 2 | ios | pending | **Affected by #10** — model must handle iPhone-originated workouts with Watch as optional sensor. |
