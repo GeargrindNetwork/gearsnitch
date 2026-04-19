@@ -1059,6 +1059,59 @@ export async function getSubscriptionInvoices(params?: {
   };
 }
 
+// ─── Notification History (item #23) ─────────────────────────────────────
+
+export type NotificationHistoryStatus =
+  | 'sent'
+  | 'delivered'
+  | 'failed'
+  | 'read';
+
+export interface NotificationHistoryItem {
+  id: string;
+  notificationType: string;
+  title: string | null;
+  body: string | null;
+  sentAt: string;
+  deliveredAt: string | null;
+  openedAt: string | null;
+  failureReason: string | null;
+  status: NotificationHistoryStatus;
+}
+
+export interface NotificationHistoryResponse {
+  items: NotificationHistoryItem[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export async function getNotificationHistory(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<NotificationHistoryResponse> {
+  const qs = new URLSearchParams();
+  if (typeof params?.page === 'number') qs.set('page', String(params.page));
+  if (typeof params?.limit === 'number') qs.set('limit', String(params.limit));
+  const suffix = qs.size > 0 ? `?${qs.toString()}` : '';
+
+  const res = await api.get<NotificationHistoryResponse>(
+    `/notifications/history${suffix}`,
+  );
+  if (!res.success || !res.data) {
+    throw new Error(res.error?.message || 'Failed to load notification history');
+  }
+  const data = res.data;
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    page: typeof data.page === 'number' ? data.page : 1,
+    limit: typeof data.limit === 'number' ? data.limit : 25,
+    total: typeof data.total === 'number' ? data.total : 0,
+    totalPages: typeof data.totalPages === 'number' ? data.totalPages : 0,
+  };
+}
+
 // ─── Emergency Contacts ───────────────────────────────────────────────────
 
 export interface EmergencyContact {
