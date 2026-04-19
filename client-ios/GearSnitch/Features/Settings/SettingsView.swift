@@ -30,6 +30,14 @@ struct SettingsView: View {
                         .foregroundColor(.gsText)
                 }
 
+                // Backlog item #9 — Strava-style default gear per activity.
+                NavigationLink {
+                    DefaultGearPerActivityView()
+                } label: {
+                    Label("Default gear per activity", systemImage: "shoe.2")
+                        .foregroundColor(.gsText)
+                }
+
                 NavigationLink {
                     NotificationPreferencesView()
                 } label: {

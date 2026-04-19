@@ -11,6 +11,7 @@ import { HealthMetric } from '../../models/HealthMetric.js';
 import { LabAppointment } from '../../models/LabAppointment.js';
 import { successResponse, errorResponse } from '../../utils/response.js';
 import reconciliationRouter from './reconciliation.js';
+import { pingGemini } from '../../services/geminiClient.js';
 
 const router = Router();
 
@@ -160,6 +161,23 @@ router.patch('/users/:id', validateBody(updateUserSchema), async (req: Request, 
     successResponse(res, serializeUser(user));
   } catch (err) {
     errorResponse(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to update user', (err as Error).message);
+  }
+});
+
+// GET /admin/ai/ping — verify Gemini/Vertex AI wiring (IAM + network)
+// Admin-only; intentionally surfaces errors instead of swallowing them so
+// post-deploy smoke tests can detect misconfiguration quickly.
+router.get('/ai/ping', async (_req: Request, res: Response) => {
+  try {
+    const result = await pingGemini();
+    successResponse(res, result);
+  } catch (err) {
+    errorResponse(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Gemini ping failed',
+      (err as Error).message,
+    );
   }
 });
 

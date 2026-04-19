@@ -5,6 +5,7 @@ import Foundation
 enum HTTPMethod: String {
     case GET
     case POST
+    case PUT
     case PATCH
     case DELETE
 }
@@ -549,6 +550,40 @@ extension APIEndpoint {
     }
 }
 
+// MARK: - Gear Endpoints (backlog item #9)
+
+extension APIEndpoint {
+    enum Gear {
+        /// List all gear owned by the authenticated user (retired + active).
+        static var list: APIEndpoint {
+            APIEndpoint(path: "/api/v1/gear")
+        }
+
+        /// Fetch the default gear configured for a given HKWorkoutActivityType.
+        static func defaultForActivity(type: String) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/gear/default-for-activity",
+                queryItems: [URLQueryItem(name: "type", value: type)]
+            )
+        }
+
+        /// Upsert / clear the default gear for a given activity type.
+        /// Pass `gearId: nil` to clear.
+        static func setDefaultForActivity(activityType: String, gearId: String?) -> APIEndpoint {
+            APIEndpoint(
+                path: "/api/v1/gear/default-for-activity",
+                method: .PUT,
+                body: SetDefaultGearBody(activityType: activityType, gearId: gearId)
+            )
+        }
+    }
+}
+
+struct SetDefaultGearBody: Encodable {
+    let activityType: String
+    let gearId: String?
+}
+
 // MARK: - Store Endpoints
 
 extension APIEndpoint {
@@ -797,6 +832,14 @@ struct CreateWorkoutBody: Encodable {
     let notes: String?
     let source: String
     let exercises: [CreateWorkoutExerciseBody]
+    /// HKWorkoutActivityType rawValue string. Used server-side to resolve
+    /// the user's default gear for auto-attach (backlog item #9).
+    var activityType: String?
+    /// Explicit gear selection. `nil` = allow server auto-attach; an empty
+    /// Optional<String> carrying an explicit JSON `null` would suppress
+    /// auto-attach, but the current wire format only sends present strings.
+    var gearId: String?
+    var gearIds: [String]?
 }
 
 struct UpdateWorkoutBody: Encodable {

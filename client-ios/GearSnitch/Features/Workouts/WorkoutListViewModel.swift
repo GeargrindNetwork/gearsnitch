@@ -18,11 +18,16 @@ struct WorkoutDTO: Identifiable, Decodable {
     let source: String?
     let createdAt: Date?
     let updatedAt: Date?
+    /// Primary GearComponent attached to this workout (backlog item #9).
+    let gearId: String?
+    let gearIds: [String]?
+    let activityType: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "_id"
         case name, startedAt, endedAt, durationMinutes, durationSeconds
         case exerciseCount, notes, exercises, gymName, source, createdAt, updatedAt
+        case gearId, gearIds, activityType
     }
 
     var duration: TimeInterval {
