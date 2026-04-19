@@ -50,6 +50,29 @@ const gymEventSchema = z.object({
   source: z.enum(['ios', 'web', 'system']).optional().default('ios'),
 });
 
+const evaluateLocationSchema = z.object({
+  lat: z.number().finite().min(-90).max(90),
+  lng: z.number().finite().min(-180).max(180),
+  gymId: z.string().trim().min(1).optional(),
+});
+
+const checkinSchema = z.object({
+  lat: z.number().finite().min(-90).max(90),
+  lng: z.number().finite().min(-180).max(180),
+});
+
+const nearbyQuerySchema = z.object({
+  lat: z.coerce.number().finite().min(-90).max(90),
+  lng: z.coerce.number().finite().min(-180).max(180),
+  radiusMeters: z.coerce
+    .number()
+    .finite()
+    .positive()
+    .max(50_000)
+    .optional()
+    .default(2000),
+});
+
 function getUserId(req: Request): string {
   return (req.user as JwtPayload).sub;
 }
@@ -101,14 +124,39 @@ router.post(
   },
 );
 
-// POST /gyms/evaluate
-router.post('/evaluate', isAuthenticated, (_req, res) => {
-  errorResponse(
-    res,
-    StatusCodes.NOT_IMPLEMENTED,
-    'Gym location evaluation is deferred to a follow-up geofence track.',
-  );
-});
+// POST /gyms/evaluate — evaluates against the caller's default gym (or a
+// specific `gymId` provided in the body). Kept for backwards compatibility
+// with the iOS client. The primary, spec-mandated route is
+// `POST /gyms/:id/evaluate-location` below.
+router.post(
+  '/evaluate',
+  isAuthenticated,
+  validateBody(evaluateLocationSchema),
+  async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const { lat, lng, gymId } = req.body as z.infer<typeof evaluateLocationSchema>;
+
+      let resolvedGymId = gymId;
+      if (!resolvedGymId) {
+        const defaultGym = await Gym.findOne({
+          userId: new Types.ObjectId(userId),
+          isDefault: true,
+        });
+        if (!defaultGym) {
+          errorResponse(res, StatusCodes.NOT_FOUND, 'No default gym configured');
+          return;
+        }
+        resolvedGymId = String(defaultGym._id);
+      }
+
+      const result = await gymService.evaluateLocation(userId, resolvedGymId, lat, lng);
+      successResponse(res, result);
+    } catch (err) {
+      handleGymError(res, err, 'Failed to evaluate gym location');
+    }
+  },
+);
 
 // POST /gyms/events
 router.post(
@@ -209,13 +257,30 @@ router.post(
   },
 );
 
-// GET /gyms/nearby
-router.get('/nearby', isAuthenticated, (_req, res) => {
-  errorResponse(
-    res,
-    StatusCodes.NOT_IMPLEMENTED,
-    'Nearby gym discovery is deferred to a follow-up geofence track.',
-  );
+// GET /gyms/nearby?lat=&lng=&radiusMeters=
+router.get('/nearby', isAuthenticated, async (req, res) => {
+  const parsed = nearbyQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    const details = parsed.error.errors.map((e) => ({
+      path: e.path.join('.'),
+      message: e.message,
+    }));
+    errorResponse(res, StatusCodes.BAD_REQUEST, 'Validation failed', details);
+    return;
+  }
+
+  try {
+    const { lat, lng, radiusMeters } = parsed.data;
+    const result = await gymService.findNearby(
+      getUserId(req),
+      lat,
+      lng,
+      radiusMeters,
+    );
+    successResponse(res, result);
+  } catch (err) {
+    handleGymError(res, err, 'Failed to find nearby gyms');
+  }
 });
 
 // GET /gyms/:id
@@ -267,13 +332,67 @@ router.delete('/:id', isAuthenticated, async (req, res) => {
   }
 });
 
-// POST /gyms/:id/check-in
-router.post('/:id/check-in', isAuthenticated, (_req, res) => {
-  errorResponse(
-    res,
-    StatusCodes.NOT_IMPLEMENTED,
-    'Gym check-in events are deferred to a follow-up geofence track.',
-  );
-});
+// POST /gyms/:id/evaluate-location — per-gym geofence probe.
+router.post(
+  '/:id/evaluate-location',
+  isAuthenticated,
+  validateBody(evaluateLocationSchema),
+  async (req, res) => {
+    try {
+      const { lat, lng } = req.body as z.infer<typeof evaluateLocationSchema>;
+      const result = await gymService.evaluateLocation(
+        getUserId(req),
+        getRouteParam(req, 'id'),
+        lat,
+        lng,
+      );
+      successResponse(res, result);
+    } catch (err) {
+      handleGymError(res, err, 'Failed to evaluate gym location');
+    }
+  },
+);
+
+async function handleCheckIn(req: Request, res: Response): Promise<void> {
+  try {
+    const { lat, lng } = req.body as z.infer<typeof checkinSchema>;
+    const result = await gymService.checkIn(
+      getUserId(req),
+      getRouteParam(req, 'id'),
+      lat,
+      lng,
+    );
+
+    if (!result.ok) {
+      errorResponse(
+        res,
+        StatusCodes.BAD_REQUEST,
+        'Not inside gym geofence',
+        { distanceMeters: result.distanceMeters },
+      );
+      return;
+    }
+
+    successResponse(res, { session: result.session }, StatusCodes.CREATED);
+  } catch (err) {
+    handleGymError(res, err, 'Failed to check in to gym');
+  }
+}
+
+// POST /gyms/:id/checkin — spec-mandated path.
+router.post(
+  '/:id/checkin',
+  isAuthenticated,
+  validateBody(checkinSchema),
+  handleCheckIn,
+);
+
+// POST /gyms/:id/check-in — hyphen alias for backwards compatibility.
+router.post(
+  '/:id/check-in',
+  isAuthenticated,
+  validateBody(checkinSchema),
+  handleCheckIn,
+);
 
 export default router;
