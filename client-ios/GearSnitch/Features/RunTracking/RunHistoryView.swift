@@ -6,28 +6,42 @@ struct RunHistoryView: View {
     @ObservedObject private var runManager = RunTrackingManager.shared
 
     var body: some View {
-        Group {
-            if viewModel.isLoading && viewModel.runs.isEmpty {
-                LoadingView(message: "Loading runs...")
-            } else if viewModel.completedRuns.isEmpty {
-                emptyState
-            } else {
-                runList
+        ZStack(alignment: .bottomTrailing) {
+            Group {
+                if viewModel.isLoading && viewModel.runs.isEmpty {
+                    LoadingView(message: "Loading runs...")
+                } else if viewModel.completedRuns.isEmpty {
+                    emptyState
+                } else {
+                    runList
+                }
             }
+
+            // Moved from top-right to bottom-right to avoid overlapping
+            // the shared TopNavBar profile/QR cluster (founder bug report).
+            NavigationLink {
+                ActiveRunView()
+            } label: {
+                Image(systemName: runManager.activeRun == nil ? "figure.run.circle.fill" : "pause.circle.fill")
+                    .font(.system(size: 40))
+                    .foregroundColor(.white)
+                    .frame(width: 56, height: 56)
+                    .background(Color.gsEmerald)
+                    .clipShape(Circle())
+                    .shadow(radius: 6, y: 3)
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 24)
+            .accessibilityIdentifier("runHistory.addRunFab")
+            .accessibilityLabel("Start a new run")
         }
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("Runs")
         .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                NavigationLink {
-                    ActiveRunView()
-                } label: {
-                    Image(systemName: runManager.activeRun == nil ? "figure.run.circle.fill" : "pause.circle.fill")
-                        .foregroundColor(.gsEmerald)
-                }
-            }
-        }
+        // Delete-run alert (PR #96). Toolbar add-run was removed in PR #95 —
+        // the "Add Run" action now lives in a bottom-right FAB (see the
+        // accessibilityIdentifier "runHistory.addRunFab" above) so it stops
+        // overlapping with the shared top-nav cluster.
         .alert(
             "Delete Run",
             isPresented: Binding(

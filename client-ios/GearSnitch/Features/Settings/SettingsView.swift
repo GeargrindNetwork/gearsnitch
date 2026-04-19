@@ -3,12 +3,33 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var authManager: AuthManager
     @ObservedObject private var releaseGateManager = ReleaseGateManager.shared
+    @ObservedObject private var iCloudSync = ICloudProfileSync.shared
     @State private var showSignOutConfirm = false
     @State private var isExporting = false
     @State private var exportError: String?
 
     var body: some View {
         List {
+            Section {
+                Toggle(isOn: Binding(
+                    get: { iCloudSync.isEnabled },
+                    set: { iCloudSync.setEnabled($0) }
+                )) {
+                    Label("Sync with iCloud", systemImage: "icloud")
+                        .foregroundColor(.gsText)
+                }
+                .tint(.gsEmerald)
+                .accessibilityIdentifier("settings.iCloudSync.toggle")
+            } header: {
+                Text("Account")
+                    .foregroundColor(.gsTextSecondary)
+            } footer: {
+                Text("Syncs display name, preferences, feature flags, default gym, and HealthKit opt-ins across your iCloud devices. Auth tokens and subscription state stay on-device.")
+                    .font(.caption)
+                    .foregroundColor(.gsTextSecondary)
+            }
+            .listRowBackground(Color.gsSurface)
+
             Section {
                 NavigationLink {
                     LostItemScannerView()

@@ -193,14 +193,18 @@ final class AuthManager: ObservableObject {
         let userDTO: UserDTO
         let syncedEntitlements = await StoreKitManager.shared.syncCurrentEntitlementsToBackend()
 
-        if let embeddedUser = response.user, !syncedEntitlements {
-            logger.info("Sign-in response included embedded user payload")
-            userDTO = embeddedUser
-        } else {
-            logger.info("Fetching current profile after \(method) sign-in")
-            do {
-                userDTO = try await apiClient.request(APIEndpoint.Auth.me)
-            } catch {
+        // Task 3 — profile auto-sync on login. We ALWAYS fetch /me after
+        // a successful sign-in so local cache never depends on the embedded
+        // payload being fresh; the embedded payload is still used as a
+        // fallback when the follow-up fetch fails (e.g. transient network).
+        do {
+            logger.info("Fetching current profile after \(method) sign-in (auto-sync)")
+            userDTO = try await apiClient.request(APIEndpoint.Auth.me)
+        } catch {
+            if let embeddedUser = response.user, !syncedEntitlements {
+                logger.warning("Profile auto-sync failed, falling back to embedded user: \(error.localizedDescription)")
+                userDTO = embeddedUser
+            } else {
                 logger.error("Failed to fetch current profile after \(method) sign-in: \(error.localizedDescription)")
                 throw error
             }
@@ -209,6 +213,19 @@ final class AuthManager: ObservableObject {
         let user = GSUser(from: userDTO)
         authState = .authenticated(user)
         logger.info("Sign-in complete for user \(user.id) via \(method)")
+
+        // Task 3 follow-up — once authenticated, reconcile with the
+        // iCloud KV store so other devices' preferences show up here.
+        let local = ICloudProfilePayload(
+            displayName: user.displayName,
+            defaultGymId: user.defaultGymId,
+            unitSystem: user.preferences?.unitSystem?.rawValue,
+            healthKitOptIns: [],
+            featureFlags: [:],
+            notificationsEnabled: user.preferences?.notificationsEnabled,
+            updatedAt: Date()
+        )
+        _ = ICloudProfileSync.shared.reconcile(local: local)
 
         AnalyticsClient.shared.identify(userId: user.id, traits: [
             "email": user.email,

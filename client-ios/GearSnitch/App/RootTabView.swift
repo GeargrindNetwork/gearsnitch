@@ -66,10 +66,16 @@ struct RootTabView: View {
 
     @EnvironmentObject private var coordinator: AppCoordinator
     @EnvironmentObject private var featureFlags: FeatureFlags
+    @ObservedObject private var alarmManager = AlarmManager.shared
 
     @State private var selection: PrimaryTab = .gear
     @State private var lastEmittedTab: PrimaryTab?
     @State private var showAvatarMenu: Bool = false
+    @State private var showReferralQR: Bool = false
+    @State private var showPairDeviceSheet: Bool = false
+    @State private var showArmModal: Bool = false
+    @State private var showDisarmConfirm: Bool = false
+    @State private var showCart: Bool = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -119,15 +125,73 @@ struct RootTabView: View {
                 if mapped != selection { selection = mapped }
             }
 
-            // Avatar overlay — anchored top-right, above the nav bar.
-            AvatarMenuLauncher(isPresented: $showAvatarMenu)
-                .padding(.trailing, 16)
-                .padding(.top, 6)
-                .accessibilityIdentifier("rootTab.avatarMenu.launcher")
+            // Shared top-right cluster — profile, referral QR, cart, disarm.
+            // Cart is only shown on the Gear tab where the Store surface lives;
+            // the other tabs hide it to avoid confusing placement.
+            TopNavBar(
+                config: TopNavBarConfig(
+                    showCart: selection == .gear,
+                    showReferral: true,
+                    showProfile: true,
+                    showDisarm: AlarmGate.showsDisarmChip(alarmManager.gateState),
+                    isDisarmDisabled: alarmManager.gateState != .armed
+                ),
+                onProfileTap: { showAvatarMenu = true },
+                onReferralTap: { showReferralQR = true },
+                onCartTap: { showCart = true },
+                onDisarmTap: {
+                    if alarmManager.gateState == .armed {
+                        showDisarmConfirm = true
+                    } else {
+                        alarmManager.userTappedDisarm()
+                    }
+                }
+            )
+            .accessibilityIdentifier("rootTab.topNavBar")
         }
         .sheet(isPresented: $showAvatarMenu) {
             AvatarMenuView(isPresented: $showAvatarMenu)
                 .environmentObject(coordinator)
+        }
+        .sheet(isPresented: $showReferralQR) {
+            ReferralQRModalView()
+        }
+        .sheet(isPresented: $showCart) {
+            NavigationStack {
+                CartView()
+            }
+        }
+        .sheet(isPresented: $showPairDeviceSheet) {
+            NavigationStack {
+                DevicePairingView()
+            }
+        }
+        .fullScreenCover(isPresented: $showArmModal) {
+            ArmSystemModal(
+                onArm: {
+                    alarmManager.userConfirmedArm()
+                    showArmModal = false
+                },
+                onCancel: {
+                    alarmManager.shouldShowArmModal = false
+                    showArmModal = false
+                }
+            )
+        }
+        .alert("Disarm alarm?", isPresented: $showDisarmConfirm) {
+            Button("Disarm", role: .destructive) { alarmManager.userTappedDisarm() }
+            Button("Keep armed", role: .cancel) {}
+        } message: {
+            Text("Your gear will stop being actively monitored for disconnects until you re-arm.")
+        }
+        .onReceive(alarmManager.$shouldShowArmModal) { newValue in
+            if newValue { showArmModal = true }
+        }
+        .onReceive(alarmManager.$shouldShowPairDevicePrompt) { newValue in
+            if newValue {
+                showPairDeviceSheet = true
+                alarmManager.acknowledgePairDevicePrompt()
+            }
         }
         .sheet(item: $coordinator.activeSheet) { sheet in
             RootTabDestinations.sheet(for: sheet)
@@ -339,6 +403,68 @@ private struct RootTabAlertDestinationView: View {
                 await loadAlert()
             } catch {
                 self.error = error.localizedDescription
+            }
+        }
+    }
+}
+
+// MARK: - Arm System Modal
+
+/// Full-screen confirmation shown when the user enters a gym geofence
+/// with a BLE device connected. Explicit user confirmation is required
+/// before the alarm system actually arms.
+struct ArmSystemModal: View {
+    let onArm: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.92).ignoresSafeArea()
+
+            VStack(spacing: 32) {
+                Spacer()
+
+                VStack(spacing: 14) {
+                    Image(systemName: "shield.lefthalf.filled")
+                        .font(.system(size: 72))
+                        .foregroundColor(.red)
+
+                    Text("You're at the gym")
+                        .font(.title2.weight(.bold))
+                        .foregroundColor(.white)
+
+                    Text("Arm GearSnitch to trigger a panic alarm if your device disconnects unexpectedly.")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+
+                Spacer()
+
+                VStack(spacing: 12) {
+                    Button(action: onArm) {
+                        Text("Arm System")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.red)
+                            .cornerRadius(14)
+                    }
+                    .accessibilityIdentifier("armSystemModal.armButton")
+
+                    Button(action: onCancel) {
+                        Text("Not now")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(.white.opacity(0.7))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                    }
+                    .accessibilityIdentifier("armSystemModal.cancelButton")
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
             }
         }
     }
