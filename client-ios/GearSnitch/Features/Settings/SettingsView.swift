@@ -9,231 +9,25 @@ struct SettingsView: View {
     @State private var exportError: String?
 
     var body: some View {
-        List {
-            Section {
-                Toggle(isOn: Binding(
-                    get: { iCloudSync.isEnabled },
-                    set: { iCloudSync.setEnabled($0) }
-                )) {
-                    Label("Sync with iCloud", systemImage: "icloud")
-                        .foregroundColor(.gsText)
-                }
-                .tint(.gsEmerald)
-                .accessibilityIdentifier("settings.iCloudSync.toggle")
-            } header: {
-                Text("Account")
-                    .foregroundColor(.gsTextSecondary)
-            } footer: {
-                Text("Syncs display name, preferences, feature flags, default gym, and HealthKit opt-ins across your iCloud devices. Auth tokens and subscription state stay on-device.")
-                    .font(.caption)
-                    .foregroundColor(.gsTextSecondary)
+        ScrollView {
+            VStack(spacing: 16) {
+                accountSection
+                findMyGearSection
+                preferencesSection
+                healthSection
+                appInfoSection
+                dataSection
+                supportSection
+                legalSection
+                #if DEBUG
+                developerSection
+                #endif
+                signOutSection
             }
-            .listRowBackground(Color.gsSurface)
-
-            Section {
-                NavigationLink {
-                    LostItemScannerView()
-                } label: {
-                    Label("Lost Item Scanner", systemImage: "location.viewfinder")
-                        .foregroundColor(.gsDanger)
-                }
-            } header: {
-                Text("Find My Gear")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
-
-            Section {
-                NavigationLink {
-                    GymListView()
-                } label: {
-                    Label("Manage Gyms", systemImage: "building.2")
-                        .foregroundColor(.gsText)
-                }
-
-                // Backlog item #9 — Strava-style default gear per activity.
-                NavigationLink {
-                    DefaultGearPerActivityView()
-                } label: {
-                    Label("Default gear per activity", systemImage: "shoe.2")
-                        .foregroundColor(.gsText)
-                }
-
-                // Backlog item #16 — Rest timer between sets.
-                NavigationLink {
-                    WorkoutSettingsView()
-                } label: {
-                    Label("Workout", systemImage: "dumbbell")
-                        .foregroundColor(.gsText)
-                }
-
-                // Backlog item #18 — Auto-pause run on inactivity.
-                NavigationLink {
-                    RunTrackingSettingsView()
-                } label: {
-                    Label("Run tracking", systemImage: "figure.run")
-                        .foregroundColor(.gsText)
-                }
-
-                NavigationLink {
-                    NotificationPreferencesView()
-                } label: {
-                    Label("Notification Preferences", systemImage: "bell.badge")
-                        .foregroundColor(.gsText)
-                }
-
-                NavigationLink {
-                    MedicationsSyncSettingsView()
-                } label: {
-                    Label("Medications", systemImage: "pills")
-                        .foregroundColor(.gsText)
-                }
-            } header: {
-                Text("Preferences")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
-
-            Section {
-                NavigationLink {
-                    ExternalHRSensorsView()
-                } label: {
-                    Label("External Heart-Rate Sensors", systemImage: "sensor.tag.radiowaves.forward")
-                        .foregroundColor(.gsText)
-                }
-            } header: {
-                Text("Health")
-                    .foregroundColor(.gsTextSecondary)
-            } footer: {
-                Text("Chest straps, optical armbands, and Powerbeats Pro 2. Additive source — Apple Watch and AirPods keep working as before.")
-                    .font(.caption)
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
-
-            Section {
-                infoRow(label: "Version", value: AppConfig.appVersion)
-                infoRow(label: "Build", value: AppConfig.buildNumber)
-                if let serverVersion = releaseGateManager.serverVersion {
-                    infoRow(label: "Server", value: serverVersion)
-                }
-            } header: {
-                Text("App Info")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
-
-            Section {
-                Button {
-                    Task { await exportAccountData() }
-                } label: {
-                    HStack {
-                        Label("Export My Data", systemImage: "arrow.down.doc")
-                            .foregroundColor(.gsText)
-                        Spacer()
-                        if isExporting {
-                            ProgressView()
-                                .tint(.gsEmerald)
-                        }
-                    }
-                }
-                .disabled(isExporting)
-            } header: {
-                Text("Data")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
-
-            Section {
-                NavigationLink {
-                    SupportCenterView()
-                } label: {
-                    Label("Support Center", systemImage: "lifepreserver")
-                        .foregroundColor(.gsText)
-                }
-
-                Link(destination: URL(string: AppConfig.supportURL)!) {
-                    Label("Open Web Support", systemImage: "safari")
-                        .foregroundColor(.gsText)
-                }
-
-                Link(destination: URL(string: "mailto:\(AppConfig.supportEmail)")!) {
-                    Label("Email Support", systemImage: "envelope")
-                        .foregroundColor(.gsText)
-                }
-
-                // Backlog item #26 — manual fallback for users who've
-                // dismissed the automatic SKStoreReviewController prompt
-                // or who want to leave a review unsolicited. Deep-links
-                // directly to the App Store "Write a Review" sheet.
-                // TODO: replace the `id0000000000` placeholder in
-                // `AppConfig.appStoreURL` with the real App Store ID
-                // once the app ships.
-                Button {
-                    openAppStoreReviewPage()
-                } label: {
-                    Label("Rate GearSnitch on the App Store", systemImage: "star.bubble")
-                        .foregroundColor(.gsText)
-                }
-            } header: {
-                Text("Support")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
-
-            Section {
-                Link(destination: URL(string: AppConfig.privacyPolicyURL)!) {
-                    Label("Privacy Policy", systemImage: "hand.raised")
-                        .foregroundColor(.gsText)
-                }
-
-                NavigationLink {
-                    TermsOfServiceView()
-                } label: {
-                    Label("Terms of Service", systemImage: "doc.text")
-                        .foregroundColor(.gsText)
-                }
-            } header: {
-                Text("Legal")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
-
-            #if DEBUG
-            Section {
-                Button {
-                    NotificationCenter.default.post(name: .debugResetOnboarding, object: nil)
-                } label: {
-                    Label("Reset Onboarding", systemImage: "arrow.counterclockwise")
-                        .foregroundColor(.gsText)
-                }
-            } header: {
-                Text("Developer")
-                    .foregroundColor(.gsTextSecondary)
-            } footer: {
-                Text("Restarts onboarding locally for simulator and device testing.")
-                    .foregroundColor(.gsTextSecondary)
-            }
-            .listRowBackground(Color.gsSurface)
-            #endif
-
-            Section {
-                Button {
-                    showSignOutConfirm = true
-                } label: {
-                    HStack {
-                        Spacer()
-                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundColor(.gsDanger)
-                        Spacer()
-                    }
-                }
-            }
-            .listRowBackground(Color.gsSurface)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
@@ -255,14 +49,312 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Sections
+
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("Account")
+
+            VStack(spacing: 0) {
+                Toggle(isOn: Binding(
+                    get: { iCloudSync.isEnabled },
+                    set: { iCloudSync.setEnabled($0) }
+                )) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "icloud")
+                            .font(.subheadline)
+                            .foregroundColor(.gsCyan)
+                            .frame(width: 28)
+                        Text("Sync with iCloud")
+                            .font(.subheadline)
+                            .foregroundColor(.gsText)
+                    }
+                }
+                .tint(.gsEmerald)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .accessibilityIdentifier("settings.iCloudSync.toggle")
+            }
+            .cardStyle(padding: 0)
+
+            Text("Syncs display name, preferences, feature flags, default gym, and HealthKit opt-ins across your iCloud devices. Auth tokens and subscription state stay on-device.")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+                .padding(.horizontal, 4)
+        }
+    }
+
+    private var findMyGearSection: some View {
+        sectionCard(title: "Find My Gear") {
+            NavigationLink {
+                LostItemScannerView()
+            } label: {
+                menuRow(icon: "location.viewfinder", label: "Lost Item Scanner", color: .gsDanger)
+            }
+        }
+    }
+
+    private var preferencesSection: some View {
+        sectionCard(title: "Preferences") {
+            NavigationLink {
+                GymListView()
+            } label: {
+                menuRow(icon: "building.2", label: "Manage Gyms", color: .gsCyan)
+            }
+            divider
+
+            NavigationLink {
+                DefaultGearPerActivityView()
+            } label: {
+                menuRow(icon: "shoe.2", label: "Default gear per activity", color: .gsEmerald)
+            }
+            divider
+
+            NavigationLink {
+                WorkoutSettingsView()
+            } label: {
+                menuRow(icon: "dumbbell", label: "Workout", color: .gsEmerald)
+            }
+            divider
+
+            NavigationLink {
+                RunTrackingSettingsView()
+            } label: {
+                menuRow(icon: "figure.run", label: "Run tracking", color: .gsEmerald)
+            }
+            divider
+
+            NavigationLink {
+                NotificationPreferencesView()
+            } label: {
+                menuRow(icon: "bell.badge", label: "Notification Preferences", color: .gsWarning)
+            }
+            divider
+
+            NavigationLink {
+                MedicationsSyncSettingsView()
+            } label: {
+                menuRow(icon: "pills", label: "Medications", color: .gsCyan)
+            }
+        }
+    }
+
+    private var healthSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("Health")
+
+            VStack(spacing: 0) {
+                NavigationLink {
+                    ExternalHRSensorsView()
+                } label: {
+                    menuRow(icon: "sensor.tag.radiowaves.forward", label: "External Heart-Rate Sensors", color: .gsDanger)
+                }
+            }
+            .cardStyle(padding: 0)
+
+            Text("Chest straps, optical armbands, and Powerbeats Pro 2. Additive source — Apple Watch and AirPods keep working as before.")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+                .padding(.horizontal, 4)
+        }
+    }
+
+    private var appInfoSection: some View {
+        sectionCard(title: "App Info") {
+            infoRow(label: "Version", value: AppConfig.appVersion)
+            divider
+            infoRow(label: "Build", value: AppConfig.buildNumber)
+            if let serverVersion = releaseGateManager.serverVersion {
+                divider
+                infoRow(label: "Server", value: serverVersion)
+            }
+        }
+    }
+
+    private var dataSection: some View {
+        sectionCard(title: "Data") {
+            Button {
+                Task { await exportAccountData() }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "arrow.down.doc")
+                        .font(.body)
+                        .foregroundColor(.gsCyan)
+                        .frame(width: 28)
+
+                    Text("Export My Data")
+                        .font(.subheadline)
+                        .foregroundColor(.gsText)
+
+                    Spacer()
+
+                    if isExporting {
+                        ProgressView()
+                            .tint(.gsEmerald)
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .font(.caption2)
+                            .foregroundColor(.gsTextSecondary)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+            }
+            .buttonStyle(.plain)
+            .disabled(isExporting)
+        }
+    }
+
+    private var supportSection: some View {
+        sectionCard(title: "Support") {
+            NavigationLink {
+                SupportCenterView()
+            } label: {
+                menuRow(icon: "lifepreserver", label: "Support Center", color: .gsEmerald)
+            }
+            divider
+
+            Link(destination: URL(string: AppConfig.supportURL)!) {
+                menuRow(icon: "safari", label: "Open Web Support", color: .gsCyan)
+            }
+            .buttonStyle(.plain)
+            divider
+
+            Link(destination: URL(string: "mailto:\(AppConfig.supportEmail)")!) {
+                menuRow(icon: "envelope", label: "Email Support", color: .gsCyan)
+            }
+            .buttonStyle(.plain)
+            divider
+
+            Button {
+                openAppStoreReviewPage()
+            } label: {
+                menuRow(icon: "star.bubble", label: "Rate GearSnitch on the App Store", color: .gsWarning)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var legalSection: some View {
+        sectionCard(title: "Legal") {
+            Link(destination: URL(string: AppConfig.privacyPolicyURL)!) {
+                menuRow(icon: "hand.raised", label: "Privacy Policy", color: .gsTextSecondary)
+            }
+            .buttonStyle(.plain)
+            divider
+
+            NavigationLink {
+                TermsOfServiceView()
+            } label: {
+                menuRow(icon: "doc.text", label: "Terms of Service", color: .gsTextSecondary)
+            }
+        }
+    }
+
+    #if DEBUG
+    private var developerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader("Developer")
+
+            VStack(spacing: 0) {
+                Button {
+                    NotificationCenter.default.post(name: .debugResetOnboarding, object: nil)
+                } label: {
+                    menuRow(icon: "arrow.counterclockwise", label: "Reset Onboarding", color: .gsWarning)
+                }
+                .buttonStyle(.plain)
+            }
+            .cardStyle(padding: 0)
+
+            Text("Restarts onboarding locally for simulator and device testing.")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+                .padding(.horizontal, 4)
+        }
+    }
+    #endif
+
+    private var signOutSection: some View {
+        VStack(spacing: 0) {
+            Button {
+                showSignOutConfirm = true
+            } label: {
+                HStack {
+                    Spacer()
+                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.gsDanger)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+            }
+            .buttonStyle(.plain)
+        }
+        .cardStyle(padding: 0)
+    }
+
+    // MARK: - Shared Builders
+
+    @ViewBuilder
+    private func sectionCard<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader(title)
+
+            VStack(spacing: 0) {
+                content()
+            }
+            .cardStyle(padding: 0)
+        }
+    }
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.headline)
+            .foregroundColor(.gsText)
+            .padding(.horizontal, 4)
+    }
+
+    private func menuRow(icon: String, label: String, color: Color) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.body)
+                .foregroundColor(color)
+                .frame(width: 28)
+
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(.gsText)
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundColor(.gsTextSecondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+
+    private var divider: some View {
+        Divider().background(Color.gsBorder)
+    }
+
     private func infoRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
+                .font(.subheadline)
                 .foregroundColor(.gsText)
             Spacer()
             Text(value)
+                .font(.subheadline)
                 .foregroundColor(.gsTextSecondary)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private func exportAccountData() async {
@@ -446,89 +538,19 @@ private struct SupportCenterView: View {
             if viewModel.isLoading && viewModel.faqEntries.isEmpty && viewModel.tickets.isEmpty {
                 LoadingView(message: "Loading support center...")
             } else {
-                List {
-                    Section {
-                        Link(destination: URL(string: AppConfig.supportURL)!) {
-                            Label("Open web support", systemImage: "safari")
-                                .foregroundColor(.gsText)
+                ScrollView {
+                    VStack(spacing: 16) {
+                        quickHelpSection
+                        recentTicketsSection
+                        if !viewModel.faqEntries.isEmpty {
+                            faqSection
                         }
-
-                        Link(destination: URL(string: "mailto:\(AppConfig.supportEmail)")!) {
-                            Label("Email support", systemImage: "envelope")
-                                .foregroundColor(.gsText)
-                        }
-
-                        Text("Response time is usually 24 to 48 hours. Requests sent here stay attached to your GearSnitch account.")
-                            .font(.footnote)
-                            .foregroundColor(.gsTextSecondary)
-                            .padding(.vertical, 4)
-                    } header: {
-                        Text("Quick Help")
-                            .foregroundColor(.gsTextSecondary)
+                        sendMessageSection
                     }
-                    .listRowBackground(Color.gsSurface)
-
-                    Section {
-                        if viewModel.tickets.isEmpty {
-                            Text("No support tickets yet. Your latest requests will show up here automatically.")
-                                .font(.footnote)
-                                .foregroundColor(.gsTextSecondary)
-                                .padding(.vertical, 4)
-                        } else {
-                            ForEach(Array(viewModel.tickets.prefix(5))) { ticket in
-                                SupportTicketRow(ticket: ticket)
-                            }
-                        }
-                    } header: {
-                        Text("Recent Tickets")
-                            .foregroundColor(.gsTextSecondary)
-                    }
-                    .listRowBackground(Color.gsSurface)
-
-                    Section {
-                        ForEach(viewModel.faqEntries) { faq in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(faq.question)
-                                    .font(.headline)
-                                    .foregroundColor(.gsText)
-                                Text(faq.answer)
-                                    .font(.subheadline)
-                                    .foregroundColor(.gsTextSecondary)
-                            }
-                            .padding(.vertical, 6)
-                        }
-                    } header: {
-                        Text("FAQ")
-                            .foregroundColor(.gsTextSecondary)
-                    }
-                    .listRowBackground(Color.gsSurface)
-
-                    Section {
-                        VStack(alignment: .leading, spacing: 12) {
-                            SupportField(title: "Name", text: $viewModel.draftName)
-                            SupportField(title: "Email", text: $viewModel.draftEmail, keyboardType: .emailAddress, autocapitalization: .never)
-                            SupportField(title: "Subject", text: $viewModel.draftSubject)
-                            SupportMessageEditor(text: $viewModel.draftMessage)
-
-                            if let submissionMessage = viewModel.submissionMessage {
-                                Text(submissionMessage)
-                                    .font(.footnote)
-                                    .foregroundColor(.gsEmerald)
-                            }
-
-                            PrimaryButton(title: viewModel.isSubmitting ? "Sending..." : "Send Request", isLoading: viewModel.isSubmitting) {
-                                Task { await viewModel.submitTicket() }
-                            }
-                        }
-                        .padding(.vertical, 8)
-                    } header: {
-                        Text("Send a Message")
-                            .foregroundColor(.gsTextSecondary)
-                    }
-                    .listRowBackground(Color.gsSurface)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 32)
                 }
-                .listStyle(.insetGrouped)
-                .scrollContentBackground(.hidden)
                 .background(Color.gsBackground.ignoresSafeArea())
             }
         }
@@ -548,6 +570,131 @@ private struct SupportCenterView: View {
         } message: {
             Text(viewModel.error ?? "Something went wrong while loading support.")
         }
+    }
+
+    private var quickHelpSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Quick Help")
+                .font(.headline)
+                .foregroundColor(.gsText)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 0) {
+                Link(destination: URL(string: AppConfig.supportURL)!) {
+                    supportMenuRow(icon: "safari", label: "Open web support", color: .gsCyan)
+                }
+                .buttonStyle(.plain)
+
+                Divider().background(Color.gsBorder)
+
+                Link(destination: URL(string: "mailto:\(AppConfig.supportEmail)")!) {
+                    supportMenuRow(icon: "envelope", label: "Email support", color: .gsCyan)
+                }
+                .buttonStyle(.plain)
+            }
+            .cardStyle(padding: 0)
+
+            Text("Response time is usually 24 to 48 hours. Requests sent here stay attached to your GearSnitch account.")
+                .font(.caption)
+                .foregroundColor(.gsTextSecondary)
+                .padding(.horizontal, 4)
+        }
+    }
+
+    private var recentTicketsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Recent Tickets")
+                .font(.headline)
+                .foregroundColor(.gsText)
+                .padding(.horizontal, 4)
+
+            if viewModel.tickets.isEmpty {
+                Text("No support tickets yet. Your latest requests will show up here automatically.")
+                    .font(.subheadline)
+                    .foregroundColor(.gsTextSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .cardStyle()
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(Array(viewModel.tickets.prefix(5))) { ticket in
+                        SupportTicketRow(ticket: ticket)
+                            .cardStyle()
+                    }
+                }
+            }
+        }
+    }
+
+    private var faqSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("FAQ")
+                .font(.headline)
+                .foregroundColor(.gsText)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 12) {
+                ForEach(viewModel.faqEntries) { faq in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(faq.question)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.gsText)
+                        Text(faq.answer)
+                            .font(.subheadline)
+                            .foregroundColor(.gsTextSecondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .cardStyle()
+                }
+            }
+        }
+    }
+
+    private var sendMessageSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Send a Message")
+                .font(.headline)
+                .foregroundColor(.gsText)
+                .padding(.horizontal, 4)
+
+            VStack(alignment: .leading, spacing: 12) {
+                SupportField(title: "Name", text: $viewModel.draftName)
+                SupportField(title: "Email", text: $viewModel.draftEmail, keyboardType: .emailAddress, autocapitalization: .never)
+                SupportField(title: "Subject", text: $viewModel.draftSubject)
+                SupportMessageEditor(text: $viewModel.draftMessage)
+
+                if let submissionMessage = viewModel.submissionMessage {
+                    Text(submissionMessage)
+                        .font(.caption)
+                        .foregroundColor(.gsEmerald)
+                }
+
+                PrimaryButton(title: viewModel.isSubmitting ? "Sending..." : "Send Request", isLoading: viewModel.isSubmitting) {
+                    Task { await viewModel.submitTicket() }
+                }
+            }
+            .cardStyle()
+        }
+    }
+
+    private func supportMenuRow(icon: String, label: String, color: Color) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.body)
+                .foregroundColor(color)
+                .frame(width: 28)
+
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(.gsText)
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption2)
+                .foregroundColor(.gsTextSecondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 }
 

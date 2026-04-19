@@ -20,37 +20,52 @@ struct MedicationsSyncSettingsView: View {
     )
 
     var body: some View {
-        List {
-            Section {
-                Toggle(isOn: Binding(
-                    get: { isEnabled },
-                    set: { newValue in
-                        Task { await handleToggle(newValue) }
-                    }
-                )) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Sync with Apple Health")
-                            .foregroundColor(.gsText)
-                        Text("Two-way sync for peptide and medication doses.")
-                            .font(.footnote)
-                            .foregroundColor(.gsTextSecondary)
-                    }
-                }
-                .tint(.gsEmerald)
-                .disabled(isRequesting)
-            } header: {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Apple Health")
+                    .font(.headline)
+                    .foregroundColor(.gsText)
+                    .padding(.horizontal, 4)
+
+                VStack(spacing: 0) {
+                    Toggle(isOn: Binding(
+                        get: { isEnabled },
+                        set: { newValue in
+                            Task { await handleToggle(newValue) }
+                        }
+                    )) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "pills")
+                                .font(.body)
+                                .foregroundColor(.gsCyan)
+                                .frame(width: 28)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Sync with Apple Health")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gsText)
+                                Text("Two-way sync for peptide and medication doses.")
+                                    .font(.caption)
+                                    .foregroundColor(.gsTextSecondary)
+                            }
+                        }
+                    }
+                    .tint(.gsEmerald)
+                    .disabled(isRequesting)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
+                .cardStyle(padding: 0)
+
+                Text("When on, every dose you log in GearSnitch is written to Apple Health, and doses logged in other apps are pulled in on app open. Off by default.")
+                    .font(.caption)
                     .foregroundColor(.gsTextSecondary)
-            } footer: {
-                Text(
-                    "When on, every dose you log in GearSnitch is written to Apple Health, and doses logged in other apps are pulled in on app open. Off by default."
-                )
-                .foregroundColor(.gsTextSecondary)
+                    .padding(.horizontal, 4)
             }
-            .listRowBackground(Color.gsSurface)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .background(Color.gsBackground.ignoresSafeArea())
         .navigationTitle("Medications")
         .navigationBarTitleDisplayMode(.inline)

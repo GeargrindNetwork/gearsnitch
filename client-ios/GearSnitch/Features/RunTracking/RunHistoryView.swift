@@ -65,9 +65,9 @@ struct RunHistoryView: View {
     }
 
     private var runList: some View {
-        List {
-            if runManager.activeRun != nil {
-                Section {
+        ScrollView {
+            VStack(spacing: 16) {
+                if runManager.activeRun != nil {
                     NavigationLink {
                         ActiveRunView()
                     } label: {
@@ -89,36 +89,56 @@ struct RunHistoryView: View {
                             }
 
                             Spacer()
-                        }
-                        .padding(.vertical, 4)
-                    }
-                    .listRowBackground(Color.gsSurface)
-                }
-            }
 
-            Section {
-                ForEach(viewModel.completedRuns) { run in
-                    NavigationLink {
-                        RunDetailView(initialRun: run, viewModel: viewModel)
-                    } label: {
-                        runRow(run)
-                    }
-                    .listRowBackground(Color.gsSurface)
-                    // Trailing swipe → destructive delete. Confirmation
-                    // happens via the `.alert` bound to `pendingDeletion`
-                    // on the parent view.
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            viewModel.pendingDeletion = run
-                        } label: {
-                            Label("Delete", systemImage: "trash.fill")
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundColor(.gsTextSecondary)
                         }
+                        .cardStyle()
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if !viewModel.completedRuns.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("History")
+                            .font(.headline)
+                            .foregroundColor(.gsText)
+                            .padding(.horizontal, 4)
+
+                        VStack(spacing: 0) {
+                            ForEach(Array(viewModel.completedRuns.enumerated()), id: \.element.id) { index, run in
+                                if index > 0 {
+                                    Divider().background(Color.gsBorder)
+                                }
+                                NavigationLink {
+                                    RunDetailView(initialRun: run, viewModel: viewModel)
+                                } label: {
+                                    runRow(run)
+                                }
+                                .buttonStyle(.plain)
+                                // Swipe-to-delete (PR #96) doesn't apply outside
+                                // of `List`; in the card-refactored layout we
+                                // trigger delete via context menu instead. The
+                                // confirmation alert on the parent view is
+                                // driven by `viewModel.pendingDeletion`.
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        viewModel.pendingDeletion = run
+                                    } label: {
+                                        Label("Delete Run", systemImage: "trash.fill")
+                                    }
+                                }
+                            }
+                        }
+                        .cardStyle(padding: 0)
                     }
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
         .refreshable {
             await viewModel.loadRuns()
         }
@@ -156,7 +176,8 @@ struct RunHistoryView: View {
                 .font(.caption)
                 .foregroundColor(.gsTextSecondary)
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 
     private var emptyState: some View {
