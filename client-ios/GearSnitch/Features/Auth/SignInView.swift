@@ -40,6 +40,8 @@ struct SignInView: View {
                 // Apple Sign In
                 appleSignInButton
 
+                // TODO(google-signin): re-enable after package re-added
+                #if false
                 // Google Sign In
                 Button(action: { viewModel.signInWithGoogle() }) {
                     HStack(spacing: 12) {
@@ -60,6 +62,7 @@ struct SignInView: View {
                     )
                 }
                 .frame(maxWidth: authButtonMaxWidth)
+                #endif
             }
             .padding(.horizontal, 24)
             .disabled(viewModel.isLoading)

@@ -9,7 +9,8 @@ final class SignInViewModel: ObservableObject {
     @Published var error: String?
 
     private let authManager = AuthManager.shared
-    private let googleSignInManager = GoogleSignInManager()
+    // TODO(google-signin): re-enable after package re-added
+    // private let googleSignInManager = GoogleSignInManager()
 
     // MARK: - Apple Sign-In
 
@@ -48,6 +49,8 @@ final class SignInViewModel: ObservableObject {
 
     // MARK: - Google Sign-In
 
+    // TODO(google-signin): re-enable after package re-added
+    #if false
     func signInWithGoogle() {
         Task {
             await performGoogleSignIn()
@@ -70,4 +73,5 @@ final class SignInViewModel: ObservableObject {
 
         isLoading = false
     }
+    #endif
 }

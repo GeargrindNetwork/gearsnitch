@@ -28,13 +28,13 @@ final class OnboardingUITests: XCTestCase {
 
         app.buttons["Get Started"].tap()
 
-        // Next screen should be sign-in (Apple/Google buttons) or subscription
+        // Next screen should be sign-in (Apple button) or subscription.
+        // TODO(google-signin): also check for "Continue with Google" button
+        // once the GoogleSignIn SPM package is restored.
         let appleButton = app.buttons["Sign in with Apple"]
-        let googleButton = app.buttons["Continue with Google"]
         let subscriptionHeader = app.staticTexts["Choose Your Plan"]
 
         let advanced = appleButton.waitForExistence(timeout: 3)
-            || googleButton.waitForExistence(timeout: 3)
             || subscriptionHeader.waitForExistence(timeout: 3)
 
         XCTAssertTrue(advanced, "Should advance past welcome to next step")

@@ -1,4 +1,7 @@
+// TODO(google-signin): re-enable after package re-added
+#if false
 import GoogleSignIn
+#endif
 import SwiftUI
 
 @main
@@ -39,9 +42,12 @@ struct GearSnitchApp: App {
                 .environmentObject(coordinator)
                 .environmentObject(referralAttribution)
                 .onOpenURL { url in
+                    // TODO(google-signin): re-enable after package re-added
+                    #if false
                     if GIDSignIn.sharedInstance.handle(url) {
                         return
                     }
+                    #endif
                     referralAttribution.recordIfReferralLink(url)
                     coordinator.handle(url: url)
                 }
