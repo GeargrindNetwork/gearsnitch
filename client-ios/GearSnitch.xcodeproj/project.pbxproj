@@ -78,7 +78,7 @@
 		3B69AAE4AE0195DE1A9FF687 /* BLEScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4ED90ED47B2C7532C3950E45 /* BLEScanner.swift */; };
 		3B9590D069122E717D0AF0C0 /* StoreHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA07F4455FC91DFEBF1E9057 /* StoreHomeView.swift */; };
 		3C236926E06C3ADC097C67AC /* BLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65040AD89C646F2EB1439629 /* BLEManager.swift */; };
-		3E46A1E1677DA39F4243EFC7 /* GearSnitchWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 81A23D3E4D1F46C1FB0CA7D8 /* GearSnitchWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3E46A1E1677DA39F4243EFC7 /* GearSnitchWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 81A23D3E4D1F46C1FB0CA7D8 /* GearSnitchWatchWidgets.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		3FEA11D8F5C845EE76310F6F /* ECGViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B1DFDA81A53E400021833A /* ECGViewModelTests.swift */; };
 		45034E6EAA33F8B9ABBDC9D2 /* DeviceListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EBE9A263604C413029119F /* DeviceListView.swift */; };
 		46D36C2A884928C6A93572FE /* HealthKitSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A87B12D0792AE9A7DD273AE /* HealthKitSyncService.swift */; };
@@ -114,7 +114,7 @@
 		5E0D8C874B7943D6F89BAB8F /* WorkoutActivityTypeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EAC3462B1358917ADDF063A /* WorkoutActivityTypeTests.swift */; };
 		5F90FAC2283D3E0662480F1A /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71772E62CED642AC9F4DEA9 /* RootView.swift */; };
 		60AF420185D0F8C121905A36 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C72A3F57652B3904DA4C0B1D /* PrimaryButton.swift */; };
-		614CDEC5D615AFA6D07EF913 /* GearSnitchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 38A15AAE9D0FBF0FA32364F0 /* GearSnitchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		614CDEC5D615AFA6D07EF913 /* GearSnitchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 38A15AAE9D0FBF0FA32364F0 /* GearSnitchWidgets.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		616C3C74FE458BFF9981751E /* AutoPauseBannerViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60F1F1DF5688E909FD331E7C /* AutoPauseBannerViewTests.swift */; };
 		61CEA77D2526E872C9DDA5F7 /* RootTabViewSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67941208C4A058BF9151303A /* RootTabViewSnapshotTests.swift */; };
 		6465E3D90138805BB7744587 /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51480EC335EB26C4CE925C66 /* SubscriptionView.swift */; };
@@ -229,7 +229,7 @@
 		C0C8D5B078D060AE7C239359 /* WorkoutAppShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C03C66A774A3110D7AC7461B /* WorkoutAppShortcuts.swift */; };
 		C1AC600ABAD186DCFAA2A3D9 /* StoreHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C3C6DF7919DBC057A43CFA /* StoreHomeViewModel.swift */; };
 		C2A9E87430D9029A58E8A3D1 /* BLESignalMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4F6EF46EE851C846BE8B98 /* BLESignalMonitor.swift */; };
-		C2BFF2DAA4C4B99464D75C09 /* GearSnitchWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CA95213EDCE919F70CDCBCD8 /* GearSnitchWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C2BFF2DAA4C4B99464D75C09 /* GearSnitchWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = CA95213EDCE919F70CDCBCD8 /* GearSnitchWatch.app */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C2C54017F71B796A166C970B /* DeviceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196547EBE5AAE728369FB79D /* DeviceDetailView.swift */; };
 		C37297D5DDEDDAA1FF8786DF /* GearService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82C8AF98938A9BB5A17236D /* GearService.swift */; };
 		C3EE28D661821251B2E6258C /* WorkoutCalorieEstimateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAB3C586E15B277A3C81D2BE /* WorkoutCalorieEstimateTests.swift */; };
