@@ -128,16 +128,7 @@ jobs:
         run: |
           set -o pipefail
           SIM_NAME=$(xcrun simctl list devices available --json \
-            | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-for runtime, devices in sorted(data.get('devices', {}).items(), reverse=True):
-    if 'iOS' not in runtime: continue
-    for d in devices:
-        if d.get('isAvailable') and d.get('name', '').startswith('iPhone'):
-            print(d['name'])
-            sys.exit(0)
-")
+            | jq -r '[.devices | to_entries[] | select(.key | contains("iOS")) | .value[] | select(.isAvailable == true) | select(.name | startswith("iPhone")) | .name] | first // empty')
           if [[ -z "$SIM_NAME" ]]; then
             echo "no_sim=true" >> "$GITHUB_OUTPUT"
             echo "::warning::No iOS simulator available on this runner; skipping test step."

@@ -38,6 +38,14 @@ struct SettingsView: View {
                         .foregroundColor(.gsText)
                 }
 
+                // Backlog item #16 — Rest timer between sets.
+                NavigationLink {
+                    WorkoutSettingsView()
+                } label: {
+                    Label("Workout", systemImage: "dumbbell")
+                        .foregroundColor(.gsText)
+                }
+
                 NavigationLink {
                     NotificationPreferencesView()
                 } label: {

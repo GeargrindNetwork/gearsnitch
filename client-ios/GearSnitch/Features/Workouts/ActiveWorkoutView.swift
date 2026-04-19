@@ -30,6 +30,17 @@ struct ActiveWorkoutView: View {
         .onChange(of: viewModel.didComplete) { _, completed in
             if completed { dismiss() }
         }
+        // Rest timer overlay (backlog item #16) — sits above everything.
+        .overlay {
+            if let restTimer = viewModel.restTimer {
+                RestTimerOverlayView(
+                    state: restTimer,
+                    onDismiss: { viewModel.dismissRestTimer() }
+                )
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: viewModel.restTimer == nil)
         // Pick up any workout session that the scene delegate recovered
         // before this view appeared (iOS 26+, item #10).
         .onAppear {
@@ -309,6 +320,18 @@ struct ActiveWorkoutView: View {
             }
 
             Spacer()
+
+            // Log Set button — backlog item #16. Marks the set complete
+            // and starts the rest timer overlay.
+            Button {
+                viewModel.logSet(exerciseId: exercise.id, setId: workoutSet.id)
+            } label: {
+                Image(systemName: workoutSet.completed ? "checkmark.circle.fill" : "checkmark.circle")
+                    .font(.title3)
+                    .foregroundColor(workoutSet.completed ? .gsEmerald : .gsTextSecondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(workoutSet.completed ? "Set logged" : "Log set")
         }
         .listRowBackground(Color.gsSurface)
     }

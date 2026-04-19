@@ -18,6 +18,9 @@ struct WorkoutSet: Identifiable {
     let id = UUID()
     var reps: Int
     var weight: Double
+    /// Backlog item #16 — marked true when the user taps "Log Set",
+    /// which also triggers the rest-timer overlay.
+    var completed: Bool = false
 }
 
 // MARK: - Recovery Toast
@@ -47,6 +50,16 @@ final class ActiveWorkoutViewModel: ObservableObject {
     // Add exercise sheet
     @Published var showAddExercise = false
     @Published var newExerciseName = ""
+
+    // Rest timer (backlog item #16) — non-nil when the overlay is showing.
+    @Published var restTimer: RestTimerState?
+
+    /// Which (exercise, set) pair should be focused when the rest timer
+    /// completes AND the user has `autoAdvance` enabled. The view
+    /// observes this and moves focus to the corresponding reps field.
+    @Published var autoFocusSetId: UUID?
+
+    private let restTimerPreferences: RestTimerPreferences
 
     // MARK: - Item #10: iPhone-native workout session
 
@@ -84,6 +97,10 @@ final class ActiveWorkoutViewModel: ObservableObject {
     /// `AnyObject?` because the concrete type is `@available(iOS 26.0, *)`
     /// and we don't want to gate the whole viewmodel on that.
     private var iPhoneSession: AnyObject?
+
+    init(restTimerPreferences: RestTimerPreferences = RestTimerPreferences()) {
+        self.restTimerPreferences = restTimerPreferences
+    }
 
     // MARK: - Formatted
 
@@ -276,6 +293,49 @@ final class ActiveWorkoutViewModel: ObservableObject {
         guard let index = exercises.firstIndex(where: { $0.id == exerciseId }) else { return }
         let newSet = WorkoutSet(reps: 0, weight: 0)
         exercises[index].sets.append(newSet)
+    }
+
+    // MARK: - Rest Timer (backlog item #16)
+
+    /// Log-set action: marks the set as complete and (if enabled)
+    /// presents the rest timer overlay. The overlay is dismissed by
+    /// `dismissRestTimer()` — skip, completion, or explicit "Next set".
+    func logSet(exerciseId: UUID, setId: UUID) {
+        guard let eIdx = exercises.firstIndex(where: { $0.id == exerciseId }),
+              let sIdx = exercises[eIdx].sets.firstIndex(where: { $0.id == setId }) else { return }
+        exercises[eIdx].sets[sIdx].completed = true
+
+        guard restTimerPreferences.isEnabled else { return }
+
+        let duration = restTimerPreferences.defaultSeconds
+        let state = RestTimerState(duration: duration)
+        state.onComplete = { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if self.restTimerPreferences.autoAdvance {
+                    self.autoAdvanceToNextSet(after: exerciseId)
+                }
+            }
+        }
+        restTimer = state
+    }
+
+    /// Dismiss the overlay (called by the view on skip / complete).
+    func dismissRestTimer() {
+        restTimer = nil
+    }
+
+    /// Pick the next empty set on `exerciseId` and focus its reps field.
+    /// If no empty set exists, append one and focus it.
+    private func autoAdvanceToNextSet(after exerciseId: UUID) {
+        guard let eIdx = exercises.firstIndex(where: { $0.id == exerciseId }) else { return }
+        if let nextSet = exercises[eIdx].sets.first(where: { !$0.completed }) {
+            autoFocusSetId = nextSet.id
+        } else {
+            let newSet = WorkoutSet(reps: 0, weight: 0)
+            exercises[eIdx].sets.append(newSet)
+            autoFocusSetId = newSet.id
+        }
     }
 
     func updateSet(exerciseId: UUID, setId: UUID, reps: Int, weight: Double) {
