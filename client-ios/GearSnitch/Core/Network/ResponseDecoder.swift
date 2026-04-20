@@ -81,6 +81,14 @@ struct TokenPairResponse: Decodable {
     let accessToken: String
     let refreshToken: String?
 
+    /// Memberwise init — primarily used by tests to construct synthetic
+    /// responses without going through JSON decoding. Production code
+    /// should always arrive via `init(from:)`.
+    init(accessToken: String, refreshToken: String?) {
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+    }
+
     private enum CodingKeys: String, CodingKey {
         case accessToken
         case accessTokenSnake = "access_token"

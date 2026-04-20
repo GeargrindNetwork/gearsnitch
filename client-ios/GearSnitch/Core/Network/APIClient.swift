@@ -12,11 +12,6 @@ actor APIClient {
     private let session: URLSession
     private let logger = Logger(subsystem: "com.gearsnitch", category: "APIClient")
 
-    /// Flag to prevent concurrent token refresh attempts.
-    private var isRefreshingToken = false
-    /// Continuations waiting on an in-flight refresh.
-    private var refreshWaiters: [CheckedContinuation<String, Error>] = []
-
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
@@ -53,28 +48,48 @@ actor APIClient {
     // MARK: - Internal Execution
 
     /// Execute with auth, intercepting 401 for one refresh-retry cycle.
+    ///
+    /// Refresh is funnelled through `AuthManager.shared.refreshToken()` which
+    /// coalesces concurrent refresh attempts into a single HTTP call. This
+    /// prevents the "second refresh uses rotated (single-use) refresh token
+    /// → 401 → false session-expiry" race that kicked users back to sign-in.
     private func executeWithAuth(_ endpoint: APIEndpoint) async throws -> (Data, Int) {
         let tokenStore = TokenStore.shared
         let accessToken = tokenStore.accessToken
-        let refreshToken = tokenStore.refreshToken
+
+        // Don't recurse on the refresh endpoint itself — refresh requests
+        // must go straight through `execute` with the live refresh token
+        // from TokenStore.
+        if endpoint.path.hasSuffix("/auth/refresh") {
+            return try await execute(endpoint, accessToken: accessToken)
+        }
 
         do {
             return try await execute(endpoint, accessToken: accessToken)
         } catch NetworkError.unauthorized {
-            guard let existingRefreshToken = refreshToken else {
+            guard tokenStore.refreshToken != nil else {
                 logger.info("Received 401 with no refresh token available")
                 throw NetworkError.unauthorized
             }
             logger.info("Received 401, attempting token refresh")
-            // Attempt refresh, then retry once
+
+            // Step 1 — attempt a refresh. If refresh itself fails that is
+            // legitimate session expiry → force logout.
+            let newToken: String
             do {
-                let newToken = try await refreshTokenIfNeeded(existingRefreshToken: existingRefreshToken)
-                return try await execute(endpoint, accessToken: newToken)
+                newToken = try await AuthManager.shared.refreshToken()
             } catch {
                 logger.error("Token refresh failed: \(error.localizedDescription)")
                 postSessionExpired()
                 throw NetworkError.tokenRefreshFailed
             }
+
+            // Step 2 — retry the original request with the fresh token.
+            // If THIS throws, surface the error as-is; do NOT treat it as a
+            // refresh failure (the refresh itself worked). This avoids the
+            // old behaviour where a post-refresh 401 on the retry wiped
+            // the just-minted valid tokens.
+            return try await execute(endpoint, accessToken: newToken)
         }
     }
 
@@ -129,67 +144,6 @@ actor APIClient {
         }
 
         return (data, statusCode)
-    }
-
-    // MARK: - Token Refresh
-
-    /// Coalesces concurrent refresh requests — only one HTTP call is made,
-    /// all waiters receive the same result.
-    private func refreshTokenIfNeeded(existingRefreshToken: String) async throws -> String {
-        if isRefreshingToken {
-            // Wait for the in-flight refresh
-            return try await withCheckedThrowingContinuation { continuation in
-                refreshWaiters.append(continuation)
-            }
-        }
-
-        isRefreshingToken = true
-
-        do {
-            let (data, statusCode) = try await execute(
-                APIEndpoint.Auth.refresh,
-                accessToken: nil
-            )
-
-            guard (200...299).contains(statusCode) else {
-                throw NetworkError.tokenRefreshFailed
-            }
-
-            let tokenResponse = try ResponseDecoder.decode(
-                TokenPairResponse.self,
-                from: data,
-                statusCode: statusCode
-            )
-
-            TokenStore.shared.save(
-                accessToken: tokenResponse.accessToken,
-                refreshToken: tokenResponse.refreshToken ?? existingRefreshToken
-            )
-
-            let newToken = tokenResponse.accessToken
-
-            // Resume all waiters
-            let waiters = refreshWaiters
-            refreshWaiters.removeAll()
-            isRefreshingToken = false
-
-            for waiter in waiters {
-                waiter.resume(returning: newToken)
-            }
-
-            return newToken
-        } catch {
-            // Fail all waiters
-            let waiters = refreshWaiters
-            refreshWaiters.removeAll()
-            isRefreshingToken = false
-
-            for waiter in waiters {
-                waiter.resume(throwing: error)
-            }
-
-            throw error
-        }
     }
 
     // MARK: - Session Expiry
