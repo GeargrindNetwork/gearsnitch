@@ -215,6 +215,7 @@
 		ABDC25394538F613D9F84E56 /* GearActivityCompatibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A718BC94514C6867EFD94D1A /* GearActivityCompatibilityTests.swift */; };
 		AC47B8ECEF90579B4624B06F /* RestTimerOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAB3D9CA4DC58FA6C10E16BA /* RestTimerOverlayView.swift */; };
 		ACF843E4ED150E6C83B23F10 /* RunPaceCadenceTonePlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 411E5F51F6DE57AD5D71AE6D /* RunPaceCadenceTonePlayer.swift */; };
+		AE1C09942EE190D1CBAB28D7 /* AuthManagerRefreshCoalescingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 591DA0BCCBB3BCE25142471C /* AuthManagerRefreshCoalescingTests.swift */; };
 		AE80AA57C26BD4BF7C7DB41A /* ExternalHRSensorAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5856FAFF0D498D396E96CE48 /* ExternalHRSensorAdapter.swift */; };
 		AF5DC2AD87FD47A53460F11D /* LabsStateEligibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E39ABE4E646B6D84EE70EC /* LabsStateEligibility.swift */; };
 		B03D91635654732CA98894AE /* GymSessionAttributesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30AD0A27ECB020144FABAF69 /* GymSessionAttributesTests.swift */; };
@@ -513,6 +514,7 @@
 		56898CE55871136E842BEC60 /* BLEAlarmSoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEAlarmSoundPlayer.swift; sourceTree = "<group>"; };
 		5856FAFF0D498D396E96CE48 /* ExternalHRSensorAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalHRSensorAdapter.swift; sourceTree = "<group>"; };
 		58E1451727196C98AB732061 /* ReleaseGateManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseGateManagerTests.swift; sourceTree = "<group>"; };
+		591DA0BCCBB3BCE25142471C /* AuthManagerRefreshCoalescingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManagerRefreshCoalescingTests.swift; sourceTree = "<group>"; };
 		5942D8F10497012501BF4901 /* LocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStore.swift; sourceTree = "<group>"; };
 		5A294D6CB70C48EAEF6AAE5E /* StoreKitManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManagerTests.swift; sourceTree = "<group>"; };
 		5C046F4715799B2015B386A4 /* PaymentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentModels.swift; sourceTree = "<group>"; };
@@ -1053,6 +1055,7 @@
 			children = (
 				939CFEBE754FB8482A9E8EB3 /* AlarmGateTests.swift */,
 				FFA8FABA9830E62E74262966 /* ApplePayManagerTests.swift */,
+				591DA0BCCBB3BCE25142471C /* AuthManagerRefreshCoalescingTests.swift */,
 				60F1F1DF5688E909FD331E7C /* AutoPauseBannerViewTests.swift */,
 				F9F8A90961F4111121B41589 /* BatteryLevelReaderTests.swift */,
 				21FA3F9F049B975A2FEE6B04 /* BLEPairingCapabilityTests.swift */,
@@ -1873,6 +1876,7 @@
 			files = (
 				C7E20326EF938B955B11D27A /* AlarmGateTests.swift in Sources */,
 				B623512F5AB5EE1AA5385ECF /* ApplePayManagerTests.swift in Sources */,
+				AE1C09942EE190D1CBAB28D7 /* AuthManagerRefreshCoalescingTests.swift in Sources */,
 				616C3C74FE458BFF9981751E /* AutoPauseBannerViewTests.swift in Sources */,
 				A6DAE48085467F603453747F /* BLEPairingCapabilityTests.swift in Sources */,
 				328FC43922B4A30FC59F65D0 /* BatteryLevelReaderTests.swift in Sources */,

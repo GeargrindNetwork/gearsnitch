@@ -52,6 +52,24 @@ final class AuthManager: ObservableObject {
     private let logger = Logger(subsystem: "com.gearsnitch", category: "AuthManager")
     private var sessionExpiredCancellable: AnyCancellable?
 
+    // MARK: Refresh Coalescing
+    //
+    // The server rotates refresh tokens on every /auth/refresh call — they
+    // are single-use. If two concurrent callers each fire their own refresh,
+    // the first succeeds (rotating the token), and the second uses the now-
+    // stale token and gets 401 — which the old code interpreted as "session
+    // truly expired" and forced a logout, even though we had valid tokens
+    // from the first call. We fix this by funnelling every refresh through
+    // a single in-flight `Task`. Concurrent callers await the same Task
+    // and all see the same new access token.
+    //
+    // Why `@MainActor` (not an actor / not the APIClient actor): both the
+    // APIClient 401-retry path and the SocketClient must share the same
+    // coalescer. AuthManager is already the lifecycle owner for auth state,
+    // so it's the natural home. The coalescer Task is scoped here and
+    // reachable from any caller via the shared instance.
+    private var currentRefresh: Task<String, Error>?
+
     // MARK: Init
 
     private init() {
@@ -171,10 +189,42 @@ final class AuthManager: ObservableObject {
 
     // MARK: - Token Refresh
 
-    /// Exposed for direct token refresh when needed (e.g. before socket connect).
+    /// Performs a token refresh, coalescing concurrent callers onto a single
+    /// in-flight HTTP request. All concurrent callers receive the same new
+    /// access token.
+    ///
+    /// Exposed for direct token refresh when needed (e.g. before socket connect)
+    /// AND used by the APIClient retry-on-401 path. Every refresh MUST flow
+    /// through this method so the single-use refresh token is never sent twice.
     func refreshToken() async throws -> String {
+        if let inFlight = currentRefresh {
+            return try await inFlight.value
+        }
+
+        let task = Task<String, Error> { [weak self] in
+            guard let self else { throw NetworkError.tokenRefreshFailed }
+            defer { self.currentRefresh = nil }
+            return try await self.performRefresh()
+        }
+        currentRefresh = task
+        return try await task.value
+    }
+
+    /// The actual refresh HTTP call + token persistence. This is intentionally
+    /// NOT coalesced — callers must go through `refreshToken()`. Tests may
+    /// inject a custom `refreshExecutor` to simulate HTTP behaviour.
+    private func performRefresh() async throws -> String {
         guard let existingRefreshToken = tokenStore.refreshToken else {
             throw NetworkError.tokenRefreshFailed
+        }
+
+        if let executor = Self.refreshExecutorOverride {
+            let response = try await executor(existingRefreshToken)
+            tokenStore.save(
+                accessToken: response.accessToken,
+                refreshToken: response.refreshToken ?? existingRefreshToken
+            )
+            return response.accessToken
         }
 
         let endpoint = APIEndpoint.Auth.refresh
@@ -185,6 +235,14 @@ final class AuthManager: ObservableObject {
         )
         return response.accessToken
     }
+
+    // MARK: - Test Hooks
+    //
+    // `refreshExecutorOverride` lets tests replace the HTTP round-trip with
+    // a local closure so we can deterministically assert coalescing behaviour
+    // without touching URLSession. Not for use in production code.
+    typealias RefreshExecutor = @Sendable (_ existingRefreshToken: String) async throws -> TokenPairResponse
+    static var refreshExecutorOverride: RefreshExecutor?
 
     // MARK: - Private
 
