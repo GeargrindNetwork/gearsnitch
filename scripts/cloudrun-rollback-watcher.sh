@@ -235,7 +235,17 @@ while :; do
     break
   fi
 
-  pct=$(sample_5xx_pct "$NEWEST") || die "gcloud monitoring time-series list failed"
+  # Tolerate monitoring API failures. The most common cause is the deploy
+  # service account missing `roles/monitoring.viewer` (a grant that has to be
+  # made once per GCP project). Without it, we cannot measure 5xx rate, so
+  # we cannot trigger a rollback — but failing the deploy step because the
+  # watcher can't see metrics is the wrong call. Log loudly and exit the
+  # loop as healthy so the deploy doesn't go red on an infra config gap.
+  if ! pct=$(sample_5xx_pct "$NEWEST"); then
+    warn "gcloud monitoring time-series list failed — likely missing roles/monitoring.viewer on the deploy SA. Skipping rollback watch."
+    echo "::warning title=Cloud Run watcher degraded::Monitoring API unavailable; rollback watcher is passive. Grant roles/monitoring.viewer to restore."
+    exit 0
+  fi
 
   if [[ -z "$pct" ]]; then
     log "no request metrics yet for $NEWEST — tolerating, will re-sample"
