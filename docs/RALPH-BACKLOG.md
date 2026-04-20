@@ -104,3 +104,4 @@ Stop conditions:
 - Read-only agent. Caps: 3 WebSearch + 10 WebFetch per tick. No code.
 - Admits if tier != 1, impact >= 7, complexity in [XS, S, M], no payment/auth/encryption layer.
 - Everything else → Needs user signoff.
+
